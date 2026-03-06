@@ -1,0 +1,32 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend binaries & hot-reload temp
+backend/server
+backend/seed
+backend/tmp/
+
+# Environment / secrets
+.env
+.env.local
+*.env
+
+# Docker volumes / DB data
+postgres-data/
+
+# Claude session data
+.claude/
+
+# Dev/test scratch files
+payload.json
+test_flow.js
+test_idor.sh
+vulnerabilities_report.md
+
+# OS
+.DS_Store
+Thumbs.db

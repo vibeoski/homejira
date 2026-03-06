@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: homejira-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: homejira
+      POSTGRES_PASSWORD: homejira_secret
+      POSTGRES_DB: homejira
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homejira"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Go API (Air hot reload) ───────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: homejira-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://homejira:homejira_secret@db:5432/homejira?sslmode=disable
+      PORT: 8080
+      ENV: development
+      CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET: dev_secret_change_in_production_32ch
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - go_modules:/go/pkg/mod
+    working_dir: /app
+
+  # ── React Frontend (Vite HMR) ─────────────────────────────────
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: homejira-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: http://localhost:8080/api/v1
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - node_modules:/app/node_modules
+
+volumes:
+  pg_data:
+  go_modules:
+  node_modules:
