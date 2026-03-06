@@ -1,92 +1,81 @@
-# 🏠 HomeJira
+# HomeJira
 
-> Collaborative household task & grocery tracker — built with React, Go, and PostgreSQL.
+> Jira for your home. Collaborative task manager for households — built with React, Go, and PostgreSQL.
 
 ---
 
 ## Tech Stack
 
-| Layer      | Technology                          |
-|-----------|--------------------------------------|
-| Frontend  | React 18 + TypeScript + Vite (HMR)  |
-| Backend   | Go 1.22 + Chi router                |
-| Database  | PostgreSQL 16                        |
-| Dev Infra | Docker Compose + Air (Go hot reload) |
+| Layer      | Technology                                      |
+|------------|-------------------------------------------------|
+| Frontend   | React 18 + TypeScript + Vite + Zustand          |
+| Backend    | Go 1.24 + Chi router + PGX                      |
+| Database   | PostgreSQL 16                                   |
+| Realtime   | Server-Sent Events (SSE)                        |
+| Dev Infra  | Docker Compose + Air (Go hot reload) + Vite HMR |
 
 ---
 
-## Prerequisites
+## Features
 
-Make sure these are installed:
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
-- [Make](https://www.gnu.org/software/make/) — comes pre-installed on macOS/Linux; Windows users can use [GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm) or WSL
+- **Auth** — phone number + 4-digit MPIN, JWT (7-day TTL), rate-limited login
+- **Households** — create or join by code, invite by phone, admin controls (promote, remove, approve/reject requests)
+- **Tasks** — full CRUD, category (grocery/chore/errand/repair), priority (urgent/high/normal), assignee, due date, notes
+- **Live sync** — SSE streams push updates to all household members instantly, no polling
+- **Activity history** — every task change (created, completed, assigned, priority/category/title/notes/due changed) recorded and shown in a unified timeline with comments
+- **Stats** — completion ring, per-category progress bars, per-member breakdown
+- **Guest mode** — try the app without an account (local storage only)
+- **My tasks** — one-tap filter to see only tasks assigned to you
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/homejira.git
+# 1. Clone
+git clone https://github.com/vibeoski/homejira.git
 cd homejira
 
 # 2. Start all services (builds images on first run)
 make up
 
-# 3. Seed the database with sample data
+# 3. Seed with sample household data
 make seed
 ```
 
-That's it. Open **http://localhost:3000** 🎉
+Open **http://localhost:3000**
 
 ---
 
 ## Available Commands
 
-Run `make help` to see all commands:
-
 ```
-  up                   Build and start all services (detached, with hot reload)
-  dev                  Start all services in foreground (all logs visible)
-  down                 Stop and remove containers
-  restart              Restart all services
-  build                Rebuild images without cache
-  clean                Stop containers and wipe volumes (resets DB)
+make up          Start all services (detached, hot reload)
+make dev         Start in foreground (all logs visible)
+make down        Stop and remove containers
+make clean       Stop containers + wipe volumes (resets DB)
+make build       Rebuild images without cache
 
-  logs                 Tail logs for all services
-  logs-api             Tail API server logs
-  logs-web             Tail frontend logs
-  logs-db              Tail database logs
+make logs        Tail all logs
+make logs-api    Tail API logs
+make logs-web    Tail frontend logs
 
-  migrate              Run pending migrations (auto-runs on startup)
-  seed                 Seed database with sample household data
-  shell-db             Open interactive psql shell
-
-  shell-api            Open shell inside API container
-  shell-web            Open shell inside frontend container
-
-  ps                   List running containers and their status
+make seed        Seed DB with sample data
+make shell-db    Open psql shell
+make shell-api   Open shell in API container
+make shell-web   Open shell in frontend container
+make ps          List running containers
 ```
 
 ---
 
 ## Service URLs
 
-| Service   | URL                             |
-|-----------|---------------------------------|
-| Frontend  | http://localhost:3000           |
-| API       | http://localhost:8080/api/v1    |
-| Database  | localhost:5432                  |
-
----
-
-## Hot Reload
-
-Both services support hot reload out of the box:
-
-- **Frontend** — Vite HMR. Save any `.tsx` / `.ts` / `.css` file and the browser updates instantly.
-- **Backend** — [Air](https://github.com/air-verse/air) watches `.go` files and recompiles + restarts the server automatically.
+| Service   | URL                          |
+|-----------|------------------------------|
+| Frontend  | http://localhost:3000        |
+| API       | http://localhost:8080/api/v1 |
+| Database  | localhost:5432               |
 
 ---
 
@@ -94,76 +83,65 @@ Both services support hot reload out of the box:
 
 ```
 homejira/
-├── Makefile                     # All dev commands
-├── docker-compose.yml           # Service orchestration
+├── Makefile
+├── docker-compose.yml
+├── BACKLOG.md
 │
 ├── backend/
-│   ├── cmd/server/main.go       # Entry point, DI wiring, router setup
-│   ├── config/                  # Environment configuration
-│   ├── internal/
-│   │   ├── domain/              # Pure business entities & repository interfaces
-│   │   │   ├── task.go
-│   │   │   ├── member.go
-│   │   │   └── errors.go
-│   │   ├── repository/          # Postgres implementations
-│   │   │   ├── task_repo.go
-│   │   │   └── member_repo.go
-│   │   ├── service/             # Business logic (orchestrates repos)
-│   │   │   ├── task_service.go
-│   │   │   └── member_service.go
-│   │   ├── handler/             # HTTP handlers (request/response)
-│   │   │   ├── task_handler.go
-│   │   │   ├── member_handler.go
-│   │   │   └── respond.go
-│   │   └── middleware/          # Request logger
-│   ├── migrations/
-│   │   ├── 001_init.sql         # Schema (auto-applied on startup)
-│   │   └── seed.sql             # Sample data
-│   ├── .air.toml                # Air hot reload config
-│   ├── Dockerfile.dev
-│   └── go.mod
+│   ├── cmd/server/main.go           # Entry point — connects DB, runs migrations, starts server
+│   ├── cmd/seed/main.go             # DB seeder
+│   ├── config/config.go             # Env config
+│   └── internal/
+│       ├── domain/                  # Entities + repository interfaces (no external deps)
+│       │   ├── task.go
+│       │   ├── member.go
+│       │   ├── household.go
+│       │   ├── activity.go
+│       │   ├── auth.go
+│       │   └── errors.go
+│       ├── repository/              # PostgreSQL implementations
+│       ├── service/                 # Business logic
+│       ├── handler/                 # HTTP handlers
+│       ├── middleware/              # Auth (JWT), logger, rate limiter
+│       ├── sse/hub.go               # SSE pub/sub hub (household + member channels)
+│       ├── server/server.go         # Router + dependency injection
+│       └── db/migrations/           # golang-migrate SQL files (auto-applied on startup)
 │
 └── frontend/
-    ├── src/
-    │   ├── api/                 # Axios API clients
-    │   │   ├── client.ts
-    │   │   ├── tasks.ts
-    │   │   └── members.ts
-    │   ├── components/
-    │   │   ├── ui/              # Atomic: Avatar, Badge, Chip, Spinner
-    │   │   ├── tasks/           # TaskCard, TaskDrawer, AddTaskSheet
-    │   │   ├── stats/           # StatsScreen
-    │   │   └── members/         # MembersScreen
-    │   ├── store/               # Zustand global state
-    │   ├── types/               # TypeScript interfaces + design constants
-    │   ├── utils/               # timeAgo helper
-    │   ├── App.tsx              # Root component, routing logic
-    │   └── main.tsx             # React entry point
-    ├── vite.config.ts
-    ├── Dockerfile.dev
-    └── package.json
+    └── src/
+        ├── api/                     # Axios clients (tasks, members, auth, households)
+        ├── store/                   # Zustand (app state + authStore)
+        ├── components/
+        │   ├── ui/                  # Avatar, Badge, Chip, Spinner
+        │   ├── layout/              # AppLayout, BottomNav, AccountMenu, GuestBanner
+        │   ├── tasks/               # TaskCard, TaskDrawer, AddTaskSheet
+        │   ├── members/             # MembersScreen, HouseholdPanel
+        │   └── stats/               # StatsScreen
+        ├── pages/                   # TasksPage, StatsPage, MembersPage, AuthPage
+        ├── types/index.ts
+        └── utils/index.ts
 ```
 
 ---
 
-## Architecture: Clean Layers
+## Architecture
 
 ```
 HTTP Request
      │
      ▼
 ┌──────────┐
-│ Handler  │  — Parse request, validate input shape, call service
+│ Handler  │  Parse request, auth claims, call service
 └────┬─────┘
      │
      ▼
 ┌──────────┐
-│ Service  │  — Business rules, validation, orchestrate repos
+│ Service  │  Business rules, validation, activity recording
 └────┬─────┘
      │
      ▼
 ┌────────────┐
-│ Repository │  — SQL queries, data mapping (implements Domain interface)
+│ Repository │  SQL queries (implements Domain interface)
 └────┬───────┘
      │
      ▼
@@ -172,71 +150,88 @@ HTTP Request
 └──────────┘
 ```
 
-**Key principle:** each layer only depends on the layer below it through an interface defined in `domain/`. The domain package has zero external dependencies.
+Each layer depends only on the layer below via interfaces defined in `domain/`. The domain package has zero external dependencies.
 
 ---
 
 ## API Reference
 
+All endpoints require `Authorization: Bearer <jwt>` unless noted.
+
+### Auth
+
+| Method | Endpoint                | Auth | Description                        |
+|--------|-------------------------|------|------------------------------------|
+| POST   | `/auth/check-phone`     | No   | Check if phone is registered       |
+| POST   | `/auth/login`           | No   | Login with phone + MPIN            |
+| POST   | `/auth/register`        | No   | Register new account               |
+| POST   | `/auth/refresh`         | Yes  | Reissue JWT with fresh DB state    |
+| PATCH  | `/auth/mpin`            | Yes  | Change MPIN                        |
+
 ### Tasks
 
-| Method | Endpoint                  | Description              |
-|--------|--------------------------|--------------------------|
-| GET    | `/api/v1/tasks`           | List tasks (filterable)  |
-| POST   | `/api/v1/tasks`           | Create a task            |
-| GET    | `/api/v1/tasks/:id`       | Get task with comments   |
-| PATCH  | `/api/v1/tasks/:id`       | Update task (partial)    |
-| DELETE | `/api/v1/tasks/:id`       | Delete task              |
-| POST   | `/api/v1/tasks/:id/comments` | Add a comment         |
-
-**Query params for GET /tasks:** `?category=grocery&done=false&search=milk`
+| Method | Endpoint                     | Description                              |
+|--------|------------------------------|------------------------------------------|
+| GET    | `/tasks`                     | List tasks (`?category=&done=&search=`)  |
+| POST   | `/tasks`                     | Create task                              |
+| GET    | `/tasks/:id`                 | Get task with comments                   |
+| PATCH  | `/tasks/:id`                 | Update task (partial)                    |
+| DELETE | `/tasks/:id`                 | Delete task                              |
+| POST   | `/tasks/:id/comments`        | Add comment                              |
+| GET    | `/tasks/:id/activity`        | Get activity history                     |
 
 ### Members
 
-| Method | Endpoint              | Description     |
-|--------|-----------------------|-----------------|
-| GET    | `/api/v1/members`     | List members    |
-| POST   | `/api/v1/members`     | Create a member |
-| GET    | `/api/v1/members/:id` | Get a member    |
+| Method | Endpoint          | Description              |
+|--------|-------------------|--------------------------|
+| GET    | `/members`        | List household members   |
+| GET    | `/members/:id`    | Get member               |
+| PATCH  | `/members/me`     | Update profile           |
 
-### Example: Create Task
+### Households
 
-```bash
-curl -X POST http://localhost:8080/api/v1/tasks \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Buy coffee beans",
-    "notes": "Colombian dark roast",
-    "category": "grocery",
-    "priority": "high",
-    "assignee_id": "<existing-member-id>"
-  }'
-```
+| Method | Endpoint                          | Description                      |
+|--------|-----------------------------------|----------------------------------|
+| GET    | `/households/me`                  | Get current household            |
+| POST   | `/households`                     | Create household                 |
+| POST   | `/households/join-by-code`        | Submit join request              |
+| POST   | `/households/leave`               | Leave household                  |
+| POST   | `/households/members/:id/remove`  | Remove member (admin)            |
+| POST   | `/households/members/:id/promote` | Promote to admin                 |
+| GET    | `/households/requests`            | List pending join requests       |
+| POST   | `/households/requests/:id/approve`| Approve join request             |
+| POST   | `/households/requests/:id/reject` | Reject join request              |
+| POST   | `/households/invites`             | Invite by phone                  |
+| POST   | `/households/invites/:id/accept`  | Accept invite                    |
+
+### Realtime
+
+| Method | Endpoint              | Auth        | Description              |
+|--------|-----------------------|-------------|--------------------------|
+| GET    | `/events?token=<jwt>` | Query param | SSE stream for household |
 
 ---
 
 ## Environment Variables
 
-The defaults work out of the box with Docker Compose. To override, edit `docker-compose.yml`.
-
-| Variable       | Default                                        | Description           |
-|---------------|------------------------------------------------|-----------------------|
-| DATABASE_URL  | postgres://homejira:homejira_secret@db:5432/... | Postgres connection   |
-| PORT          | 8080                                           | API server port       |
-| ENV           | development                                    | Environment name      |
-| CORS_ORIGINS  | http://localhost:3000                          | Allowed CORS origins  |
+| Variable       | Default                                           | Description              |
+|----------------|---------------------------------------------------|--------------------------|
+| `DATABASE_URL` | `postgres://homejira:homejira_secret@db:5432/...` | Postgres connection      |
+| `PORT`         | `8080`                                            | API server port          |
+| `JWT_SECRET`   | `dev-secret-change-in-prod`                       | JWT signing key          |
+| `CORS_ORIGINS` | `http://localhost:3000`                           | Allowed CORS origins     |
+| `ENV`          | `development`                                     | Environment name         |
 
 ---
 
 ## Roadmap
 
-- [ ] Due dates + reminders
-- [ ] Recurring tasks
-- [ ] Shopping list mode (aggregate quantities)
-- [ ] Real-time sync (SSE / WebSockets)
-- [ ] Household invite via shareable link
-- [ ] Dark mode
-- [ ] PWA / native mobile app
+See [BACKLOG.md](./BACKLOG.md) for the full prioritised backlog.
+
+**MVP next:**
+- Due date reminders (push notifications)
+- Recurring tasks
+- Shopping list aggregation
 
 ---
 
