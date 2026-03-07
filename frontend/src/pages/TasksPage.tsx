@@ -31,6 +31,7 @@ export function TasksPage() {
   }
 
   const visible = tasks
+    .filter((t) => t.category !== 'grocery')
     .filter((t) => catTab === 'all' || t.category === catTab)
     .filter((t) => filterStatus === 'all' ? true : filterStatus === 'open' ? !t.done : t.done)
     .filter((t) => !myTasks || t.assignee_id === member?.id)
@@ -41,11 +42,13 @@ export function TasksPage() {
       return ((a.done ? 10 : 0) + po[a.priority]) - ((b.done ? 10 : 0) + po[b.priority])
     })
 
-  const openCount = tasks.filter((t) => !t.done).length
-  const urgentCount = tasks.filter((t) => !t.done && t.priority === 'urgent').length
+  const nonGroceryTasks = tasks.filter((t) => t.category !== 'grocery')
+  const openCount = nonGroceryTasks.filter((t) => !t.done).length
+  const urgentCount = nonGroceryTasks.filter((t) => !t.done && t.priority === 'urgent').length
   const catTabs = [
     { id: 'all' as const, label: 'All' },
     ...(Object.entries(CATEGORIES) as [Category, { label: string; icon: string; color: string }][])
+      .filter(([id]) => id !== 'grocery')
       .map(([id, v]) => ({ id, label: v.label })),
   ]
 
@@ -116,7 +119,7 @@ export function TasksPage() {
         {/* Category tabs */}
         <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 12 }}>
           {catTabs.map((t) => {
-            const cnt = tasks.filter((x) => (t.id === 'all' || x.category === t.id) && !x.done).length
+            const cnt = nonGroceryTasks.filter((x) => (t.id === 'all' || x.category === t.id) && !x.done).length
             const active = catTab === t.id
             return (
               <button
@@ -185,7 +188,7 @@ export function TasksPage() {
       <div style={{ padding: '4px 12px 100px' }}>
         {loading ? (
           <Spinner />
-        ) : tasks.length === 0 ? (
+        ) : nonGroceryTasks.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '72px 24px 32px', textAlign: 'center' }}>
             <div style={{
               width: 64, height: 64, borderRadius: 20, background: '#eef2ff',

@@ -1,5 +1,5 @@
 .PHONY: help up dev down restart build logs logs-api logs-web logs-db \
-        migrate seed shell-db shell-api shell-web ps clean \
+        migrate seed shell-db shell-api shell-web ps clean hooks test \
         up-db up-api up-web \
         dev-db dev-api dev-web \
         down-db down-api down-web
@@ -115,6 +115,15 @@ shell-api: ## Open shell inside API container
 
 shell-web: ## Open shell inside frontend container
 	$(DC) exec web sh
+
+# ── Tests & Hooks ─────────────────────────────────────────────────
+hooks: ## Configure git to use project hooks in .githooks/
+	git config core.hooksPath .githooks
+	@echo "  Git hooks activated (.githooks/pre-commit, .githooks/pre-push)"
+
+test: ## Run backend unit tests with coverage report
+	@cd backend && go test ./internal/service/... -coverprofile=coverage.out -covermode=atomic && \
+	  go tool cover -func=coverage.out | grep "^total" && rm -f coverage.out
 
 # ── Status ────────────────────────────────────────────────────────
 ps: ## List running containers and their status

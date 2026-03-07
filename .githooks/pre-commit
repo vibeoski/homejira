@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# pre-commit: fast local checks (build + lint). Runs in < 30s.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo "==> [pre-commit] Go build + vet"
+cd "$REPO_ROOT/backend"
+go build ./... 2>&1
+go vet ./... 2>&1
+
+echo "==> [pre-commit] Frontend build + lint"
+cd "$REPO_ROOT/frontend"
+npm run build --silent 2>&1
+npm run lint 2>&1
+
+echo "==> [pre-commit] All checks passed."
