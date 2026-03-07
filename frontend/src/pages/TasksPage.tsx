@@ -55,13 +55,13 @@ export function TasksPage() {
     <>
       {/* Sub-header: task stats + member avatars */}
       <div style={{
-        background: 'white', padding: '10px 16px 0',
-        borderBottom: '1px solid #e4e4e7',
+        background: 'var(--bg-surface)', padding: '10px 16px 0',
+        borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 57, zIndex: 49,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
               {openCount} open
               {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
             </p>
@@ -105,8 +105,8 @@ export function TasksPage() {
             placeholder="Search tasks…"
             style={{
               width: '100%', padding: '9px 32px 9px 32px', borderRadius: 8,
-              border: '1px solid #e4e4e7', fontSize: 13, outline: 'none',
-              background: '#f9f9f9', color: '#18181b', boxSizing: 'border-box',
+              border: '1px solid var(--border)', fontSize: 13, outline: 'none',
+              background: 'var(--bg-subtle)', color: 'var(--text-primary)', boxSizing: 'border-box',
             }}
           />
           {search !== '' && (
@@ -160,15 +160,15 @@ export function TasksPage() {
 
       {/* Filter toolbar */}
       <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', background: '#e4e4e7', borderRadius: 99, padding: 2, gap: 1 }}>
+        <div style={{ display: 'flex', background: 'var(--border)', borderRadius: 99, padding: 2, gap: 1 }}>
           {(['open', 'done', 'all'] as FilterStatus[]).map((k) => (
             <button
               key={k}
               onClick={() => setFilterStatus(k)}
               style={{
                 padding: '4px 10px', borderRadius: 99, border: 'none', fontSize: 11, fontWeight: 600,
-                background: filterStatus === k ? 'white' : 'transparent',
-                color: filterStatus === k ? '#18181b' : '#71717a',
+                background: filterStatus === k ? 'var(--bg-surface)' : 'transparent',
+                color: filterStatus === k ? 'var(--text-primary)' : 'var(--text-secondary)',
                 boxShadow: filterStatus === k ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
                 cursor: 'pointer', transition: 'all .12s',
               }}

@@ -55,8 +55,8 @@ export function BottomNav() {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: 520, background: 'white',
-      borderTop: '1px solid #e4e4e7', display: 'flex',
+      width: '100%', maxWidth: 520, background: 'var(--bg-surface)',
+      borderTop: '1px solid var(--border)', display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
       zIndex: 40,
     }}>

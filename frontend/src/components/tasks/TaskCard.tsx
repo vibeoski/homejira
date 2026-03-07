@@ -25,11 +25,11 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
     <div
       onClick={() => onOpen(task)}
       style={{
-        background: 'white',
+        background: 'var(--bg-surface)',
         borderRadius: 12,
         padding: '13px 14px 12px',
         marginBottom: 6,
-        border: `1px solid ${overdue && !task.done ? '#fecaca' : '#e4e4e7'}`,
+        border: `1px solid ${overdue && !task.done ? '#fecaca' : 'var(--border)'}`,
         display: 'flex',
         gap: 11,
         alignItems: 'flex-start',
@@ -45,7 +45,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         style={{
           width: 20, height: 20, borderRadius: 6, marginTop: 2, flexShrink: 0,
           border: task.done ? 'none' : '1.5px solid #d4d4d8',
-          background: task.done ? '#22c55e' : 'white',
+          background: task.done ? '#22c55e' : 'var(--bg-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', padding: 0, transition: 'background .15s',
         }}
@@ -62,7 +62,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         <p style={{
           fontSize: 14, fontWeight: 500, lineHeight: 1.4,
           textDecoration: task.done ? 'line-through' : 'none',
-          color: task.done ? '#a1a1aa' : '#18181b',
+          color: task.done ? 'var(--text-muted)' : 'var(--text-primary)',
           margin: '0 0 5px',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{task.title}</p>

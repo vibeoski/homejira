@@ -172,8 +172,8 @@ export function GroceryPage() {
       <div style={{ paddingBottom: 80 }}>
         {/* History header */}
         <div style={{
-          background: 'white', padding: '16px 16px 14px',
-          borderBottom: '1px solid #e4e4e7',
+          background: 'var(--bg-surface)', padding: '16px 16px 14px',
+          borderBottom: '1px solid var(--border)',
           position: 'sticky', top: 0, zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
@@ -186,7 +186,7 @@ export function GroceryPage() {
             </svg>
             Back
           </button>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#18181b' }}>History</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>History</span>
           <span style={{ width: 48 }} />
         </div>
 
@@ -245,8 +245,8 @@ export function GroceryPage() {
     <div style={{ paddingBottom: 80 }}>
       {/* Sub-header */}
       <div style={{
-        background: 'white', padding: '10px 16px',
-        borderBottom: '1px solid #e4e4e7',
+        background: 'var(--bg-surface)', padding: '10px 16px',
+        borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 57, zIndex: 49,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>

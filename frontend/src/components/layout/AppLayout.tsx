@@ -7,12 +7,27 @@ import { AppLogo } from '../ui/AppLogo'
 import { useAuthStore } from '../../store/authStore'
 import { authApi } from '../../api/auth'
 import { useStore } from '../../store'
+import { useThemeStore, resolveTheme } from '../../store/themeStore'
 
 export function AppLayout() {
   const { isGuest, isAuthenticated, token, setAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, bumpSse } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
+  const { theme } = useThemeStore()
+
+  // Apply resolved theme to <html> so CSS vars cascade everywhere
+  useEffect(() => {
+    const apply = () => {
+      document.documentElement.setAttribute('data-theme', resolveTheme(theme))
+    }
+    apply()
+    if (theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      mq.addEventListener('change', apply)
+      return () => mq.removeEventListener('change', apply)
+    }
+  }, [theme])
 
   // SSE: subscribe to live updates for authenticated users.
   // EventSource reconnects automatically on drop; we close and recreate when token changes.
@@ -68,18 +83,18 @@ export function AppLayout() {
   }, [isGuest])
 
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', background: '#f4f4f5', position: 'relative' }}>
+    <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', background: 'var(--bg-app)', position: 'relative' }}>
       {isGuest && <GuestBanner />}
       {/* Persistent top bar — visible on every screen */}
       <div style={{
-        background: 'white', borderBottom: '1px solid #e4e4e7',
+        background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', height: 57, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <AppLogo size={30} />
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>HomeJira</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: -0.3 }}>HomeJira</span>
         </div>
         <AccountMenu />
       </div>

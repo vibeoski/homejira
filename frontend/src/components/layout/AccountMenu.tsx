@@ -5,6 +5,7 @@ import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
 import { timeAgo } from '../../utils'
+import { useThemeStore, type Theme } from '../../store/themeStore'
 
 const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
   '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐯', '🦄', '🌟']
@@ -35,6 +36,7 @@ export function AccountMenu() {
 
   const navigate = useNavigate()
   const { member, isGuest, clearAuth, clearGuest, updateMember } = useAuthStore()
+  const { theme, setTheme } = useThemeStore()
 
   useEffect(() => {
     if (!isGuest && member) {
@@ -112,14 +114,14 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={() => setOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--shadow-overlay)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             className="slide-up"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', paddingBottom: 36, overflow: 'hidden' }}
+            style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', paddingBottom: 36, overflow: 'hidden' }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 0' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 16px' }}>
               <div style={{
@@ -132,7 +134,7 @@ export function AccountMenu() {
                 {isGuest ? '👤' : (member?.avatar ?? '👤')}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#18181b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {isGuest ? 'Guest' : (member?.name ?? '')}
                 </p>
                 {!isGuest && member?.phone && (
@@ -154,7 +156,7 @@ export function AccountMenu() {
               </div>
             </div>
 
-            <div style={{ height: 1, background: '#f4f4f5' }} />
+            <div style={{ height: 1, background: 'var(--border-light)' }} />
 
             <div style={{ padding: '6px 0' }}>
               {isGuest ? (
@@ -164,7 +166,7 @@ export function AccountMenu() {
                   <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
                   <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
                   <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
-                  <div style={{ height: 1, background: '#f4f4f5', margin: '4px 0' }} />
+                  <div style={{ height: 1, background: 'var(--border-light)', margin: '4px 0' }} />
                   <MenuItem label="Sign out" onClick={handleSignOut} danger />
                 </>
               )}
@@ -178,14 +180,14 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--shadow-overlay)', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             className="slide-up"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '88vh', overflowY: 'auto' }}
+            style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '88vh', overflowY: 'auto' }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 0' }} />
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 16px' }}>
               <div style={{
@@ -228,15 +230,38 @@ export function AccountMenu() {
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Your name"
                 style={{
-                  width: '100%', padding: '11px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
-                  fontSize: 14, outline: 'none', background: '#f9f9f9', boxSizing: 'border-box', marginBottom: 20, color: '#18181b',
+                  width: '100%', padding: '11px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                  fontSize: 14, outline: 'none', background: 'var(--bg-subtle)', boxSizing: 'border-box', marginBottom: 20, color: 'var(--text-primary)',
                 }}
               />
 
+              <FieldLabel>Theme</FieldLabel>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+                {([
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark',  label: 'Dark' },
+                  { value: 'system', label: 'System' },
+                ] as { value: Theme; label: string }[]).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setTheme(value)}
+                    style={{
+                      flex: 1, padding: '8px 0', borderRadius: 8,
+                      border: `1.5px solid ${theme === value ? ACCENT : 'var(--border)'}`,
+                      background: theme === value ? ACCENT + '1a' : 'var(--bg-subtle)',
+                      color: theme === value ? ACCENT : 'var(--text-secondary)',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      transition: 'all .12s',
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={closeSheet} style={{
-                  flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #e4e4e7',
-                  background: 'white', fontSize: 13, fontWeight: 600, color: '#71717a', cursor: 'pointer',
+                  flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid var(--border)',
+                  background: 'var(--bg-surface)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
                 }}>Cancel</button>
                 <button
                   type="button" onClick={handleSaveProfile}
@@ -259,14 +284,14 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--shadow-overlay)', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             className="slide-up"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '80vh', overflowY: 'auto' }}
+            style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '80vh', overflowY: 'auto' }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 0' }} />
             <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', margin: 0 }}>My Coins</p>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '4px 14px' }}>
@@ -282,7 +307,7 @@ export function AccountMenu() {
                 { icon: '🏠', label: 'Invite to household', coins: '+20' },
                 { icon: '👥', label: 'Refer a friend', coins: '+10' },
               ].map((item) => (
-                <div key={item.label} style={{ flex: 1, background: '#f9f9f9', borderRadius: 10, padding: '12px 10px', border: '1px solid #f4f4f5', textAlign: 'center' }}>
+                <div key={item.label} style={{ flex: 1, background: 'var(--bg-subtle)', borderRadius: 10, padding: '12px 10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
                   <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#854d0e' }}>{item.coins}</div>
@@ -290,7 +315,7 @@ export function AccountMenu() {
               ))}
             </div>
 
-            <div style={{ height: 1, background: '#f4f4f5', margin: '0 20px 16px' }} />
+            <div style={{ height: 1, background: 'var(--border-light)', margin: '0 20px 16px' }} />
             <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
               History
             </p>
@@ -323,12 +348,12 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--shadow-overlay)', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             className="slide-up"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+            style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
           >
             <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 20px' }} />
             <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 20 }}>Change PIN</p>
@@ -359,8 +384,8 @@ export function AccountMenu() {
 
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button type="button" onClick={closeSheet} style={{
-                    flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #e4e4e7',
-                    background: 'white', fontSize: 13, fontWeight: 600, color: '#71717a', cursor: 'pointer',
+                    flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid var(--border)',
+                    background: 'var(--bg-surface)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
                   }}>Cancel</button>
                   <button
                     type="button" onClick={handleSavePin}
@@ -381,7 +406,7 @@ export function AccountMenu() {
 }
 
 function MenuItem({ label, onClick, accent, danger }: { label: string; onClick: () => void; accent?: boolean; danger?: boolean }) {
-  const color = danger ? '#ef4444' : accent ? ACCENT : '#18181b'
+  const color = danger ? '#ef4444' : accent ? ACCENT : 'var(--text-primary)'
   return (
     <button
       type="button"
