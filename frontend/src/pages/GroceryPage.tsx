@@ -9,17 +9,20 @@ import type { Task } from '../types'
 
 const ACCENT = '#6366f1'
 
+// Persists across tab navigations so re-entering the page is instant
+let _cache: { active: Task[]; done: Task[] } | null = null
+
 export function GroceryPage() {
   const { isGuest, member } = useAuthStore()
   const { sseVersion } = useStore()
 
-  const [active, setActive] = useState<Task[]>([])
-  const [done, setDone] = useState<Task[]>([])
+  const [active, setActive] = useState<Task[]>(_cache?.active ?? [])
+  const [done, setDone] = useState<Task[]>(_cache?.done ?? [])
   const [showDone, setShowDone] = useState(true)
   const [historyMode, setHistoryMode] = useState(false)
   const todayKey = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() })()
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(_cache === null)
 
   const [newTitle, setNewTitle] = useState('')
   const [adding, setAdding] = useState(false)
@@ -29,15 +32,18 @@ export function GroceryPage() {
   const load = async () => {
     if (isGuest) {
       const all = loadGuestTasks().filter((t) => t.category === 'grocery')
-      setActive(all.filter((t) => !t.done).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-      setDone(all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()))
-      setLoading(false)
+      const a = all.filter((t) => !t.done).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const d = all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      _cache = { active: a, done: d }
+      setActive(a); setDone(d); setLoading(false)
       return
     }
     try {
       const all = await tasksApi.list({ category: 'grocery' })
-      setActive(all.filter((t) => !t.done))
-      setDone(all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()))
+      const a = all.filter((t) => !t.done)
+      const d = all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      _cache = { active: a, done: d }
+      setActive(a); setDone(d)
     } finally {
       setLoading(false)
     }
