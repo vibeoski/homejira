@@ -148,9 +148,10 @@ export function GroceryPage() {
     }
   }
 
-  // ── Delete from history ───────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    setDone((prev) => prev.filter((t) => t.id !== id))
+  // ── Delete item ───────────────────────────────────────────────
+  const handleDelete = async (id: string, fromActive = false) => {
+    if (fromActive) setActive((prev) => prev.filter((t) => t.id !== id))
+    else setDone((prev) => prev.filter((t) => t.id !== id))
     if (isGuest) {
       saveGuestTasks(loadGuestTasks().filter((t) => t.id !== id))
       return
@@ -231,7 +232,7 @@ export function GroceryPage() {
                     </div>
                   </button>
                   {open && dayTasks.map((task) => (
-                    <HistoryRow key={task.id} task={task} onDelete={handleDelete} />
+                    <HistoryRow key={task.id} task={task} onDelete={(id) => handleDelete(id)} />
                   ))}
                 </div>
               )
@@ -336,7 +337,7 @@ export function GroceryPage() {
       {active.length > 0 && (
         <div style={{ padding: '0 12px' }}>
           {active.map((task) => (
-            <GroceryRow key={task.id} task={task} onToggle={handleToggle} onEdit={handleEdit} />
+            <GroceryRow key={task.id} task={task} onToggle={handleToggle} onEdit={handleEdit} onDelete={(id) => handleDelete(id, true)} />
           ))}
         </div>
       )}
@@ -418,11 +419,13 @@ interface RowProps {
   done?: boolean
   onToggle: (task: Task, checked: boolean) => void
   onEdit?: (task: Task, newTitle: string) => void
+  onDelete?: (id: string) => void
 }
 
-function GroceryRow({ task, done = false, onToggle, onEdit }: RowProps) {
+function GroceryRow({ task, done = false, onToggle, onEdit, onDelete }: RowProps) {
   const [editing, setEditing] = useState(false)
   const [editVal, setEditVal] = useState(task.title)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const startEdit = () => {
@@ -487,7 +490,7 @@ function GroceryRow({ task, done = false, onToggle, onEdit }: RowProps) {
         </span>
       )}
 
-      {task.assignee && (
+      {task.assignee && !confirmDelete && (
         <span style={{
           width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
           background: (task.assignee.color ?? '#6366f1') + '20',
@@ -497,6 +500,31 @@ function GroceryRow({ task, done = false, onToggle, onEdit }: RowProps) {
         }}>
           {task.assignee.avatar ?? '?'}
         </span>
+      )}
+
+      {onDelete && !editing && (
+        confirmDelete ? (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => onDelete(task.id)}
+              style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+            >Delete</button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              style={{ border: 'none', background: '#f4f4f5', color: '#71717a', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8', display: 'flex', flexShrink: 0 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" />
+              <path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
+            </svg>
+          </button>
+        )
       )}
     </div>
   )
