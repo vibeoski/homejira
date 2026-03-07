@@ -24,8 +24,9 @@ main (production)
 
 **Rules:**
 - Never commit directly to `main` or `staging`
-- Never open a PR directly to `main` (only staging → main promotions)
-- Always verify locally first, then in staging, before merging to main
+- **All PRs from feature/fix branches MUST target `staging`**, never `main`
+- `main` only ever receives PRs from `staging` (promotion PRs)
+- Always verify locally first, then in staging, before promoting staging → main
 
 ---
 
