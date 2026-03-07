@@ -211,9 +211,7 @@ export function HouseholdPanel() {
     setSharingLink(true)
     try {
       const { token } = await householdsApi.createInviteLink()
-      const appBase = (import.meta.env.VITE_API_URL as string | undefined)
-        ?.replace('/api/v1', '') ?? window.location.origin
-      const url = `${appBase}/join/${token}`
+      const url = `${window.location.origin}/join/${token}`
       const text = `Join ${household?.name ?? 'our household'} on HomeJira: ${url}`
       if (navigator.share) {
         await navigator.share({ title: 'Join our household', text, url })
