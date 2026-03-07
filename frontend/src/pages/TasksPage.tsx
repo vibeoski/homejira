@@ -109,11 +109,26 @@ export function TasksPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tasks…"
             style={{
-              width: '100%', padding: '9px 12px 9px 32px', borderRadius: 8,
+              width: '100%', padding: '9px 32px 9px 32px', borderRadius: 8,
               border: '1px solid #e4e4e7', fontSize: 13, outline: 'none',
               background: '#f9f9f9', color: '#18181b', boxSizing: 'border-box',
             }}
           />
+          {search !== '' && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', padding: 2, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#a1a1aa',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Category tabs */}
@@ -181,7 +196,7 @@ export function TasksPage() {
             marginLeft: 'auto', background: 'white', border: '1px solid #e4e4e7',
             borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#71717a', cursor: 'pointer',
           }}
-        >{sortBy === 'priority' ? 'Priority' : 'Recent'}</button>
+        >{sortBy === 'priority' ? 'Sort: Priority' : 'Sort: Recent'}</button>
       </div>
 
       {/* Content */}
@@ -214,7 +229,14 @@ export function TasksPage() {
         ) : visible.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 20px' }}>
             <p style={{ fontSize: 18, fontWeight: 700, color: '#18181b' }}>All clear!</p>
-            <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 6 }}>Nothing matches these filters.</p>
+            <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
+            <button
+              onClick={() => { setCatTab('all'); setFilterStatus('open'); setMyTasks(false); setSearch('') }}
+              style={{
+                padding: '8px 20px', borderRadius: 8, border: '1px solid #e4e4e7',
+                background: 'white', color: '#71717a', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}
+            >Reset filters</button>
           </div>
         ) : visible.map((task) => (
           <TaskCard key={task.id} task={task} onToggle={toggleTask} onOpen={setSelected} />

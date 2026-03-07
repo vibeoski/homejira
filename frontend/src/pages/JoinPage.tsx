@@ -90,9 +90,16 @@ export function JoinPage() {
           Sign up &amp; join
         </button>
 
-        <p style={{ marginTop: 12, fontSize: 12, color: '#a1a1aa', textAlign: 'center' }}>
-          Already have an account? Sign in to join automatically.
-        </p>
+        <button
+          onClick={handleSignUpAndJoin}
+          style={{
+            marginTop: 10, width: '100%', padding: '12px 0', borderRadius: 10,
+            border: '1px solid #e4e4e7', background: 'white',
+            color: '#18181b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          Sign in
+        </button>
       </div>
     </div>
   )

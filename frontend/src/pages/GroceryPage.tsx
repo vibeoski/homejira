@@ -3,6 +3,8 @@ import { tasksApi } from '../api/tasks'
 import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
 import { loadGuestTasks, saveGuestTasks } from '../store/guest'
+import { Spinner } from '../components/ui/Spinner'
+import { AccountMenu } from '../components/layout/AccountMenu'
 import type { Task } from '../types'
 
 const ACCENT = '#6366f1'
@@ -117,6 +119,24 @@ export function GroceryPage() {
   // ── Clear done (hide from active view, stays in history) ──────
   const handleClearDone = () => setShowDone(false)
 
+  // ── Edit item title ───────────────────────────────────────────
+  const handleEdit = async (task: Task, newTitle: string) => {
+    const title = newTitle.trim()
+    if (!title || title === task.title) return
+    const update = (list: Task[]) => list.map((t) => t.id === task.id ? { ...t, title } : t)
+    setActive((prev) => update(prev))
+    setDone((prev) => update(prev))
+    if (isGuest) {
+      saveGuestTasks(loadGuestTasks().map((t) => t.id === task.id ? { ...t, title } : t))
+      return
+    }
+    try {
+      await tasksApi.update(task.id, { title })
+    } catch {
+      load() // revert on error
+    }
+  }
+
   // ── Delete from history ───────────────────────────────────────
   const handleDelete = async (id: string) => {
     setDone((prev) => prev.filter((t) => t.id !== id))
@@ -134,11 +154,7 @@ export function GroceryPage() {
   // ─────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a1a1aa', fontSize: 14 }}>
-        Loading…
-      </div>
-    )
+    return <Spinner />
   }
 
   if (historyMode) {
@@ -185,6 +201,7 @@ export function GroceryPage() {
         padding: '16px 16px 12px',
       }}>
         <span style={{ fontSize: 18, fontWeight: 800, color: '#18181b' }}>Grocery list</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <button
           onClick={() => setHistoryMode(true)}
           style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
@@ -195,6 +212,8 @@ export function GroceryPage() {
           </svg>
           History {done.length > 0 && `(${done.length})`}
         </button>
+        <AccountMenu />
+        </div>
       </div>
 
       {/* Quick-add */}
@@ -244,16 +263,26 @@ export function GroceryPage() {
 
       {/* Active items */}
       {active.length === 0 && done.length === 0 && (
-        <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-          <p style={{ fontSize: 14, color: '#71717a', marginBottom: 4 }}>Your grocery list is empty.</p>
-          <p style={{ fontSize: 12, color: '#a1a1aa' }}>Add items above to get started.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '56px 24px 32px', textAlign: 'center' }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 18, background: '#eef2ff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 01-8 0" />
+            </svg>
+          </div>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b', margin: '0 0 6px' }}>List is empty</p>
+          <p style={{ fontSize: 13, color: '#a1a1aa', margin: 0, lineHeight: 1.6 }}>Type an item above and press Enter to add it.</p>
         </div>
       )}
 
       {active.length > 0 && (
         <div style={{ padding: '0 12px' }}>
           {active.map((task) => (
-            <GroceryRow key={task.id} task={task} onToggle={handleToggle} />
+            <GroceryRow key={task.id} task={task} onToggle={handleToggle} onEdit={handleEdit} />
           ))}
         </div>
       )}
@@ -283,7 +312,7 @@ export function GroceryPage() {
                 onClick={handleClearDone}
                 style={{ background: 'none', border: 'none', color: '#a1a1aa', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
               >
-                Clear done
+                Hide done
               </button>
             )}
           </div>
@@ -307,9 +336,26 @@ interface RowProps {
   task: Task
   done?: boolean
   onToggle: (task: Task, checked: boolean) => void
+  onEdit?: (task: Task, newTitle: string) => void
 }
 
-function GroceryRow({ task, done = false, onToggle }: RowProps) {
+function GroceryRow({ task, done = false, onToggle, onEdit }: RowProps) {
+  const [editing, setEditing] = useState(false)
+  const [editVal, setEditVal] = useState(task.title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const startEdit = () => {
+    if (done) return
+    setEditVal(task.title)
+    setEditing(true)
+    setTimeout(() => inputRef.current?.select(), 0)
+  }
+
+  const commitEdit = () => {
+    setEditing(false)
+    onEdit?.(task, editVal)
+  }
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
@@ -333,13 +379,32 @@ function GroceryRow({ task, done = false, onToggle }: RowProps) {
         )}
       </button>
 
-      <span style={{
-        flex: 1, fontSize: 14,
-        textDecoration: done ? 'line-through' : 'none',
-        color: done ? '#a1a1aa' : '#18181b',
-      }}>
-        {task.title}
-      </span>
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={editVal}
+          onChange={(e) => setEditVal(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+          style={{
+            flex: 1, fontSize: 14, border: 'none', outline: 'none',
+            borderBottom: `1.5px solid ${ACCENT}`, background: 'transparent',
+            color: '#18181b', padding: '1px 0',
+          }}
+        />
+      ) : (
+        <span
+          onClick={startEdit}
+          style={{
+            flex: 1, fontSize: 14,
+            textDecoration: done ? 'line-through' : 'none',
+            color: done ? '#a1a1aa' : '#18181b',
+            cursor: done ? 'default' : 'text',
+          }}
+        >
+          {task.title}
+        </span>
+      )}
 
       {task.assignee && (
         <span style={{

@@ -4,9 +4,12 @@ import { CATEGORIES, type Task, type Member } from '../../types'
 interface Props { tasks: Task[]; members: Member[] }
 
 export function StatsScreen({ tasks, members }: Props) {
-  const done = tasks.filter((x) => x.done).length
-  const total = tasks.length
+  const householdTasks = tasks.filter((x) => x.category !== 'grocery')
+  const done = householdTasks.filter((x) => x.done).length
+  const total = householdTasks.length
   const pct = total ? Math.round((done / total) * 100) : 0
+  const overdueCount = householdTasks.filter((x) => !x.done && x.due_at && new Date(x.due_at) < new Date()).length
+  const urgentCount = householdTasks.filter((x) => !x.done && x.priority === 'urgent').length
   const r = 30, circ = 2 * Math.PI * r
 
   return (
@@ -46,6 +49,30 @@ export function StatsScreen({ tasks, members }: Props) {
         )}
       </div>
 
+      {/* Urgency summary */}
+      {(overdueCount > 0 || urgentCount > 0) && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          {overdueCount > 0 && (
+            <div style={{ flex: 1, background: '#fef2f2', borderRadius: 10, padding: '10px 14px', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>⚠</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', margin: 0 }}>{overdueCount} overdue</p>
+                <p style={{ fontSize: 11, color: '#ef4444', margin: 0 }}>Past due date</p>
+              </div>
+            </div>
+          )}
+          {urgentCount > 0 && (
+            <div style={{ flex: 1, background: '#fff7ed', borderRadius: 10, padding: '10px 14px', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>!</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#ea580c', margin: 0 }}>{urgentCount} urgent</p>
+                <p style={{ fontSize: 11, color: '#f97316', margin: 0 }}>Needs attention</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* By category */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
         {(Object.entries(CATEGORIES) as [string, { label: string; icon: string; color: string }][]).map(([k, v]) => {
@@ -66,6 +93,7 @@ export function StatsScreen({ tasks, members }: Props) {
       </div>
 
       {/* By member */}
+      {members.length > 0 && (<>
       <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>By member</p>
       {members.map((m) => {
         const mine = tasks.filter((x) => x.assignee_id === m.id)
@@ -90,6 +118,7 @@ export function StatsScreen({ tasks, members }: Props) {
           </div>
         )
       })}
+      </>)}
     </div>
   )
 }

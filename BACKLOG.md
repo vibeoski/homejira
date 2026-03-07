@@ -162,6 +162,113 @@ Complete visual redesign:
 
 ---
 
+## 🎨 UI/UX (Round 2)
+
+### UX-08 · JoinPage missing "Sign in" button
+**Status:** `done`
+**File:** `frontend/src/pages/JoinPage.tsx`
+The note "Already have an account? Sign in to join automatically." is plain text with no action.
+Existing users have no button to proceed — dead end.
+**Fix:** Add a secondary "Sign in" button that calls the same pending-join flow.
+
+---
+
+### UX-09 · Stats overall ring includes grocery items
+**Status:** `done`
+**File:** `frontend/src/components/stats/StatsScreen.tsx`
+The overall "X of Y done" ring counts grocery check-offs alongside household tasks, inflating
+the completion % and making the number meaningless.
+**Fix:** Filter out `category=grocery` from `done` and `total` in the ring. Category breakdown
+card for grocery stays (useful for per-category view).
+
+---
+
+### UX-10 · Grocery "Clear done" label sounds destructive
+**Status:** `done`
+**File:** `frontend/src/pages/GroceryPage.tsx`
+"Clear done" reads like a delete. It actually just collapses the done section.
+**Fix:** Rename to "Hide done".
+
+---
+
+### UX-11 · AccountMenu missing from Grocery page header
+**Status:** `done`
+**File:** `frontend/src/pages/GroceryPage.tsx`
+Every other page header has an AccountMenu. Grocery does not — users can't access
+profile/settings/sign-out from this tab.
+**Fix:** Import and add `<AccountMenu />` to the Grocery page header.
+
+---
+
+### UX-12 · Tasks search has no clear (×) button
+**Status:** `done`
+**File:** `frontend/src/pages/TasksPage.tsx`
+After typing in the search field there is no clear button — users must manually backspace.
+**Fix:** Show a small × icon button inside the input when `search !== ''`.
+
+---
+
+### UX-13 · "All clear" empty state has no filter reset
+**Status:** `done`
+**File:** `frontend/src/pages/TasksPage.tsx`
+When filters produce 0 results the "All clear! Nothing matches." state gives no escape
+route — users must manually unset all filters.
+**Fix:** Add a "Reset filters" button on the All clear state that resets catTab, filterStatus,
+myTasks, and search to defaults.
+
+---
+
+### UX-14 · Grocery loading state uses raw text
+**Status:** `done`
+**File:** `frontend/src/pages/GroceryPage.tsx`
+The grocery loading state renders raw "Loading…" text while all other pages use `<Spinner />`.
+**Fix:** Replace with `<Spinner />`.
+
+---
+
+### UX-15 · Grocery empty state is plain text
+**Status:** `done`
+**File:** `frontend/src/pages/GroceryPage.tsx`
+TasksPage has an illustrated empty state with icon + headline + CTA. Grocery shows plain text.
+**Fix:** Match the visual language with an icon, headline, and supporting copy.
+
+---
+
+### UX-16 · Grocery items have no edit capability
+**Status:** `done`
+**File:** `frontend/src/pages/GroceryPage.tsx` · `GroceryRow` sub-component
+A typo in an item title requires deleting and re-adding.
+**Fix:** Tap-to-edit on row title — click the text to show an inline input; save on Enter/blur.
+
+---
+
+### UX-17 · Sort toggle label is ambiguous
+**Status:** `done`
+**File:** `frontend/src/pages/TasksPage.tsx`
+The button shows "Priority" when sorted by priority — looks like a no-op. Clicking it
+switches to "Recent" but nothing signals the button is a toggle.
+**Fix:** Prefix with "Sort: " so users read "Sort: Priority" and understand it's interactive.
+
+---
+
+### UX-18 · Stats "By member" header renders with no members
+**Status:** `done`
+**File:** `frontend/src/components/stats/StatsScreen.tsx`
+The "By member" section label renders even when `members.length === 0` (guest mode).
+**Fix:** Wrap the entire section in `{members.length > 0 && ...}`.
+
+---
+
+### UX-19 · Stats lacks urgency summary
+**Status:** `done`
+**File:** `frontend/src/components/stats/StatsScreen.tsx`
+Stats are passive (completion only). No overdue or urgent count is surfaced, so the page
+gives no actionable signal.
+**Fix:** Add a small summary row below the ring showing overdue count and urgent open count,
+drawn from non-grocery tasks.
+
+---
+
 ## 🟢 Roadmap
 
 ### RD-00 · Task activity history
@@ -217,3 +324,15 @@ Generate a URL (e.g. `/join/YJLS5ZVJ`) that opens the app and pre-fills the join
 | UX-06 | TaskCard 3-row hierarchy (title / category+notes / due+comments) | 2026-03-06 |
 | UX-07 | Checkbox pop animation, optimistic comment send, promote flash | 2026-03-06 |
 | DS-01 | Full UI revamp — indigo accent, neutral palette, SVG nav icons, DM Sans only | 2026-03-06 |
+| UX-08 | JoinPage — added "Sign in" secondary button for existing users | 2026-03-07 |
+| UX-09 | Stats ring excludes grocery tasks from done/total count | 2026-03-07 |
+| UX-10 | Grocery "Clear done" renamed to "Hide done" | 2026-03-07 |
+| UX-11 | AccountMenu added to Grocery page header | 2026-03-07 |
+| UX-12 | Tasks search — clear (×) button appears when input non-empty | 2026-03-07 |
+| UX-13 | Tasks "All clear" empty state — "Reset filters" button added | 2026-03-07 |
+| UX-14 | Grocery loading state now uses Spinner component | 2026-03-07 |
+| UX-15 | Grocery empty state — illustrated with icon, headline, and copy | 2026-03-07 |
+| UX-16 | Grocery items — tap-to-edit inline input (Enter/blur saves, Escape cancels) | 2026-03-07 |
+| UX-17 | Sort toggle label prefixed with "Sort: " for clarity | 2026-03-07 |
+| UX-18 | Stats "By member" section hidden when no members exist | 2026-03-07 |
+| UX-19 | Stats urgency summary cards (overdue + urgent counts) added | 2026-03-07 |
