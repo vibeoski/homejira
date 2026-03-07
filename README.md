@@ -18,14 +18,17 @@
 
 ## Features
 
-- **Auth** — phone number + 4-digit MPIN, JWT (7-day TTL), rate-limited login
-- **Households** — create or join by code, invite by phone, admin controls (promote, remove, approve/reject requests)
-- **Tasks** — full CRUD, category (grocery/chore/errand/repair), priority (urgent/high/normal), assignee, due date, notes
+- **Auth** — phone number + 4-digit MPIN, JWT (30-day TTL), rate-limited login, change PIN in-app
+- **Households** — create or join by code; invite by share link; admin controls (promote, remove, approve/reject join requests); leave household; delete group
+- **Tasks** — full CRUD, category (chore/errand/repair), priority (urgent/high/normal), assignee, due date, notes, search and filter
+- **Grocery list** — dedicated checklist view with quick-add, check-all, clear done, and history grouped by day
 - **Live sync** — SSE streams push updates to all household members instantly, no polling
-- **Activity history** — every task change (created, completed, assigned, priority/category/title/notes/due changed) recorded and shown in a unified timeline with comments
+- **Activity history** — every task change (created, completed, assigned, priority/category/title/notes/due changed) recorded in a unified timeline alongside comments
 - **Stats** — completion ring, per-category progress bars, per-member breakdown
+- **Coins & referral** — earn coins for referring friends (+10) and for household members joining via your invite link (+20); coin balance and history in account menu
+- **Theme** — light, dark, and system-preference modes, persisted per device
 - **Guest mode** — try the app without an account (local storage only)
-- **My tasks** — one-tap filter to see only tasks assigned to you
+- **My tasks filter** — one-tap to see only tasks assigned to you
 
 ---
 
@@ -96,11 +99,12 @@ homejira/
 │       │   ├── task.go
 │       │   ├── member.go
 │       │   ├── household.go
+│       │   ├── coins.go
 │       │   ├── activity.go
 │       │   ├── auth.go
 │       │   └── errors.go
 │       ├── repository/              # PostgreSQL implementations
-│       ├── service/                 # Business logic
+│       ├── service/                 # Business logic + tests
 │       ├── handler/                 # HTTP handlers
 │       ├── middleware/              # Auth (JWT), logger, rate limiter
 │       ├── sse/hub.go               # SSE pub/sub hub (household + member channels)
@@ -109,15 +113,16 @@ homejira/
 │
 └── frontend/
     └── src/
-        ├── api/                     # Axios clients (tasks, members, auth, households)
-        ├── store/                   # Zustand (app state + authStore)
+        ├── api/                     # Axios clients (tasks, members, auth, households, coins)
+        ├── store/                   # Zustand (appStore, authStore, themeStore)
         ├── components/
-        │   ├── ui/                  # Avatar, Badge, Chip, Spinner
+        │   ├── ui/                  # Avatar, Badge, Chip, Spinner, AppLogo
         │   ├── layout/              # AppLayout, BottomNav, AccountMenu, GuestBanner
         │   ├── tasks/               # TaskCard, TaskDrawer, AddTaskSheet
-        │   ├── members/             # MembersScreen, HouseholdPanel
+        │   ├── members/             # MembersScreen, HouseholdPanel, HouseholdPromo
+        │   ├── auth/                # PhoneStep, MPINStep, RegisterStep
         │   └── stats/               # StatsScreen
-        ├── pages/                   # TasksPage, StatsPage, MembersPage, AuthPage
+        ├── pages/                   # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
         ├── types/index.ts
         └── utils/index.ts
 ```
@@ -182,27 +187,38 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 ### Members
 
-| Method | Endpoint          | Description              |
-|--------|-------------------|--------------------------|
-| GET    | `/members`        | List household members   |
-| GET    | `/members/:id`    | Get member               |
-| PATCH  | `/members/me`     | Update profile           |
+| Method | Endpoint              | Description              |
+|--------|-----------------------|--------------------------|
+| GET    | `/members`            | List household members   |
+| GET    | `/members/:id`        | Get member               |
+| PATCH  | `/members/me`         | Update profile           |
+| GET    | `/members/me/coins`   | Get coin balance + history |
+| GET    | `/members/me/referral-link` | Get or create referral link |
 
 ### Households
 
-| Method | Endpoint                          | Description                      |
-|--------|-----------------------------------|----------------------------------|
-| GET    | `/households/me`                  | Get current household            |
-| POST   | `/households`                     | Create household                 |
-| POST   | `/households/join-by-code`        | Submit join request              |
-| POST   | `/households/leave`               | Leave household                  |
-| POST   | `/households/members/:id/remove`  | Remove member (admin)            |
-| POST   | `/households/members/:id/promote` | Promote to admin                 |
-| GET    | `/households/requests`            | List pending join requests       |
-| POST   | `/households/requests/:id/approve`| Approve join request             |
-| POST   | `/households/requests/:id/reject` | Reject join request              |
-| POST   | `/households/invites`             | Invite by phone                  |
-| POST   | `/households/invites/:id/accept`  | Accept invite                    |
+| Method | Endpoint                           | Description                      |
+|--------|------------------------------------|----------------------------------|
+| GET    | `/households/me`                   | Get current household            |
+| POST   | `/households`                      | Create household                 |
+| DELETE | `/households`                      | Delete household (admin only)    |
+| POST   | `/households/join-by-code`         | Submit join request              |
+| POST   | `/households/leave`                | Leave household                  |
+| POST   | `/households/members/:id/remove`   | Remove member (admin)            |
+| POST   | `/households/members/:id/promote`  | Promote to admin                 |
+| GET    | `/households/requests`             | List pending join requests       |
+| POST   | `/households/requests/:id/approve` | Approve join request             |
+| POST   | `/households/requests/:id/reject`  | Reject join request              |
+| POST   | `/households/requests/:id/cancel`  | Cancel own join request          |
+| POST   | `/households/invite-link`          | Generate shareable invite link   |
+| GET    | `/households/link/:token`          | Resolve invite link (public)     |
+| POST   | `/households/link/:token/join`     | Join via invite link             |
+
+### Referral
+
+| Method | Endpoint              | Auth | Description                          |
+|--------|-----------------------|------|--------------------------------------|
+| GET    | `/referral/:token`    | No   | Get referrer info for landing page   |
 
 ### Realtime
 
@@ -228,7 +244,7 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 See [BACKLOG.md](./BACKLOG.md) for the full prioritised backlog.
 
-**MVP next:**
+**Up next:**
 - Due date reminders (push notifications)
 - Recurring tasks
 - Shopping list aggregation
