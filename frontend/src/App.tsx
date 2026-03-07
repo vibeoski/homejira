@@ -8,6 +8,7 @@ import { StatsPage } from './pages/StatsPage'
 import { MembersPage } from './pages/MembersPage'
 import { AuthPage } from './pages/AuthPage'
 import { JoinPage } from './pages/JoinPage'
+import { GroceryPage } from './pages/GroceryPage'
 
 export default function App() {
   const { fetchTasks, fetchMembers } = useStore()
@@ -38,6 +39,7 @@ export default function App() {
           element={canAccessApp ? <AppLayout /> : <Navigate to="/auth" replace />}
         >
           <Route index element={<TasksPage />} />
+          <Route path="grocery" element={<GroceryPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="household" element={<MembersPage />} />
         </Route>
