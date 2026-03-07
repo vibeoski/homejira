@@ -8,13 +8,19 @@ import { authApi } from '../../api/auth'
 
 const ACCENT = '#6366f1'
 
+type HouseholdData = Awaited<ReturnType<typeof householdsApi.getMine>>['household']
+type RequestsData = Awaited<ReturnType<typeof householdsApi.listRequests>>['requests']
+
+// Persists across tab navigations so re-entering the page is instant
+let _cache: { household: HouseholdData; requests: RequestsData } | null = null
+
 export function HouseholdPanel() {
   const { isGuest, member, updateMember, setAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, members, sseVersion } = useStore()
   const navigate = useNavigate()
 
-  const [household, setHousehold] = useState<Awaited<ReturnType<typeof householdsApi.getMine>>['household']>(null)
-  const [loadingHousehold, setLoadingHousehold] = useState(false)
+  const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
+  const [loadingHousehold, setLoadingHousehold] = useState(_cache === null)
 
   const [createKind, setCreateKind] = useState<'home' | 'group'>('home')
   const [createName, setCreateName] = useState('')
@@ -26,8 +32,8 @@ export function HouseholdPanel() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [requests, setRequests] = useState<Awaited<ReturnType<typeof householdsApi.listRequests>>['requests']>([])
-  const [requestsLoading, setRequestsLoading] = useState(false)
+  const [requests, setRequests] = useState<RequestsData>(_cache?.requests ?? [])
+  const [requestsLoading, setRequestsLoading] = useState(_cache === null)
 
   const [copied, setCopied] = useState(false)
   const [sharingLink, setSharingLink] = useState(false)
@@ -41,22 +47,27 @@ export function HouseholdPanel() {
   useEffect(() => {
     if (isGuest || !member) return
 
-    setLoadingHousehold(true)
-    householdsApi.getMine().then(async ({ household }) => {
-      setHousehold(household ?? null)
-      if (household && !member.household_id) {
+    householdsApi.getMine().then(async ({ household: h }) => {
+      const hh = h ?? null
+      setHousehold(hh)
+      _cache = { household: hh, requests: _cache?.requests ?? [] }
+      if (hh && !member.household_id) {
         try {
           const fresh = await membersApi.getById(member.id)
           updateMember(fresh)
         } catch {
-          updateMember({ ...member, household_id: household.id })
+          updateMember({ ...member, household_id: hh.id })
         }
       }
     }).finally(() => setLoadingHousehold(false))
 
     if (member.role === 'admin') {
-      setRequestsLoading(true)
-      householdsApi.listRequests().then(({ requests }) => setRequests(requests)).finally(() => setRequestsLoading(false))
+      householdsApi.listRequests().then(({ requests: r }) => {
+        setRequests(r)
+        _cache = { household: _cache?.household ?? null, requests: r }
+      }).finally(() => setRequestsLoading(false))
+    } else {
+      setRequestsLoading(false)
     }
 
     if (!member.household_id) {
