@@ -60,7 +60,7 @@ export function HouseholdPanel() {
 
     if (!member.household_id) {
       householdsApi.getMyRequest().then(({ request }) => {
-        if (request) setWaitingRequest({ id: request.id, householdName: request.household?.name ?? 'household' })
+        if (request) setWaitingRequest({ id: request.id, householdName: 'household' })
       }).catch(() => {})
     }
   }, [isGuest, member?.id])
