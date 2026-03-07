@@ -24,6 +24,8 @@ func main() {
 		log.Fatalf("migration failed: %v", err)
 	}
 
+	log.Printf("CORS_ORIGINS=%q", cfg.CORSOrigins)
+
 	// ── Server ────────────────────────────────────────────────────
 	srv := server.New(&cfg, pool)
 
