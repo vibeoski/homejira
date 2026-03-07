@@ -212,9 +212,9 @@ export function HouseholdPanel() {
     try {
       const { token } = await householdsApi.createInviteLink()
       const url = `${window.location.origin}/join/${token}`
-      const text = `Join ${household?.name ?? 'our household'} on HomeJira: ${url}`
+      const text = `Join ${household?.name ?? 'our household'} on HomeJira 🏠 — the easiest way to manage your household tasks together. Tap to join: ${url}`
       if (navigator.share) {
-        await navigator.share({ title: 'Join our household', text, url })
+        await navigator.share({ title: `Join ${household?.name ?? 'our household'} on HomeJira`, text, url })
       } else {
         await navigator.clipboard.writeText(url)
         setMessage('Invite link copied to clipboard!')
