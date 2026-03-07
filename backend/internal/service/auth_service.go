@@ -14,13 +14,15 @@ import (
 // AuthService handles phone+mPIN authentication and JWT issuance.
 type AuthService struct {
 	members   domain.MemberRepository
+	coins     *CoinService
 	jwtSecret []byte
 	jwtTTL    time.Duration
 }
 
-func NewAuthService(members domain.MemberRepository, jwtSecret string) *AuthService {
+func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string) *AuthService {
 	return &AuthService{
 		members:   members,
+		coins:     coins,
 		jwtSecret: []byte(jwtSecret),
 		jwtTTL:    7 * 24 * time.Hour,
 	}
@@ -64,6 +66,11 @@ func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Memb
 	m, err := s.members.CreateWithAuth(input.Name, input.Avatar, color, input.Phone, string(hash))
 	if err != nil {
 		return "", nil, err
+	}
+
+	// Award referral coins — non-fatal if token is invalid
+	if s.coins != nil {
+		s.coins.ProcessReferral(input.ReferralToken, m.ID)
 	}
 
 	token, err := s.issueToken(m)

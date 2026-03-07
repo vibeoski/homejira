@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
+import { coinsApi, type CoinInfo } from '../../api/coins'
+import { timeAgo } from '../../utils'
 
 const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
   '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐯', '🦄', '🌟']
 
 const COLORS = ['#6366f1', '#0ea5e9', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#ec4899', '#14b8a6']
 
-type Sheet = 'profile' | 'pin' | null
+type Sheet = 'profile' | 'pin' | 'coins' | null
 
 const ACCENT = '#6366f1'
 
@@ -29,8 +31,17 @@ export function AccountMenu() {
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinSuccess, setPinSuccess] = useState(false)
 
+  const [coinInfo, setCoinInfo] = useState<CoinInfo | null>(null)
+
   const navigate = useNavigate()
   const { member, isGuest, clearAuth, clearGuest, updateMember } = useAuthStore()
+
+  useEffect(() => {
+    if (!isGuest && member) {
+      coinsApi.getMyCoins().then(setCoinInfo).catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member?.id, isGuest])
 
   const openProfile = () => {
     if (!member) return
@@ -128,12 +139,18 @@ export function AccountMenu() {
                   <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>{member.phone}</p>
                 )}
                 {isGuest && <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>Browsing as guest</p>}
-                {!isGuest && member?.role === 'admin' && (
-                  <span style={{
-                    display: 'inline-block', marginTop: 4, fontSize: 10, fontWeight: 700,
-                    padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT,
-                  }}>Admin</span>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                  {!isGuest && member?.role === 'admin' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>Admin</span>
+                  )}
+                  {!isGuest && coinInfo != null && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setOpen(false); setSheet('coins') }}
+                      style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#fef9c3', color: '#854d0e', border: 'none', cursor: 'pointer' }}
+                    >🪙 {coinInfo.balance} coins</button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -146,6 +163,7 @@ export function AccountMenu() {
                 <>
                   <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
                   <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
+                  <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
                   <div style={{ height: 1, background: '#f4f4f5', margin: '4px 0' }} />
                   <MenuItem label="Sign out" onClick={handleSignOut} danger />
                 </>
@@ -232,6 +250,70 @@ export function AccountMenu() {
                 >{saveBusy ? 'Saving…' : 'Save changes'}</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coins sheet */}
+      {sheet === 'coins' && (
+        <div
+          className="fade-in"
+          onClick={closeSheet}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div
+            className="slide-up"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '80vh', overflowY: 'auto' }}
+          >
+            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', margin: 0 }}>My Coins</p>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '4px 14px' }}>
+                🪙 {coinInfo?.balance ?? 0}
+              </div>
+            </div>
+
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '20px 20px 10px' }}>
+              How to earn
+            </p>
+            <div style={{ display: 'flex', gap: 8, padding: '0 20px', marginBottom: 20 }}>
+              {[
+                { icon: '🏠', label: 'Invite to household', coins: '+20' },
+                { icon: '👥', label: 'Refer a friend', coins: '+10' },
+              ].map((item) => (
+                <div key={item.label} style={{ flex: 1, background: '#f9f9f9', borderRadius: 10, padding: '12px 10px', border: '1px solid #f4f4f5', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
+                  <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#854d0e' }}>{item.coins}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ height: 1, background: '#f4f4f5', margin: '0 20px 16px' }} />
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
+              History
+            </p>
+
+            {!coinInfo?.transactions.length ? (
+              <p style={{ fontSize: 13, color: '#a1a1aa', padding: '0 20px' }}>No transactions yet. Invite someone to earn coins!</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {coinInfo.transactions.map((t) => (
+                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px' }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>
+                        {t.reason === 'household_invite'
+                          ? `${t.meta?.member_name ?? 'Someone'} joined your household`
+                          : `${t.meta?.referred_name ?? 'Someone'} signed up via your link`}
+                      </p>
+                      <p style={{ fontSize: 11, color: '#a1a1aa', margin: '2px 0 0' }}>{timeAgo(t.created_at)}</p>
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>+{t.amount}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
