@@ -328,6 +328,23 @@ func (s *HouseholdService) LeaveHousehold(memberID uuid.UUID) (*domain.Member, e
 	return s.members.ClearHousehold(memberID)
 }
 
+// DeleteHousehold deletes the caller's household entirely. Caller must be an admin.
+// Tasks, join requests, and invite links are removed via DB cascade.
+// All other members have their household_id cleared.
+func (s *HouseholdService) DeleteHousehold(memberID uuid.UUID) error {
+	m, err := s.members.FindByID(memberID)
+	if err != nil {
+		return err
+	}
+	if m.HouseholdID == nil {
+		return fmt.Errorf("%w: not in a household", domain.ErrInvalidInput)
+	}
+	if m.Role != domain.MemberRoleAdmin {
+		return fmt.Errorf("%w: only admins can delete the household", domain.ErrUnauthorized)
+	}
+	return s.households.Delete(*m.HouseholdID)
+}
+
 // GetMyPendingRequest returns the caller's current pending join request, or nil if none exists.
 func (s *HouseholdService) GetMyPendingRequest(memberID uuid.UUID) (*domain.HouseholdJoinRequest, error) {
 	req, err := s.joins.FindPendingByRequester(memberID)

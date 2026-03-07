@@ -112,6 +112,10 @@ export const householdsApi = {
     return data
   },
 
+  deleteHousehold: async (): Promise<void> => {
+    await client.delete('/households')
+  },
+
   getMyRequest: async (): Promise<{ request: JoinRequest | null }> => {
     const { data } = await client.get('/households/requests/mine')
     return data

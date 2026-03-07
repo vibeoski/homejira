@@ -288,6 +288,29 @@ func (h *HouseholdHandler) PromoteMember(w http.ResponseWriter, r *http.Request)
 	respond(w, http.StatusOK, envelope{"member": member})
 }
 
+// DELETE /households
+func (h *HouseholdHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	household, _ := h.svc.GetHouseholdForMember(memberID)
+	if err := h.svc.DeleteHousehold(memberID); err != nil {
+		respondError(w, err)
+		return
+	}
+	if household != nil {
+		h.hub.Notify(household.ID)
+	}
+	respond(w, http.StatusNoContent, nil)
+}
+
 // POST /households/leave
 func (h *HouseholdHandler) Leave(w http.ResponseWriter, r *http.Request) {
 	claims, ok := middleware.ClaimsFromContext(r.Context())
