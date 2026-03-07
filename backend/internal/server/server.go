@@ -33,11 +33,12 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	householdRepo := repository.NewHouseholdRepository(db)
 	joinRepo := repository.NewHouseholdJoinRequestRepository(db)
 	inviteRepo := repository.NewHouseholdInviteRepository(db)
+	inviteLinkRepo := repository.NewHouseholdInviteLinkRepository(db)
 
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
 	authSvc := service.NewAuthService(memberRepo, cfg.JWTSecret)
-	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, taskRepo)
+	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo)
 
 	hub := sse.NewHub()
 
@@ -87,6 +88,9 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		// SSE stream — auth via ?token= query param (EventSource can't set headers)
 		r.Get("/events", eventH.Stream)
 
+		// Public: resolve a shareable household invite link (no auth required)
+		r.Get("/households/link/{token}", householdH.GetByInviteToken)
+
 		// Protected: all app routes require a valid JWT
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireAuth(authSvc))
@@ -120,7 +124,10 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 				r.Post("/", householdH.Create)
 				r.Post("/join-by-code", householdH.JoinByCode)
 
-				r.Post("/leave", householdH.Leave)
+				r.Post("/invite-link", householdH.CreateInviteLink)
+			r.Post("/link/{token}/join", householdH.JoinByInviteToken)
+
+			r.Post("/leave", householdH.Leave)
 				r.Post("/members/{id}/remove", householdH.RemoveMember)
 				r.Post("/members/{id}/promote", householdH.PromoteMember)
 

@@ -73,6 +73,22 @@ type HouseholdInvite struct {
 	Household *Household `json:"household,omitempty"`
 }
 
+// HouseholdInviteLink is a shareable link token that lets anyone join a household.
+type HouseholdInviteLink struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	CreatedBy   uuid.UUID  `json:"created_by"`
+	Token       string     `json:"token"`
+	ExpiresAt   time.Time  `json:"expires_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+}
+
+// HouseholdInviteLinkRepository manages invite link persistence.
+type HouseholdInviteLinkRepository interface {
+	Create(householdID, createdBy uuid.UUID, token string, expiresAt time.Time) (*HouseholdInviteLink, error)
+	FindByToken(token string) (*HouseholdInviteLink, error)
+}
+
 // HouseholdRepository encapsulates basic household operations.
 type HouseholdRepository interface {
 	Create(name string, kind HouseholdKind, createdBy uuid.UUID, joinCode string) (*Household, error)

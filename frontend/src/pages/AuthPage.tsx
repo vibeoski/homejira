@@ -3,6 +3,7 @@ import { PhoneStep } from '../components/auth/PhoneStep'
 import { MPINStep } from '../components/auth/MPINStep'
 import { RegisterStep } from '../components/auth/RegisterStep'
 import { useAuthStore } from '../store/authStore'
+import { householdsApi } from '../api/households'
 import type { Member } from '../types'
 
 type Step = 'phone' | 'mpin' | 'register'
@@ -12,7 +13,20 @@ export function AuthPage() {
   const [phone, setPhone] = useState('')
   const { setAuth, setGuest } = useAuthStore()
 
-  const handleSuccess = (token: string, member: Member) => {
+  const handleSuccess = async (token: string, member: Member) => {
+    const pendingJoin = localStorage.getItem('hj_pending_join')
+    if (pendingJoin) {
+      localStorage.removeItem('hj_pending_join')
+      // Set the token so the API call can authenticate
+      localStorage.setItem('hj_token', token)
+      try {
+        const { member: updatedMember } = await householdsApi.joinByInviteToken(pendingJoin)
+        setAuth(token, updatedMember)
+        return
+      } catch {
+        // Join failed (e.g. link expired) — continue with normal auth
+      }
+    }
     setAuth(token, member)
   }
 

@@ -120,5 +120,20 @@ export const householdsApi = {
   cancelRequest: async (id: string): Promise<void> => {
     await client.post(`/households/requests/${id}/cancel`)
   },
+
+  createInviteLink: async (): Promise<{ token: string; household: Household }> => {
+    const { data } = await client.post('/households/invite-link')
+    return data
+  },
+
+  getByInviteToken: async (token: string): Promise<{ household: Household }> => {
+    const { data } = await client.get(`/households/link/${token}`)
+    return data
+  },
+
+  joinByInviteToken: async (token: string): Promise<{ member: Member }> => {
+    const { data } = await client.post(`/households/link/${token}/join`)
+    return data
+  },
 }
 

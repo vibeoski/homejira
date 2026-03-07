@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -12,11 +13,12 @@ import (
 
 // HouseholdService orchestrates household creation, join flows, and invites.
 type HouseholdService struct {
-	households domain.HouseholdRepository
-	members    domain.MemberRepository
-	joins      domain.HouseholdJoinRequestRepository
-	invites    domain.HouseholdInviteRepository
-	tasks      domain.TaskRepository
+	households   domain.HouseholdRepository
+	members      domain.MemberRepository
+	joins        domain.HouseholdJoinRequestRepository
+	invites      domain.HouseholdInviteRepository
+	inviteLinks  domain.HouseholdInviteLinkRepository
+	tasks        domain.TaskRepository
 }
 
 func NewHouseholdService(
@@ -24,14 +26,16 @@ func NewHouseholdService(
 	members domain.MemberRepository,
 	joins domain.HouseholdJoinRequestRepository,
 	invites domain.HouseholdInviteRepository,
+	inviteLinks domain.HouseholdInviteLinkRepository,
 	tasks domain.TaskRepository,
 ) *HouseholdService {
 	return &HouseholdService{
-		households: households,
-		members:    members,
-		joins:      joins,
-		invites:    invites,
-		tasks:      tasks,
+		households:  households,
+		members:     members,
+		joins:       joins,
+		invites:     invites,
+		inviteLinks: inviteLinks,
+		tasks:       tasks,
 	}
 }
 
@@ -370,6 +374,68 @@ func (s *HouseholdService) PromoteMember(adminID, targetID uuid.UUID) (*domain.M
 	}
 
 	return s.members.UpdateHouseholdAndRole(targetID, target.HouseholdID, domain.MemberRoleAdmin)
+}
+
+// CreateInviteLink generates a shareable join link for an admin's household.
+// Returns the token and the household (so the caller can build the full URL).
+func (s *HouseholdService) CreateInviteLink(adminID uuid.UUID) (string, *domain.Household, error) {
+	admin, err := s.members.FindByID(adminID)
+	if err != nil {
+		return "", nil, err
+	}
+	if admin.HouseholdID == nil || admin.Role != domain.MemberRoleAdmin {
+		return "", nil, domain.ErrUnauthorized
+	}
+
+	h, err := s.households.FindByID(*admin.HouseholdID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	token, err := generateJoinCode()
+	if err != nil {
+		return "", nil, err
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	if _, err := s.inviteLinks.Create(*admin.HouseholdID, admin.ID, token, expiresAt); err != nil {
+		return "", nil, err
+	}
+
+	return token, h, nil
+}
+
+// GetHouseholdByInviteToken returns the household for a valid, non-expired invite link.
+func (s *HouseholdService) GetHouseholdByInviteToken(token string) (*domain.Household, error) {
+	link, err := s.inviteLinks.FindByToken(token)
+	if err != nil {
+		return nil, err
+	}
+	return s.households.FindByID(link.HouseholdID)
+}
+
+// JoinByInviteToken adds the authenticated member to the household referenced by the link.
+func (s *HouseholdService) JoinByInviteToken(memberID uuid.UUID, token string) (*domain.Member, error) {
+	member, err := s.members.FindByID(memberID)
+	if err != nil {
+		return nil, err
+	}
+
+	link, err := s.inviteLinks.FindByToken(token)
+	if err != nil {
+		return nil, err
+	}
+
+	// Already in this household — idempotent success.
+	if member.HouseholdID != nil && *member.HouseholdID == link.HouseholdID {
+		return member, nil
+	}
+
+	if member.HouseholdID != nil {
+		return nil, fmt.Errorf("%w: already in a household", domain.ErrInvalidInput)
+	}
+
+	return s.members.UpdateHouseholdAndRole(memberID, &link.HouseholdID, domain.MemberRoleMember)
 }
 
 // GetHouseholdForMember returns the household for the given member, if any.

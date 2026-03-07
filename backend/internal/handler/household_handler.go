@@ -396,6 +396,63 @@ func (h *HouseholdHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) 
 	respond(w, http.StatusOK, envelope{"invite": invite, "member": member})
 }
 
+// POST /households/invite-link
+func (h *HouseholdHandler) CreateInviteLink(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	adminID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+
+	token, household, err := h.svc.CreateInviteLink(adminID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusCreated, envelope{"token": token, "household": household})
+}
+
+// GET /households/link/{token} — public, no auth required
+func (h *HouseholdHandler) GetByInviteToken(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	household, err := h.svc.GetHouseholdByInviteToken(token)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusOK, envelope{"household": household})
+}
+
+// POST /households/link/{token}/join
+func (h *HouseholdHandler) JoinByInviteToken(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+
+	token := chi.URLParam(r, "token")
+	member, err := h.svc.JoinByInviteToken(memberID, token)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if member.HouseholdID != nil {
+		h.hub.Notify(*member.HouseholdID)
+	}
+	respond(w, http.StatusOK, envelope{"member": member})
+}
+
 // POST /households/invites/{id}/reject
 func (h *HouseholdHandler) RejectInvite(w http.ResponseWriter, r *http.Request) {
 	claims, ok := middleware.ClaimsFromContext(r.Context())

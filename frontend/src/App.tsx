@@ -7,6 +7,7 @@ import { TasksPage } from './pages/TasksPage'
 import { StatsPage } from './pages/StatsPage'
 import { MembersPage } from './pages/MembersPage'
 import { AuthPage } from './pages/AuthPage'
+import { JoinPage } from './pages/JoinPage'
 
 export default function App() {
   const { fetchTasks, fetchMembers } = useStore()
@@ -40,6 +41,9 @@ export default function App() {
           <Route path="stats" element={<StatsPage />} />
           <Route path="household" element={<MembersPage />} />
         </Route>
+
+        {/* Public: shareable household invite link — always accessible */}
+        <Route path="/join/:token" element={<JoinPage />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={canAccessApp ? '/' : '/auth'} replace />} />

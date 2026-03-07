@@ -30,6 +30,7 @@ export function HouseholdPanel() {
   const [requestsLoading, setRequestsLoading] = useState(false)
 
   const [copied, setCopied] = useState(false)
+  const [sharingLink, setSharingLink] = useState(false)
 
   const [waitingRequest, setWaitingRequest] = useState<{ id: string; householdName: string } | null>(null)
   const [cancelBusy, setCancelBusy] = useState(false)
@@ -193,6 +194,28 @@ export function HouseholdPanel() {
     navigator.clipboard?.writeText(household.join_code).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShareLink = async () => {
+    setSharingLink(true)
+    try {
+      const { token } = await householdsApi.createInviteLink()
+      const appBase = (import.meta.env.VITE_API_URL as string | undefined)
+        ?.replace('/api/v1', '') ?? window.location.origin
+      const url = `${appBase}/join/${token}`
+      const text = `Join ${household?.name ?? 'our household'} on HomeJira: ${url}`
+      if (navigator.share) {
+        await navigator.share({ title: 'Join our household', text, url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setMessage('Invite link copied to clipboard!')
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch {
+      // user cancelled share or clipboard failed — no-op
+    } finally {
+      setSharingLink(false)
+    }
   }
 
   const handleApprove = async (id: string) => {
@@ -378,6 +401,30 @@ export function HouseholdPanel() {
                 borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
               }}
             >{copied ? 'Copied' : 'Copy'}</button>
+          </div>
+        )}
+
+        {/* Share invite link — admin only */}
+        {isAdmin && (
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #f4f4f5' }}>
+            <button
+              type="button"
+              onClick={handleShareLink}
+              disabled={sharingLink}
+              style={{
+                width: '100%', padding: '9px 0', borderRadius: 8, border: `1px solid ${ACCENT}`,
+                background: sharingLink ? '#f4f4f5' : '#eef2ff',
+                color: sharingLink ? '#a1a1aa' : ACCENT,
+                fontSize: 13, fontWeight: 700, cursor: sharingLink ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              {sharingLink ? 'Generating…' : 'Share invite link'}
+            </button>
           </div>
         )}
 
