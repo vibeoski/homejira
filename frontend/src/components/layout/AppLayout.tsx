@@ -21,7 +21,8 @@ export function AppLayout() {
     fetchTasks()
     fetchMembers()
 
-    const es = new EventSource(`/api/v1/events?token=${encodeURIComponent(token)}`)
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
+    const es = new EventSource(`${apiBase}/events?token=${encodeURIComponent(token)}`)
     esRef.current = es
 
     es.onmessage = async () => {
