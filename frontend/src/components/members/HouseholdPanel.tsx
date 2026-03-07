@@ -135,8 +135,8 @@ export function HouseholdPanel() {
           </svg>
         </div>
 
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 8px' }}>Waiting for approval</h2>
-        <p style={{ fontSize: 13, color: '#71717a', lineHeight: 1.6, maxWidth: 260, margin: '0 0 12px' }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px' }}>Waiting for approval</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 260, margin: '0 0 12px' }}>
           Your request to join
         </p>
         <div style={{
@@ -146,7 +146,7 @@ export function HouseholdPanel() {
         }}>
           {waitingRequest.householdName}
         </div>
-        <p style={{ fontSize: 13, color: '#71717a', lineHeight: 1.6, maxWidth: 260, margin: '0 0 36px' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 260, margin: '0 0 36px' }}>
           is pending. The admin will approve or decline. This page updates automatically.
         </p>
 
@@ -161,8 +161,8 @@ export function HouseholdPanel() {
           onClick={handleCancelRequest}
           disabled={cancelBusy}
           style={{
-            padding: '10px 28px', borderRadius: 8, border: '1px solid #e4e4e7',
-            background: 'white', color: cancelBusy ? '#a1a1aa' : '#71717a',
+            padding: '10px 28px', borderRadius: 8, border: '1px solid var(--border)',
+            background: 'var(--bg-surface)', color: cancelBusy ? '#a1a1aa' : '#71717a',
             fontSize: 13, fontWeight: 600, cursor: cancelBusy ? 'not-allowed' : 'pointer',
           }}
         >{cancelBusy ? 'Cancelling…' : 'Cancel request'}</button>
@@ -259,19 +259,19 @@ export function HouseholdPanel() {
           </svg>
         </div>
 
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 6px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px', textAlign: 'center' }}>
           Set up your household
         </h2>
-        <p style={{ fontSize: 13, color: '#71717a', margin: '0 0 28px', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 28px', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
           Create a shared space or join an existing one.
         </p>
 
         <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Create */}
-          <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
 
-            <div style={{ display: 'flex', background: '#f4f4f5', padding: 3, borderRadius: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', background: 'var(--bg-muted)', padding: 3, borderRadius: 8, marginBottom: 12 }}>
               {(['home', 'group'] as const).map((k) => (
                 <button
                   key={k}
@@ -279,8 +279,8 @@ export function HouseholdPanel() {
                   onClick={() => setCreateKind(k)}
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 6, border: 'none',
-                    background: createKind === k ? 'white' : 'transparent',
-                    color: createKind === k ? ACCENT : '#71717a',
+                    background: createKind === k ? 'var(--bg-surface)' : 'transparent',
+                    color: createKind === k ? ACCENT : 'var(--text-secondary)',
                     fontWeight: 600, fontSize: 13, cursor: 'pointer',
                     boxShadow: createKind === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                     transition: 'all 0.15s',
@@ -294,8 +294,8 @@ export function HouseholdPanel() {
               onChange={(e) => setCreateName(e.target.value)}
               placeholder={createKind === 'home' ? 'e.g. The Apartment' : 'e.g. Chore Squad'}
               style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
-                fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: '#f9f9f9', outline: 'none', color: '#18181b',
+                width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: 'var(--bg-subtle)', outline: 'none', color: 'var(--text-primary)',
               }}
             />
 
@@ -313,14 +313,14 @@ export function HouseholdPanel() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.3 }}>OR</span>
-            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: 0.3 }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 
           {/* Join */}
-          <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>JOIN EXISTING</p>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.8, marginBottom: 12 }}>JOIN EXISTING</p>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -328,9 +328,9 @@ export function HouseholdPanel() {
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="INVITE CODE"
                 style={{
-                  flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
+                  flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)',
                   fontSize: 14, textTransform: 'uppercase', boxSizing: 'border-box',
-                  background: '#f9f9f9', outline: 'none', letterSpacing: 1, color: '#18181b',
+                  background: 'var(--bg-subtle)', outline: 'none', letterSpacing: 1, color: 'var(--text-primary)',
                 }}
               />
               <button
@@ -368,7 +368,7 @@ export function HouseholdPanel() {
 
   return (
     <div style={{ padding: '12px 12px 0' }}>
-      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e4e4e7', overflow: 'hidden', marginBottom: 12 }}>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 12 }}>
         {/* Name + role */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #f4f4f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -378,7 +378,7 @@ export function HouseholdPanel() {
                 <polyline points="9,22 9,12 15,12 15,22" />
               </svg>
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#18181b' }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
               {loadingHousehold ? 'Loading…' : (household?.name ?? 'Your household')}
             </span>
           </div>
@@ -397,7 +397,7 @@ export function HouseholdPanel() {
             borderBottom: isAdmin ? '1px solid #f4f4f5' : 'none',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>Invite code</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Invite code</span>
               <span style={{
                 fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
                 background: '#eef2ff', color: ACCENT,
@@ -444,7 +444,7 @@ export function HouseholdPanel() {
         {isAdmin && (
           <div style={{ padding: '10px 16px 14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#71717a' }}>Join requests</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>Join requests</span>
               {hasRequests && (
                 <span style={{ fontSize: 10, fontWeight: 700, background: ACCENT, color: 'white', borderRadius: 999, padding: '1px 6px' }}>
                   {requests.length}
@@ -453,15 +453,15 @@ export function HouseholdPanel() {
             </div>
 
             {requestsLoading ? (
-              <p style={{ fontSize: 12, color: '#a1a1aa' }}>Loading…</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading…</p>
             ) : requests.length === 0 ? (
-              <p style={{ fontSize: 12, color: '#a1a1aa' }}>No pending requests</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No pending requests</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {requests.map((r) => (
                   <div key={r.id} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: '#f9f9f9', borderRadius: 8, padding: '8px 10px',
+                    background: 'var(--bg-subtle)', borderRadius: 8, padding: '8px 10px',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{
@@ -471,7 +471,7 @@ export function HouseholdPanel() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 13, flexShrink: 0,
                       }}>{r.requester?.avatar ?? '?'}</span>
-                      <span style={{ fontSize: 13, color: '#18181b', fontWeight: 600 }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>
                         {r.requester?.name ?? `#${r.requester_id.slice(0, 6)}`}
                       </span>
                     </div>

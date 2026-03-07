@@ -47,7 +47,7 @@ export function JoinPage() {
   if (loading || joining) {
     return (
       <div style={pageStyle}>
-        <p style={{ color: '#71717a', fontSize: 14 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
           {joining ? 'Joining household…' : 'Loading…'}
         </p>
       </div>
@@ -78,10 +78,10 @@ export function JoinPage() {
           </svg>
         </div>
 
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 8px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px', textAlign: 'center' }}>
           You're invited!
         </h1>
-        <p style={{ fontSize: 14, color: '#71717a', margin: '0 0 4px', textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 4px', textAlign: 'center' }}>
           Join
         </p>
         <p style={{ fontSize: 16, fontWeight: 700, color: ACCENT, margin: '0 0 24px', textAlign: 'center' }}>
@@ -96,8 +96,8 @@ export function JoinPage() {
           onClick={handleSignUpAndJoin}
           style={{
             marginTop: 10, width: '100%', padding: '12px 0', borderRadius: 10,
-            border: '1px solid #e4e4e7', background: 'white',
-            color: '#18181b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--border)', background: 'var(--bg-surface)',
+            color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
           }}
         >
           Sign in
@@ -109,7 +109,7 @@ export function JoinPage() {
 
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
-  background: '#f4f4f5',
+  background: 'var(--bg-muted)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -117,9 +117,9 @@ const pageStyle: React.CSSProperties = {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'white',
+  background: 'var(--bg-surface)',
   borderRadius: 16,
-  border: '1px solid #e4e4e7',
+  border: '1px solid var(--border)',
   padding: '32px 28px',
   width: '100%',
   maxWidth: 360,

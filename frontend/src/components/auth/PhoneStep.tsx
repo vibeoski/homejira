@@ -102,8 +102,8 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
-      <p style={{ color: '#71717a', fontSize: 13, marginBottom: 16 }}>Enter your phone number to continue</p>
+    <div style={{ background: 'var(--bg-surface)', borderRadius: 16, padding: '28px 28px', width: '100%', maxWidth: 380, border: '1px solid var(--border)' }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>Enter your phone number to continue</p>
 
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -115,9 +115,9 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
             }}
             style={{
               height: '100%', padding: '10px 24px 10px 10px', borderRadius: 8, fontSize: 14,
-              border: '1px solid #e4e4e7', outline: 'none', background: '#f9f9f9',
+              border: '1px solid var(--border)', outline: 'none', background: 'var(--bg-subtle)',
               appearance: 'none', WebkitAppearance: 'none',
-              cursor: 'pointer', fontWeight: 600, color: '#18181b',
+              cursor: 'pointer', fontWeight: 600, color: 'var(--text-primary)',
             }}
           >
             {COUNTRIES.map((c, i) => (
@@ -126,7 +126,7 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
               </option>
             ))}
           </select>
-          <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 9, color: '#a1a1aa' }}>▼</span>
+          <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 9, color: 'var(--text-muted)' }}>▼</span>
         </div>
 
         <input
@@ -138,14 +138,14 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
           autoFocus
           style={{
             flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 14,
-            border: '1px solid #e4e4e7', outline: 'none', background: '#f9f9f9',
-            color: '#18181b', minWidth: 0,
+            border: '1px solid var(--border)', outline: 'none', background: 'var(--bg-subtle)',
+            color: 'var(--text-primary)', minWidth: 0,
           }}
         />
       </div>
 
       {phone.trim() && (
-        <p style={{ fontSize: 11, color: '#a1a1aa', marginTop: 5, textAlign: 'center' }}>{fullPhone}</p>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5, textAlign: 'center' }}>{fullPhone}</p>
       )}
 
       {error && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{error}</p>}

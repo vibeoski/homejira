@@ -114,25 +114,25 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
           <div
             key={m.id}
             className={flashSuccess === m.id ? 'flash-green' : undefined}
-            style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e4e4e7', marginBottom: 8 }}
+            style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', marginBottom: 8 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: open.length > 0 ? 12 : 0 }}>
               <Avatar member={m} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#18181b' }}>{m.name}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{m.name}</p>
                   {m.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>
                       Admin
                     </span>
                   )}
                   {isSelf && (
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 999, background: '#f4f4f5', color: '#71717a' }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 999, background: 'var(--bg-muted)', color: 'var(--text-secondary)' }}>
                       You
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: '#a1a1aa' }}>{open.length} open tasks</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{open.length} open tasks</p>
               </div>
               {urgent.length > 0 && (
                 <span style={{ background: '#fef2f2', color: '#ef4444', borderRadius: 99, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
@@ -156,7 +156,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                     <>
                       <button
                         onClick={() => setConfirmRemove(null)}
-                        style={{ border: 'none', background: '#f4f4f5', color: '#71717a', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ border: 'none', background: 'var(--bg-muted)', color: 'var(--text-secondary)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
                       >Cancel</button>
                       <button
                         onClick={() => handleRemove(m.id)}
@@ -167,7 +167,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                   ) : (
                     <button
                       onClick={() => setConfirmRemove(m.id)}
-                      style={{ border: 'none', background: '#f4f4f5', color: '#a1a1aa', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                      style={{ border: 'none', background: 'var(--bg-muted)', color: 'var(--text-muted)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
                     >Remove</button>
                   )}
                 </div>
@@ -176,12 +176,12 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             {open.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {open.slice(0, 3).map((t) => (
-                  <span key={t.id} style={{ background: '#f4f4f5', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#71717a' }}>
+                  <span key={t.id} style={{ background: 'var(--bg-muted)', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: 'var(--text-secondary)' }}>
                     {t.title.length > 22 ? t.title.slice(0, 22) + '…' : t.title}
                   </span>
                 ))}
                 {open.length > 3 && (
-                  <span style={{ background: '#f4f4f5', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#a1a1aa' }}>
+                  <span style={{ background: 'var(--bg-muted)', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: 'var(--text-muted)' }}>
                     +{open.length - 3} more
                   </span>
                 )}

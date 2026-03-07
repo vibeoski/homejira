@@ -15,11 +15,11 @@ export function StatsScreen({ tasks, members }: Props) {
   return (
     <div style={{ padding: '16px 12px 100px' }}>
       {/* Overall ring */}
-      <div style={{ background: 'white', borderRadius: 12, padding: 20, border: '1px solid #e4e4e7', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 16 }}>
         {total === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
             <div style={{
-              width: 64, height: 64, borderRadius: '50%', background: '#f4f4f5',
+              width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-muted)',
               border: '1.5px dashed #d4d4d8', display: 'flex', alignItems: 'center',
               justifyContent: 'center', flexShrink: 0,
             }}>
@@ -28,8 +28,8 @@ export function StatsScreen({ tasks, members }: Props) {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#18181b' }}>No tasks yet</p>
-              <p style={{ fontSize: 12, color: '#a1a1aa', marginTop: 3 }}>Add tasks to see progress here.</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>No tasks yet</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>Add tasks to see progress here.</p>
             </div>
           </div>
         ) : (
@@ -42,8 +42,8 @@ export function StatsScreen({ tasks, members }: Props) {
               <text x={34} y={39} textAnchor="middle" fontSize={13} fontWeight={700} fill="#18181b">{pct}%</text>
             </svg>
             <div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b' }}>{done} of {total} done</p>
-              <p style={{ fontSize: 12, color: '#71717a', marginTop: 3 }}>{total - done} remaining</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{done} of {total} done</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>{total - done} remaining</p>
             </div>
           </>
         )}
@@ -80,11 +80,11 @@ export function StatsScreen({ tasks, members }: Props) {
           const catDone = catTasks.filter((x) => x.done).length
           const p = catTasks.length ? (catDone / catTasks.length) * 100 : 0
           return (
-            <div key={k} style={{ background: 'white', borderRadius: 12, padding: 14, border: '1px solid #e4e4e7' }}>
+            <div key={k} style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 14, border: '1px solid var(--border)' }}>
               <div style={{ fontSize: 20, marginBottom: 5 }}>{v.icon}</div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#18181b' }}>{v.label}</p>
-              <p style={{ fontSize: 11, color: '#a1a1aa', margin: '2px 0 8px' }}>{catDone}/{catTasks.length} done</p>
-              <div style={{ height: 3, background: '#f4f4f5', borderRadius: 99 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{v.label}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 8px' }}>{catDone}/{catTasks.length} done</p>
+              <div style={{ height: 3, background: 'var(--bg-muted)', borderRadius: 99 }}>
                 <div style={{ height: 3, background: v.color, borderRadius: 99, width: `${p}%`, transition: 'width .4s' }} />
               </div>
             </div>
@@ -94,26 +94,26 @@ export function StatsScreen({ tasks, members }: Props) {
 
       {/* By member */}
       {members.length > 0 && (<>
-      <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>By member</p>
+      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8, paddingLeft: 4 }}>By member</p>
       {members.map((m) => {
         const mine = tasks.filter((x) => x.assignee_id === m.id)
         const myDone = mine.filter((x) => x.done).length
         const hasNone = mine.length === 0
         return (
-          <div key={m.id} style={{ background: 'white', borderRadius: 10, padding: '12px 14px', border: '1px solid #e4e4e7', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div key={m.id} style={{ background: 'var(--bg-surface)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
             <Avatar member={m} size={32} />
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b' }}>{m.name}</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{m.name}</p>
               {hasNone ? (
-                <p style={{ fontSize: 11, color: '#a1a1aa', marginTop: 2 }}>No tasks assigned</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>No tasks assigned</p>
               ) : (
-                <div style={{ height: 3, background: '#f4f4f5', borderRadius: 99, marginTop: 5 }}>
+                <div style={{ height: 3, background: 'var(--bg-muted)', borderRadius: 99, marginTop: 5 }}>
                   <div style={{ height: 3, background: m.color, borderRadius: 99, width: `${(myDone / mine.length) * 100}%`, transition: 'width .4s' }} />
                 </div>
               )}
             </div>
             {!hasNone && (
-              <span style={{ fontSize: 12, color: '#71717a', fontWeight: 600 }}>{myDone}/{mine.length}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>{myDone}/{mine.length}</span>
             )}
           </div>
         )

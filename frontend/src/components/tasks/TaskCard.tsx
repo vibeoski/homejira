@@ -44,7 +44,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         className={popping ? 'check-pop' : undefined}
         style={{
           width: 20, height: 20, borderRadius: 6, marginTop: 2, flexShrink: 0,
-          border: task.done ? 'none' : '1.5px solid #d4d4d8',
+          border: task.done ? 'none' : '1.5px solid var(--border)',
           background: task.done ? '#22c55e' : 'var(--bg-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', padding: 0, transition: 'background .15s',
@@ -75,7 +75,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           }}>{cat.icon} {cat.label}</span>
           {task.notes && (
             <span style={{
-              fontSize: 12, color: '#a1a1aa',
+              fontSize: 12, color: 'var(--text-muted)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110,
             }}>{task.notes}</span>
           )}
@@ -90,7 +90,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
               </span>
             )}
             {(task.comments?.length ?? 0) > 0 && (
-              <span style={{ fontSize: 11, color: '#a1a1aa' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 {task.comments!.length} comment{task.comments!.length !== 1 ? 's' : ''}
               </span>
             )}

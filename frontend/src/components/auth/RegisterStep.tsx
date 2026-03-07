@@ -38,7 +38,7 @@ function PinBox({
             borderRadius: 10, border: `1.5px solid ${d ? ACCENT : '#e4e4e7'}`,
             fontWeight: 700, outline: 'none',
             background: d ? '#eef2ff' : '#f9f9f9',
-            color: '#18181b',
+            color: 'var(--text-primary)',
             transition: 'border-color 0.12s, background 0.12s',
           }}
         />
@@ -49,7 +49,7 @@ function PinBox({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.7, textTransform: 'uppercase', margin: '0 0 8px' }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.7, textTransform: 'uppercase', margin: '0 0 8px' }}>
       {children}
     </p>
   )
@@ -114,18 +114,18 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
 
   return (
     <div style={{
-      background: 'white', borderRadius: 16, padding: '32px 28px',
-      width: '100%', maxWidth: 380, border: '1px solid #e4e4e7',
+      background: 'var(--bg-surface)', borderRadius: 16, padding: '32px 28px',
+      width: '100%', maxWidth: 380, border: '1px solid var(--border)',
       maxHeight: '90vh', overflowY: 'auto',
     }}>
       <button
         onClick={onBack}
-        style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 20, fontWeight: 500 }}
+        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 20, fontWeight: 500 }}
       >← Back</button>
 
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: '0 0 4px' }}>Create profile</h2>
-        <p style={{ color: '#71717a', fontSize: 13 }}>{phone}</p>
+        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: 'var(--text-primary)', margin: '0 0 4px' }}>Create profile</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{phone}</p>
       </div>
 
       <FieldLabel>Choose an avatar</FieldLabel>
@@ -136,8 +136,8 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
             onClick={() => setAvatar(e)}
             style={{
               fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-              border: `1.5px solid ${avatar === e ? ACCENT : '#e4e4e7'}`,
-              background: avatar === e ? '#eef2ff' : 'white',
+              border: `1.5px solid ${avatar === e ? ACCENT : 'var(--border)'}`,
+              background: avatar === e ? '#eef2ff' : 'var(--bg-surface)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'border-color 0.12s, background 0.12s',
             }}
@@ -152,8 +152,8 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
         placeholder="e.g. Alex"
         style={{
           width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: 14,
-          border: '1px solid #e4e4e7', outline: 'none', background: '#f9f9f9',
-          boxSizing: 'border-box', marginBottom: 18, color: '#18181b',
+          border: '1px solid var(--border)', outline: 'none', background: 'var(--bg-subtle)',
+          boxSizing: 'border-box', marginBottom: 18, color: 'var(--text-primary)',
         }}
       />
 

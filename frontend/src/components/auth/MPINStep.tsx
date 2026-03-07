@@ -53,15 +53,15 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
+    <div style={{ background: 'var(--bg-surface)', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 380, border: '1px solid var(--border)' }}>
       <button
         onClick={onBack}
-        style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 24, fontWeight: 500 }}
+        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 24, fontWeight: 500 }}
       >← Back</button>
 
       <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: '0 0 4px' }}>Enter your PIN</h2>
-        <p style={{ color: '#71717a', fontSize: 13 }}>{phone}</p>
+        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: 'var(--text-primary)', margin: '0 0 4px' }}>Enter your PIN</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{phone}</p>
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
@@ -81,7 +81,7 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
               borderRadius: 10, border: `1.5px solid ${d ? ACCENT : '#e4e4e7'}`,
               fontWeight: 700, outline: 'none',
               background: d ? '#eef2ff' : '#f9f9f9',
-              color: '#18181b',
+              color: 'var(--text-primary)',
               transition: 'border-color 0.12s, background 0.12s',
             }}
           />
@@ -89,7 +89,7 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
       </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>{error}</p>}
-      {loading && <p style={{ color: '#a1a1aa', fontSize: 12, textAlign: 'center' }}>Verifying…</p>}
+      {loading && <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>Verifying…</p>}
     </div>
   )
 }

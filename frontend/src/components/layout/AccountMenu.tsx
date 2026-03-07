@@ -138,9 +138,9 @@ export function AccountMenu() {
                   {isGuest ? 'Guest' : (member?.name ?? '')}
                 </p>
                 {!isGuest && member?.phone && (
-                  <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>{member.phone}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{member.phone}</p>
                 )}
-                {isGuest && <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>Browsing as guest</p>}
+                {isGuest && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>Browsing as guest</p>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                   {!isGuest && member?.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>Admin</span>
@@ -196,7 +196,7 @@ export function AccountMenu() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 34, marginBottom: 8, transition: 'border-color 0.15s',
               }}>{editAvatar}</div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b' }}>{editName || 'Your name'}</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{editName || 'Your name'}</p>
             </div>
 
             <div style={{ padding: '0 20px' }}>
@@ -205,8 +205,8 @@ export function AccountMenu() {
                 {AVATARS.map((e) => (
                   <button key={e} type="button" onClick={() => setEditAvatar(e)} style={{
                     fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${editAvatar === e ? editColor : '#e4e4e7'}`,
-                    background: editAvatar === e ? editColor + '14' : 'white',
+                    border: `2px solid ${editAvatar === e ? editColor : 'var(--border)'}`,
+                    background: editAvatar === e ? editColor + '14' : 'var(--bg-surface)',
                     transition: 'border-color 0.12s',
                   }}>{e}</button>
                 ))}
@@ -293,13 +293,13 @@ export function AccountMenu() {
           >
             <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 0' }} />
             <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', margin: 0 }}>My Coins</p>
+              <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>My Coins</p>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '4px 14px' }}>
                 🪙 {coinInfo?.balance ?? 0}
               </div>
             </div>
 
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '20px 20px 10px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.8, textTransform: 'uppercase', margin: '20px 20px 10px' }}>
               How to earn
             </p>
             <div style={{ display: 'flex', gap: 8, padding: '0 20px', marginBottom: 20 }}>
@@ -309,30 +309,30 @@ export function AccountMenu() {
               ].map((item) => (
                 <div key={item.label} style={{ flex: 1, background: 'var(--bg-subtle)', borderRadius: 10, padding: '12px 10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
-                  <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#854d0e' }}>{item.coins}</div>
                 </div>
               ))}
             </div>
 
             <div style={{ height: 1, background: 'var(--border-light)', margin: '0 20px 16px' }} />
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
               History
             </p>
 
             {!coinInfo?.transactions.length ? (
-              <p style={{ fontSize: 13, color: '#a1a1aa', padding: '0 20px' }}>No transactions yet. Invite someone to earn coins!</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '0 20px' }}>No transactions yet. Invite someone to earn coins!</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {coinInfo.transactions.map((t) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px' }}>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                         {t.reason === 'household_invite'
                           ? `${t.meta?.member_name ?? 'Someone'} joined your household`
                           : `${t.meta?.referred_name ?? 'Someone'} signed up via your link`}
                       </p>
-                      <p style={{ fontSize: 11, color: '#a1a1aa', margin: '2px 0 0' }}>{timeAgo(t.created_at)}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>{timeAgo(t.created_at)}</p>
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>+{t.amount}</span>
                   </div>
@@ -355,8 +355,8 @@ export function AccountMenu() {
             onClick={(e) => e.stopPropagation()}
             style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 20px' }} />
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 20 }}>Change PIN</p>
+            <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 20px' }} />
+            <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20 }}>Change PIN</p>
 
             {pinSuccess ? (
               <div style={{ textAlign: 'center', padding: '28px 0' }}>
@@ -422,7 +422,7 @@ function MenuItem({ label, onClick, accent, danger }: { label: string; onClick: 
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.6, textTransform: 'uppercase', margin: '0 0 7px' }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 0.6, textTransform: 'uppercase', margin: '0 0 7px' }}>
       {children}
     </p>
   )
@@ -448,7 +448,7 @@ function PinRow({ value, onChange }: { value: string; onChange: (v: string) => v
             flex: 1, height: 48, textAlign: 'center', fontSize: 20, fontWeight: 700,
             borderRadius: 8, border: `1.5px solid ${value[i] ? ACCENT : '#e4e4e7'}`,
             outline: 'none', background: value[i] ? '#eef2ff' : '#f9f9f9',
-            color: '#18181b', transition: 'border-color 0.12s, background 0.12s',
+            color: 'var(--text-primary)', transition: 'border-color 0.12s, background 0.12s',
           }}
         />
       ))}

@@ -17,7 +17,7 @@ export function GuestBanner() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '9px 16px', gap: 12,
     }}>
-      <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         Guest mode · Data stored locally
       </span>
       <button
