@@ -54,8 +54,15 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(middleware.Logger)
+	rawOrigins := strings.Split(cfg.CORSOrigins, ",")
+	allowedOrigins := make([]string, 0, len(rawOrigins))
+	for _, o := range rawOrigins {
+		if trimmed := strings.TrimSpace(o); trimmed != "" {
+			allowedOrigins = append(allowedOrigins, trimmed)
+		}
+	}
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   strings.Split(cfg.CORSOrigins, ","),
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Content-Type", "X-Request-ID", "Authorization"},
 		AllowCredentials: false,
