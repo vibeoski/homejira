@@ -8,6 +8,7 @@ import { AddTaskSheet } from '../components/tasks/AddTaskSheet'
 import { Spinner } from '../components/ui/Spinner'
 import { AccountMenu } from '../components/layout/AccountMenu'
 import { CATEGORIES, type Task, type Category } from '../types'
+import { AppLogo } from '../components/ui/AppLogo'
 
 type FilterStatus = 'open' | 'done' | 'all'
 type SortBy = 'priority' | 'recent'
@@ -61,7 +62,9 @@ export function TasksPage() {
         position: 'sticky', top: 0, zIndex: 50,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: 1 }}>
+            <AppLogo size={30} />
+            <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3, color: '#18181b' }}>
               HomeJira
             </h1>
@@ -69,6 +72,7 @@ export function TasksPage() {
               {openCount} open
               {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
             </p>
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {members.slice(0, 4).map((m, i) => (

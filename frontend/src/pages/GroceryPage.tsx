@@ -5,6 +5,7 @@ import { useStore } from '../store'
 import { loadGuestTasks, saveGuestTasks } from '../store/guest'
 import { Spinner } from '../components/ui/Spinner'
 import { AccountMenu } from '../components/layout/AccountMenu'
+import { AppLogo } from '../components/ui/AppLogo'
 import type { Task } from '../types'
 
 const ACCENT = '#6366f1'
@@ -170,8 +171,10 @@ export function GroceryPage() {
       <div style={{ paddingBottom: 80 }}>
         {/* History header */}
         <div style={{
+          background: 'white', padding: '16px 16px 14px',
+          borderBottom: '1px solid #e4e4e7',
+          position: 'sticky', top: 0, zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 16px 8px',
         }}>
           <button
             onClick={() => setHistoryMode(false)}
@@ -241,10 +244,15 @@ export function GroceryPage() {
     <div style={{ paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
+        background: 'white', padding: '16px 16px 14px',
+        borderBottom: '1px solid #e4e4e7',
+        position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 16px 12px',
       }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: '#18181b' }}>Grocery list</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <AppLogo size={30} />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>Grocery</h1>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <button
           onClick={() => setHistoryMode(true)}

@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import { MembersScreen } from '../components/members/MembersScreen'
 import { HouseholdPanel } from '../components/members/HouseholdPanel'
 import { AccountMenu } from '../components/layout/AccountMenu'
+import { AppLogo } from '../components/ui/AppLogo'
 
 export function MembersPage() {
   const { tasks, members } = useStore()
@@ -15,7 +16,10 @@ export function MembersPage() {
         borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>Household</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <AppLogo size={30} />
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>Household</h1>
+        </div>
         <AccountMenu />
       </div>
       <HouseholdPanel />

@@ -102,11 +102,8 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: '0 0 4px' }}>HomeJira</h1>
-        <p style={{ color: '#71717a', fontSize: 13 }}>Enter your phone number to continue</p>
-      </div>
+    <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
+      <p style={{ color: '#71717a', fontSize: 13, marginBottom: 16 }}>Enter your phone number to continue</p>
 
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>

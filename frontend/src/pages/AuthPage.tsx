@@ -4,6 +4,7 @@ import { MPINStep } from '../components/auth/MPINStep'
 import { RegisterStep } from '../components/auth/RegisterStep'
 import { useAuthStore } from '../store/authStore'
 import { householdsApi } from '../api/households'
+import { AppLogo } from '../components/ui/AppLogo'
 import type { Member } from '../types'
 
 type Step = 'phone' | 'mpin' | 'register'
@@ -36,6 +37,15 @@ export function AuthPage() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '20px 16px', gap: 14,
     }}>
+      {/* Brand header — visible on all steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <AppLogo size={52} />
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: 0 }}>HomeJira</h1>
+          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '3px 0 0' }}>Your household, organized.</p>
+        </div>
+      </div>
+
       {step === 'phone' && (
         <PhoneStep
           onRegistered={(p) => { setPhone(p); setStep('mpin') }}
