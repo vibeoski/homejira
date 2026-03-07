@@ -17,7 +17,7 @@ func newHouseholdSvc(
 	inviteLinks *mockInviteLinkRepo,
 	tasks *mockTaskRepo,
 ) *HouseholdService {
-	return NewHouseholdService(households, members, joins, invites, inviteLinks, tasks)
+	return NewHouseholdService(households, members, joins, invites, inviteLinks, tasks, nil)
 }
 
 // seedAdmin returns a member repo with an admin who belongs to a household.

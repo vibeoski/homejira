@@ -34,11 +34,14 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	joinRepo := repository.NewHouseholdJoinRequestRepository(db)
 	inviteRepo := repository.NewHouseholdInviteRepository(db)
 	inviteLinkRepo := repository.NewHouseholdInviteLinkRepository(db)
+	coinRepo := repository.NewCoinRepository(db)
+	referralRepo := repository.NewReferralRepository(db)
 
+	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
-	authSvc := service.NewAuthService(memberRepo, cfg.JWTSecret)
-	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo)
+	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret)
+	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
 	hub := sse.NewHub()
 
@@ -47,6 +50,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	authH := handler.NewAuthHandler(authSvc)
 	householdH := handler.NewHouseholdHandler(householdSvc, hub)
 	eventH := handler.NewEventHandler(hub, authSvc, taskSvc)
+	coinH := handler.NewCoinHandler(coinSvc)
 
 	// ── Router ────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -91,6 +95,9 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		// Public: resolve a shareable household invite link (no auth required)
 		r.Get("/households/link/{token}", householdH.GetByInviteToken)
 
+		// Public: resolve a referral token to the referrer's public profile
+		r.Get("/referral/{token}", coinH.GetReferrer)
+
 		// Protected: all app routes require a valid JWT
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireAuth(authSvc))
@@ -104,6 +111,8 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 				r.Get("/", memberH.List)
 				r.Post("/", memberH.Create)
 				r.Patch("/me", memberH.UpdateMe)
+				r.Get("/me/coins", coinH.GetMyCoins)
+				r.Get("/me/referral-link", coinH.GetOrCreateReferralLink)
 				r.Get("/{id}", memberH.Get)
 			})
 

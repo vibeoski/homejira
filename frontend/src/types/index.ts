@@ -56,8 +56,18 @@ export interface Activity {
   created_at: string
 }
 
+// Coin types
+export interface CoinTransaction {
+  id: string
+  member_id: string
+  amount: number
+  reason: string
+  meta?: Record<string, string> | null
+  created_at: string
+}
+
 // Auth types
 export interface AuthCheckResponse { registered: boolean }
 export interface AuthResponse { token: string; member: Member }
 export interface LoginPayload { phone: string; mpin: string }
-export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string }
+export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string }
