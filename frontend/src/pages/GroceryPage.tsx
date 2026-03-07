@@ -17,6 +17,8 @@ export function GroceryPage() {
   const [done, setDone] = useState<Task[]>([])
   const [showDone, setShowDone] = useState(true)
   const [historyMode, setHistoryMode] = useState(false)
+  const todayKey = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() })()
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
   const [loading, setLoading] = useState(true)
 
   const [newTitle, setNewTitle] = useState('')
@@ -184,9 +186,45 @@ export function GroceryPage() {
           </div>
         ) : (
           <div style={{ padding: '0 12px' }}>
-            {done.map((task) => (
-              <HistoryRow key={task.id} task={task} onDelete={handleDelete} />
-            ))}
+            {groupByDay(done).map(({ key, label, tasks: dayTasks }) => {
+              const open = expandedDays.has(key)
+              const toggle = () => setExpandedDays((prev) => {
+                const next = new Set(prev)
+                if (open) next.delete(key); else next.add(key)
+                return next
+              })
+              return (
+                <div key={key} style={{ marginBottom: 8 }}>
+                  <button
+                    onClick={toggle}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      padding: '8px 4px', marginBottom: open ? 4 : 0,
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                      {label}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {!open && (
+                        <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 600 }}>{dayTasks.length} item{dayTasks.length !== 1 ? 's' : ''}</span>
+                      )}
+                      <svg
+                        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa"
+                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
+                      >
+                        <polyline points="9,18 15,12 9,6" />
+                      </svg>
+                    </div>
+                  </button>
+                  {open && dayTasks.map((task) => (
+                    <HistoryRow key={task.id} task={task} onDelete={handleDelete} />
+                  ))}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -328,6 +366,33 @@ export function GroceryPage() {
       )}
     </div>
   )
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+
+function groupByDay(tasks: Task[]): { key: string; label: string; tasks: Task[] }[] {
+  const now = new Date()
+  const today = new Date(now); today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+
+  const map = new Map<string, Task[]>()
+  for (const task of tasks) {
+    const d = new Date(task.updated_at); d.setHours(0, 0, 0, 0)
+    const key = d.toISOString()
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(task)
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, tasks]) => {
+      const d = new Date(key)
+      let label: string
+      if (d.getTime() === today.getTime()) label = 'Today'
+      else if (d.getTime() === yesterday.getTime()) label = 'Yesterday'
+      else label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
+      return { key, label, tasks }
+    })
 }
 
 // ── Sub-components ────────────────────────────────────────────────
