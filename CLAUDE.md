@@ -5,6 +5,31 @@ Read it before adding any new feature, endpoint, or component.
 
 ---
 
+## Git Workflow
+
+**Branch strategy:**
+```
+main (production)
+└── staging (staging environment)
+    └── feature/* or fix/* (your work branches)
+```
+
+**For every feature or bug fix:**
+1. Branch off `staging`: `git checkout staging && git pull && git checkout -b feature/my-thing`
+2. Build and verify locally (`make up`) on the feature branch before opening a PR
+3. Open PR targeting `staging` (never directly to `main`)
+4. CI must pass on the PR
+5. Verify the deployed preview in the staging environment (Railway staging + Vercel preview)
+6. Only then merge staging → main via PR to promote to production
+
+**Rules:**
+- Never commit directly to `main` or `staging`
+- **All PRs from feature/fix branches MUST target `staging`**, never `main`
+- `main` only ever receives PRs from `staging` (promotion PRs)
+- Always verify locally first, then in staging, before promoting staging → main
+
+---
+
 ## Project Overview
 
 HomeJira is a household task management app (Jira for home).

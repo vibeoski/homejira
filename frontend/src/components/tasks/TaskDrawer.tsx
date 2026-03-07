@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Avatar } from '../ui/Avatar'
-import { CATEGORIES, PRIORITIES, type Task, type Member, type UpdateTaskPayload, type Category, type Activity } from '../../types'
+import { CATEGORIES, PRIORITIES, type Task, type Member, type UpdateTaskPayload, type Category, type Priority, type Activity } from '../../types'
 import { tasksApi } from '../../api/tasks'
 import { timeAgo, toDateInputValue } from '../../utils'
 import { useStore } from '../../store'
@@ -137,7 +137,7 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
           <FieldLabel>Priority</FieldLabel>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {(Object.entries(PRIORITIES) as [string, { label: string; color: string }][]).map(([k, v]) => (
-              <PillBtn key={k} active={current.priority === k} color={v.color} onClick={() => patch({ priority: k as any })}>
+              <PillBtn key={k} active={current.priority === k} color={v.color} onClick={() => patch({ priority: k as Priority })}>
                 {v.label}
               </PillBtn>
             ))}

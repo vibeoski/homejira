@@ -61,8 +61,8 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
       const { member: updated } = await householdsApi.leave()
       updateMember(updated)
       await Promise.all([fetchMembers(), fetchTasks()])
-    } catch (e: any) {
-      setLeaveError(e?.response?.data?.error ?? 'Could not leave household.')
+    } catch (e: unknown) {
+      setLeaveError((e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not leave household.')
     } finally {
       setLeaveBusy(false)
     }

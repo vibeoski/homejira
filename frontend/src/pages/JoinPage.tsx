@@ -22,6 +22,7 @@ export function JoinPage() {
       .then(({ household }) => setHousehold(household))
       .catch(() => setError('This invite link is invalid or has expired.'))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   // If already authenticated, auto-join and redirect
@@ -30,11 +31,12 @@ export function JoinPage() {
       setJoining(true)
       householdsApi.joinByInviteToken(token!)
         .then(() => navigate('/household', { replace: true }))
-        .catch((err) => {
+        .catch((err: unknown) => {
           setJoining(false)
-          setError(err.response?.data?.error ?? 'Failed to join household.')
+          setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to join household.')
         })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, household, isAuthenticated])
 
   const handleSignUpAndJoin = () => {

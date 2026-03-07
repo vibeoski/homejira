@@ -16,7 +16,7 @@ let _cache: { household: HouseholdData; requests: RequestsData } | null = null
 
 export function HouseholdPanel() {
   const { isGuest, member, updateMember, setAuth } = useAuthStore()
-  const { fetchTasks, fetchMembers, members, sseVersion } = useStore()
+  const { fetchTasks, fetchMembers, sseVersion } = useStore()
   const navigate = useNavigate()
 
   const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
@@ -75,13 +75,14 @@ export function HouseholdPanel() {
         if (request) setWaitingRequest({ id: request.id, householdName: 'household' })
       }).catch(() => {})
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest, member?.id])
 
   // Refresh join requests whenever the SSE fires a household update
   useEffect(() => {
     if (isGuest || !member || member.role !== 'admin') return
     householdsApi.listRequests().then(({ requests }) => setRequests(requests)).catch(() => {})
-  }, [isGuest, member?.id, member?.role, sseVersion])
+  }, [isGuest, member, sseVersion])
 
   // When SSE fires (triggered by approve/reject on the member channel), check request status
   useEffect(() => {
@@ -102,6 +103,7 @@ export function HouseholdPanel() {
       } catch {}
     }
     check()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sseVersion])
 
   if (isGuest || !member) return null
@@ -211,14 +213,13 @@ export function HouseholdPanel() {
     setSharingLink(true)
     try {
       const { token } = await householdsApi.createInviteLink()
-      const appBase = (import.meta.env.VITE_API_URL as string | undefined)
-        ?.replace('/api/v1', '') ?? window.location.origin
-      const url = `${appBase}/join/${token}`
-      const text = `Join ${household?.name ?? 'our household'} on HomeJira: ${url}`
+      const url = `${window.location.origin}/join/${token}`
+      const shareTitle = `Join ${household?.name ?? 'our household'} on HomeJira`
+      const shareText = `Join ${household?.name ?? 'our household'} on HomeJira 🏠 — the easiest way to manage your household tasks together.`
       if (navigator.share) {
-        await navigator.share({ title: 'Join our household', text, url })
+        await navigator.share({ title: shareTitle, text: shareText, url })
       } else {
-        await navigator.clipboard.writeText(url)
+        await navigator.clipboard.writeText(`${shareText} Tap to join: ${url}`)
         setMessage('Invite link copied to clipboard!')
         setTimeout(() => setMessage(null), 3000)
       }

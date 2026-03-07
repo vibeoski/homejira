@@ -49,6 +49,7 @@ export function AppLayout() {
       es.close()
       esRef.current = null
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token])
 
   // Guest mode: poll every 2s (local storage only, no network cost)
@@ -61,6 +62,7 @@ export function AppLayout() {
       fetchMembers()
     }, 2000)
     return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest])
 
   return (

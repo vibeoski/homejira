@@ -68,8 +68,8 @@ export function AccountMenu() {
       await authApi.changeMpin(pinCurrent, pinNew)
       setPinSuccess(true)
       setTimeout(closeSheet, 1500)
-    } catch (e: any) {
-      setPinError(e?.response?.data?.error ?? 'Could not change PIN.')
+    } catch (e: unknown) {
+      setPinError((e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not change PIN.')
     } finally {
       setPinBusy(false)
     }
