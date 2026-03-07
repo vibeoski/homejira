@@ -24,12 +24,11 @@ export function TasksPage() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Task | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
   if (!isGuest && member && !member.household_id) {
     return <Navigate to="/household" replace />
   }
-
-  const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
   const visible = tasks
     .filter((t) => catTab === 'all' || t.category === catTab)
