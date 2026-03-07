@@ -269,33 +269,82 @@ drawn from non-grocery tasks.
 
 ---
 
+## 🟡 Necessary
+
+### NE-08 · No task assignment notifications
+**Status:** `todo`
+**Files:** backend · frontend
+`due_at` exists but is completely silent. Members have no way to know when a task is assigned to
+them or when a due date is approaching. The feature exists on paper but delivers no actionable signal.
+**Fix:**
+- In-app notification feed (bell icon in header) — recorded in a `notifications` table
+- Events: task assigned to me, task overdue, task due in 24 h
+- Backend: `POST /api/v1/notifications/read` to mark seen; SSE push for real-time badge
+- Frontend: notification badge count in header, simple drop-down list
+
+---
+
+### NE-09 · Grocery items have no quantity / unit field
+**Status:** `todo`
+**File:** `frontend/src/pages/GroceryPage.tsx` · backend tasks domain
+Grocery items only have a title. "Milk" vs "2 gallons of milk" is a meaningful difference when
+shopping. There is no way to specify amount, size, or unit.
+**Fix:**
+- Migration: `ADD COLUMN quantity TEXT` on `tasks` (nullable, grocery-only semantic)
+- Backend: include in `CreateTaskInput`, `UpdateTaskInput`, and API responses
+- Frontend: optional quantity input in the add-grocery form and inline below the item title
+
+---
+
+### NE-10 · Recurring tasks
+**Status:** `todo`
+**Files:** backend · domain · migration · frontend `AddTaskSheet` · `TaskDrawer`
+Common household chores (trash, laundry, bills) need to auto-reopen on a schedule. Without this,
+members manually re-create the same tasks every week.
+**Fix:**
+- Migration: `ADD COLUMN recurrence TEXT CHECK (IN ('daily','weekly','monthly','none'))` +
+  `recurrence_next_at TIMESTAMPTZ` on `tasks`
+- Backend: background worker (ticker) that scans for completed recurring tasks past
+  `recurrence_next_at` and re-opens them (new row or reset done=false + bump next_at)
+- Frontend: recurrence selector in `AddTaskSheet` and `TaskDrawer`
+
+---
+
 ## 🟢 Roadmap
 
 ### RD-00 · Task activity history
 **Status:** `done`
 Unified activity + comment feed in TaskDrawer. `task_activities` table records created/completed/reopened/assigned/priority_changed/category_changed/title_changed/notes_changed/due_set/due_cleared events. `GET /tasks/{id}/activity`. Feed sorted chronologically; activities render as compact log lines, comments as bubbles.
 
-### RD-01 · Recurring tasks
-**Status:** `todo`
-Tasks that automatically re-open on a schedule (daily / weekly / monthly).
-
 ### RD-02 · Shopping list aggregation
-**Status:** `todo`
-Merge all `grocery` category tasks into a consolidated shopping list view.
+**Status:** `done`
+Implemented as `GroceryPage` — dedicated tab that shows all `category=grocery` tasks with check-off,
+hide-done toggle, inline edit, and illustrated empty state.
 
 ### RD-03 · Real-time sync (SSE / WebSockets)
 **Status:** `done`
 Replaced all polling with SSE. Member-level channels for join-request flow. Hub notifies household on every task/household mutation.
 
 ### RD-04 · Shareable invite links
-**Status:** `todo`
-Generate a URL (e.g. `/join/YJLS5ZVJ`) that opens the app and pre-fills the join code.
+**Status:** `done`
+Backend generates token-based invite URLs (`/join/:token`). `JoinPage` resolves the token to a
+household name, auto-joins authenticated users, and routes unauthenticated users through sign-up
+with a pending-join flag in localStorage.
 
 ### RD-05 · Dark mode
 **Status:** `todo`
 
 ### RD-06 · PWA (installable, offline)
 **Status:** `todo`
+
+### RD-07 · Household spending tracker
+**Status:** `todo`
+Attach an optional cost to grocery/errand tasks. Monthly spend summary in Stats.
+
+### RD-08 · Task templates
+**Status:** `todo`
+Save a set of tasks as a reusable template (e.g. "Spring cleaning checklist") that can be
+bulk-applied to the household.
 
 ---
 
