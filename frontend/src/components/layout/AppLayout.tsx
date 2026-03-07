@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { GuestBanner } from './GuestBanner'
+import { AccountMenu } from './AccountMenu'
+import { AppLogo } from '../ui/AppLogo'
 import { useAuthStore } from '../../store/authStore'
 import { authApi } from '../../api/auth'
 import { useStore } from '../../store'
@@ -68,6 +70,19 @@ export function AppLayout() {
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', background: '#f4f4f5', position: 'relative' }}>
       {isGuest && <GuestBanner />}
+      {/* Persistent top bar — visible on every screen */}
+      <div style={{
+        background: 'white', borderBottom: '1px solid #e4e4e7',
+        position: 'sticky', top: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px', height: 57, flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <AppLogo size={30} />
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>HomeJira</span>
+        </div>
+        <AccountMenu />
+      </div>
       <Outlet />
       <BottomNav />
     </div>

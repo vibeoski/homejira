@@ -6,9 +6,7 @@ import { TaskCard } from '../components/tasks/TaskCard'
 import { TaskDrawer } from '../components/tasks/TaskDrawer'
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet'
 import { Spinner } from '../components/ui/Spinner'
-import { AccountMenu } from '../components/layout/AccountMenu'
 import { CATEGORIES, type Task, type Category } from '../types'
-import { AppLogo } from '../components/ui/AppLogo'
 
 type FilterStatus = 'open' | 'done' | 'all'
 type SortBy = 'priority' | 'recent'
@@ -55,24 +53,18 @@ export function TasksPage() {
 
   return (
     <>
-      {/* Header */}
+      {/* Sub-header: task stats + member avatars */}
       <div style={{
-        background: 'white', padding: '16px 16px 0',
+        background: 'white', padding: '10px 16px 0',
         borderBottom: '1px solid #e4e4e7',
-        position: 'sticky', top: 0, zIndex: 50,
+        position: 'sticky', top: 57, zIndex: 49,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: 1 }}>
-            <AppLogo size={30} />
-            <div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3, color: '#18181b' }}>
-              HomeJira
-            </h1>
-            <p style={{ fontSize: 12, color: '#71717a', marginTop: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>
               {openCount} open
               {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
             </p>
-            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {members.slice(0, 4).map((m, i) => (
@@ -94,7 +86,6 @@ export function TasksPage() {
                 background: '#f4f4f5', color: '#71717a', marginLeft: -8, border: '2px solid white',
               }}>+{members.length - 4}</span>
             )}
-            <AccountMenu />
           </div>
         </div>
 

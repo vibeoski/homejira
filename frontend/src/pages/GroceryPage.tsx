@@ -4,8 +4,6 @@ import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
 import { loadGuestTasks, saveGuestTasks } from '../store/guest'
 import { Spinner } from '../components/ui/Spinner'
-import { AccountMenu } from '../components/layout/AccountMenu'
-import { AppLogo } from '../components/ui/AppLogo'
 import type { Task } from '../types'
 
 const ACCENT = '#6366f1'
@@ -245,18 +243,14 @@ export function GroceryPage() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      {/* Header */}
+      {/* Sub-header */}
       <div style={{
-        background: 'white', padding: '16px 16px 14px',
+        background: 'white', padding: '10px 16px',
         borderBottom: '1px solid #e4e4e7',
-        position: 'sticky', top: 0, zIndex: 50,
+        position: 'sticky', top: 57, zIndex: 49,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <AppLogo size={30} />
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>Grocery</h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
         <button
           onClick={() => setHistoryMode(true)}
           style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
@@ -267,8 +261,6 @@ export function GroceryPage() {
           </svg>
           History {done.length > 0 && `(${done.length})`}
         </button>
-        <AccountMenu />
-        </div>
       </div>
 
       {/* Quick-add */}

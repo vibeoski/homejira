@@ -2,8 +2,6 @@ import { useStore } from '../store'
 import { useAuthStore } from '../store/authStore'
 import { MembersScreen } from '../components/members/MembersScreen'
 import { HouseholdPanel } from '../components/members/HouseholdPanel'
-import { AccountMenu } from '../components/layout/AccountMenu'
-import { AppLogo } from '../components/ui/AppLogo'
 
 export function MembersPage() {
   const { tasks, members } = useStore()
@@ -12,15 +10,10 @@ export function MembersPage() {
   return (
     <>
       <div style={{
-        background: 'white', padding: '16px 16px 14px',
-        borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 0, zIndex: 50,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'white', padding: '12px 16px',
+        borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 57, zIndex: 49,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <AppLogo size={30} />
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', letterSpacing: -0.3 }}>Household</h1>
-        </div>
-        <AccountMenu />
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2 }}>Household</h2>
       </div>
       <HouseholdPanel />
       {!!member?.household_id && (
