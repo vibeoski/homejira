@@ -100,7 +100,9 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin })
+      const referralToken = localStorage.getItem('hj_pending_referral') ?? undefined
+      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin, referral_token: referralToken })
+      localStorage.removeItem('hj_pending_referral')
       onSuccess(token, member)
     } catch (e: unknown) {
       if ((e as { response?: { status?: number } })?.response?.status === 409) setError('This phone is already registered. Go back and log in.')

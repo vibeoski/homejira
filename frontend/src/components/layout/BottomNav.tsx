@@ -80,7 +80,7 @@ export function BottomNav() {
             }} />
             <Icon color={color} />
             <span style={{
-              fontSize: 10, fontWeight: isActive ? 700 : 500,
+              fontSize: 10, fontWeight: 600,
               color, transition: 'color 0.15s',
               letterSpacing: 0.2,
             }}>{label}</span>

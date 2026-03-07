@@ -13,12 +13,13 @@ import (
 
 // HouseholdService orchestrates household creation, join flows, and invites.
 type HouseholdService struct {
-	households   domain.HouseholdRepository
-	members      domain.MemberRepository
-	joins        domain.HouseholdJoinRequestRepository
-	invites      domain.HouseholdInviteRepository
-	inviteLinks  domain.HouseholdInviteLinkRepository
-	tasks        domain.TaskRepository
+	households  domain.HouseholdRepository
+	members     domain.MemberRepository
+	joins       domain.HouseholdJoinRequestRepository
+	invites     domain.HouseholdInviteRepository
+	inviteLinks domain.HouseholdInviteLinkRepository
+	tasks       domain.TaskRepository
+	coins       *CoinService
 }
 
 func NewHouseholdService(
@@ -28,6 +29,7 @@ func NewHouseholdService(
 	invites domain.HouseholdInviteRepository,
 	inviteLinks domain.HouseholdInviteLinkRepository,
 	tasks domain.TaskRepository,
+	coins *CoinService,
 ) *HouseholdService {
 	return &HouseholdService{
 		households:  households,
@@ -36,6 +38,7 @@ func NewHouseholdService(
 		invites:     invites,
 		inviteLinks: inviteLinks,
 		tasks:       tasks,
+		coins:       coins,
 	}
 }
 
@@ -435,7 +438,22 @@ func (s *HouseholdService) JoinByInviteToken(memberID uuid.UUID, token string) (
 		return nil, fmt.Errorf("%w: already in a household", domain.ErrInvalidInput)
 	}
 
-	return s.members.UpdateHouseholdAndRole(memberID, &link.HouseholdID, domain.MemberRoleMember)
+	updated, err := s.members.UpdateHouseholdAndRole(memberID, &link.HouseholdID, domain.MemberRoleMember)
+	if err != nil {
+		return nil, err
+	}
+
+	// Award coins to the invite link creator — non-fatal
+	if s.coins != nil {
+		_ = s.coins.Award(link.CreatedBy, 20, CoinReasonHouseholdInvite, map[string]interface{}{
+			"member_name": member.Name,
+		})
+		_ = s.coins.Award(link.CreatedBy, 10, CoinReasonReferral, map[string]interface{}{
+			"referred_name": member.Name,
+		})
+	}
+
+	return updated, nil
 }
 
 // GetHouseholdForMember returns the household for the given member, if any.

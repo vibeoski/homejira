@@ -8,6 +8,7 @@ import { StatsPage } from './pages/StatsPage'
 import { MembersPage } from './pages/MembersPage'
 import { AuthPage } from './pages/AuthPage'
 import { JoinPage } from './pages/JoinPage'
+import { ReferralPage } from './pages/ReferralPage'
 import { GroceryPage } from './pages/GroceryPage'
 
 export default function App() {
@@ -46,6 +47,9 @@ export default function App() {
 
         {/* Public: shareable household invite link — always accessible */}
         <Route path="/join/:token" element={<JoinPage />} />
+
+        {/* Public: app referral landing page */}
+        <Route path="/refer/:token" element={<ReferralPage />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={canAccessApp ? '/' : '/auth'} replace />} />

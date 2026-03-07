@@ -122,7 +122,7 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
           >
             {COUNTRIES.map((c, i) => (
               <option key={`${c.name}-${i}`} value={`${c.flag}|${c.code}|${c.name}`}>
-                {c.flag} {c.code} {c.name}
+                {c.flag} {c.code}
               </option>
             ))}
           </select>

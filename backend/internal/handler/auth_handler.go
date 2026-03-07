@@ -139,14 +139,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/register
-// Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234" }
+// Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "referral_token": "optional" }
 // Response: { "token": "...", "member": {...} }
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Phone  string `json:"phone"`
-		Name   string `json:"name"`
-		Avatar string `json:"avatar"`
-		Mpin   string `json:"mpin"`
+		Phone         string `json:"phone"`
+		Name          string `json:"name"`
+		Avatar        string `json:"avatar"`
+		Mpin          string `json:"mpin"`
+		ReferralToken string `json:"referral_token"`
 	}
 	if err := decode(r, &body); err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
@@ -158,10 +159,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token, member, err := h.svc.Register(domain.RegisterInput{
-		Phone:  body.Phone,
-		Name:   body.Name,
-		Avatar: body.Avatar,
-		Mpin:   body.Mpin,
+		Phone:         body.Phone,
+		Name:          body.Name,
+		Avatar:        body.Avatar,
+		Mpin:          body.Mpin,
+		ReferralToken: body.ReferralToken,
 	})
 	if errors.Is(err, domain.ErrAlreadyExists) {
 		respond(w, http.StatusConflict, envelope{"error": "phone already registered"})
