@@ -102,8 +102,8 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
     try {
       const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin })
       onSuccess(token, member)
-    } catch (e: any) {
-      if (e.response?.status === 409) setError('This phone is already registered. Go back and log in.')
+    } catch (e: unknown) {
+      if ((e as { response?: { status?: number } })?.response?.status === 409) setError('This phone is already registered. Go back and log in.')
       else setError('Registration failed. Please try again.')
     } finally {
       setLoading(false)

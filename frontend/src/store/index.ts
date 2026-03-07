@@ -56,8 +56,8 @@ export const useStore = create<AppStore>((set, get) => ({
       } else if (isInitial) {
         set({ loading: false })
       }
-    } catch (e: any) {
-      if (isInitial) set({ error: e.message, loading: false })
+    } catch (e: unknown) {
+      if (isInitial) set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false })
     }
   },
 

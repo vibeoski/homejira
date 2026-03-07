@@ -50,7 +50,9 @@ export function GroceryPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [isGuest])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (sseVersion > 0) load() }, [sseVersion])
 
   // ── Quick add ────────────────────────────────────────────────
