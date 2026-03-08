@@ -19,3 +19,9 @@ export function isOverdue(dueAt: string | undefined, done: boolean): boolean {
 export function toDateInputValue(ts: string): string {
   return new Date(ts).toISOString().slice(0, 10)
 }
+
+export function isDueSoon(dueAt: string | undefined, done: boolean): boolean {
+  if (!dueAt || done) return false
+  const ms = new Date(dueAt).getTime() - Date.now()
+  return ms > 0 && ms <= 86_400_000
+}

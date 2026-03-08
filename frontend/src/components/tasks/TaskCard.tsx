@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { CATEGORIES, PRIORITIES, type Task } from '../../types'
-import { formatDate, isOverdue } from '../../utils'
+import { formatDate, isOverdue, isDueSoon } from '../../utils'
 
 interface Props {
   task: Task
@@ -13,6 +13,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
   const [popping, setPopping] = useState(false)
   const cat = CATEGORIES[task.category]
   const overdue = isOverdue(task.due_at, task.done)
+  const dueSoon = isDueSoon(task.due_at, task.done)
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -29,7 +30,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         borderRadius: 12,
         padding: '13px 14px 12px',
         marginBottom: 6,
-        border: `1px solid ${overdue && !task.done ? '#fecaca' : '#e4e4e7'}`,
+        border: `1px solid ${overdue && !task.done ? '#fecaca' : dueSoon && !task.done ? '#fde68a' : '#e4e4e7'}`,
         display: 'flex',
         gap: 11,
         alignItems: 'flex-start',
@@ -85,8 +86,14 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         {((task.due_at && !task.done) || (task.comments?.length ?? 0) > 0) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {task.due_at && !task.done && (
-              <span style={{ fontSize: 11, fontWeight: 500, color: overdue ? '#ef4444' : '#71717a' }}>
-                {overdue ? '⚠ ' : ''}{formatDate(task.due_at)}
+              <span style={{
+                fontSize: 11, fontWeight: 500,
+                color: overdue ? '#ef4444' : dueSoon ? '#d97706' : '#71717a',
+                background: dueSoon && !overdue ? '#fffbeb' : 'transparent',
+                borderRadius: dueSoon && !overdue ? 4 : 0,
+                padding: dueSoon && !overdue ? '1px 5px' : '0',
+              }}>
+                {overdue ? '⚠ ' : dueSoon ? '⏰ ' : ''}{formatDate(task.due_at)}
               </span>
             )}
             {(task.comments?.length ?? 0) > 0 && (
