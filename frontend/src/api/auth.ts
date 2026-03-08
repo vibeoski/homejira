@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { AuthCheckResponse, AuthResponse, LoginPayload, RegisterPayload, Member } from '../types'
+import type { AuthCheckResponse, AuthResponse, LoginPayload, RegisterPayload } from '../types'
 
 export const authApi = {
   checkPhone: async (phone: string): Promise<AuthCheckResponse> => {
@@ -20,15 +20,5 @@ export const authApi = {
   },
   changeMpin: async (currentMpin: string, newMpin: string): Promise<void> => {
     await client.patch('/auth/mpin', { current_mpin: currentMpin, new_mpin: newMpin })
-  },
-  sendEmailVerification: async (email: string): Promise<void> => {
-    await client.post('/auth/email/send-verification', {
-      email,
-      app_base_url: window.location.origin,
-    })
-  },
-  verifyPhone: async (firebaseToken: string): Promise<Member> => {
-    const { data } = await client.post('/auth/phone/verify', { firebase_token: firebaseToken })
-    return data.member
   },
 }

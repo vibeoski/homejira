@@ -24,10 +24,7 @@ type Member struct {
 	MpinHash      string     `json:"-"`                      // never serialized
 	HouseholdID   *uuid.UUID `json:"household_id,omitempty"` // null until they join/create
 	Role          MemberRole `json:"role,omitempty"`         // admin/member inside a household
-	Email         string     `json:"email,omitempty"`
-	EmailVerified bool       `json:"email_verified"`
-	PhoneVerified bool       `json:"phone_verified"`
-	CreatedAt     time.Time  `json:"created_at"`
+	CreatedAt  time.Time  `json:"created_at"`
 }
 
 // MemberRepository defines the persistence contract.
@@ -50,9 +47,4 @@ type MemberRepository interface {
 
 	// Credential update
 	UpdateMpin(id uuid.UUID, mpinHash string) error
-
-	// Verification
-	UpdateEmail(id uuid.UUID, email string) (*Member, error)
-	SetPhoneVerified(id uuid.UUID) error
-	SetEmailVerified(id uuid.UUID) error
 }

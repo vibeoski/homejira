@@ -36,7 +36,6 @@ services:
       ENV: development
       CORS_ORIGINS: http://localhost:3000
       JWT_SECRET: dev_secret_change_in_production_32ch
-      FIREBASE_CREDENTIALS_FILE: /app/firebase-service-account.json
     ports:
       - "8080:8080"
     volumes:

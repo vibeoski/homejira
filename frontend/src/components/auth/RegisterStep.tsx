@@ -6,7 +6,6 @@ interface Props {
   phone: string
   onSuccess: (token: string, member: Member) => void
   onBack: () => void
-  firebaseToken?: string
 }
 
 const ACCENT = '#6366f1'
@@ -53,11 +52,10 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props) {
+export function RegisterStep({ phone, onSuccess, onBack }: Props) {
   const [name, setName] = useState('')
   const [mpin, setMpin] = useState(['', '', '', ''])
   const [confirmMpin, setConfirmMpin] = useState(['', '', '', ''])
-  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -99,7 +97,7 @@ export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props)
     setError(null)
     try {
       const referralToken = localStorage.getItem('hj_pending_referral') ?? undefined
-      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar: '', mpin: pin, referral_token: referralToken, ...(email.trim() ? { email: email.trim() } : {}), ...(firebaseToken ? { firebase_token: firebaseToken } : {}) })
+      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar: '', mpin: pin, referral_token: referralToken })
       localStorage.removeItem('hj_pending_referral')
       onSuccess(token, member)
     } catch (e: unknown) {
@@ -153,23 +151,6 @@ export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props)
         onChange={makeDigitHandler(confirmMpin, setConfirmMpin, confirmRefs)}
         onKeyDown={makeKeyDownHandler(confirmMpin, confirmRefs)}
       />
-
-      <div style={{ marginTop: 18, padding: '14px', borderRadius: 10, background: '#f9f9f9', border: '1px solid #e4e4e7' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <FieldLabel>Recovery email</FieldLabel>
-          <span style={{ fontSize: 10, color: '#a1a1aa', fontWeight: 500 }}>(optional)</span>
-        </div>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7', fontSize: 14, outline: 'none', background: 'white', boxSizing: 'border-box', color: '#18181b' }}
-        />
-        <p style={{ fontSize: 11, color: '#a1a1aa', margin: '6px 0 0', lineHeight: 1.5 }}>
-          🔒 Used only to recover your account if you forget your PIN. We won't spam you.
-        </p>
-      </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginTop: 12 }}>{error}</p>}
 

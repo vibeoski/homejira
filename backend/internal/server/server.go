@@ -13,9 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/homejira/api/config"
-	"github.com/homejira/api/internal/firebase"
 	"github.com/homejira/api/internal/handler"
-	"github.com/homejira/api/internal/mailer"
 	"github.com/homejira/api/internal/middleware"
 	"github.com/homejira/api/internal/repository"
 	"github.com/homejira/api/internal/service"
@@ -39,21 +37,13 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	coinRepo := repository.NewCoinRepository(db)
 	referralRepo := repository.NewReferralRepository(db)
 
-	stubMailer := mailer.NewStubMailer()
-	verificationRepo := repository.NewVerificationRepository(db)
-
-	// Initialise Firebase client for phone OTP verification at registration.
-	// A missing or invalid credentials file is fatal — the app must not start
-	// without the ability to verify phone ownership.
-	firebaseClient, err := firebase.New(cfg.FirebaseCredentialsJSON, cfg.FirebaseCredentialsFile)
-	if err != nil {
-		log.Fatalf("firebase: failed to initialise client: %v", err)
-	}
+	featureFlagRepo := repository.NewFeatureFlagRepository(db)
+	featureFlagSvc := service.NewFeatureFlagService(featureFlagRepo)
 
 	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
-	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo, firebaseClient)
+	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, featureFlagSvc)
 	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
 	hub := sse.NewHub()
@@ -64,6 +54,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	householdH := handler.NewHouseholdHandler(householdSvc, hub)
 	eventH := handler.NewEventHandler(hub, authSvc, taskSvc)
 	coinH := handler.NewCoinHandler(coinSvc)
+	configH := handler.NewConfigHandler(featureFlagSvc)
 
 	// ── Router ────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -100,7 +91,6 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			r.Post("/check-phone", authH.CheckPhone)
 			r.Post("/login", authH.Login)
 			r.Post("/register", authH.Register)
-			r.Get("/email/verify", authH.VerifyEmail)
 		})
 
 		// SSE stream — auth via ?token= query param (EventSource can't set headers)
@@ -112,6 +102,9 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		// Public: resolve a referral token to the referrer's public profile
 		r.Get("/referral/{token}", coinH.GetReferrer)
 
+		// Public: app configuration (feature flags)
+		r.Get("/config", configH.GetConfig)
+
 		// Protected: all app routes require a valid JWT
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireAuth(authSvc))
@@ -119,15 +112,12 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			// Auth refresh — reissues JWT with current DB state
 			r.Post("/auth/refresh", authH.Refresh)
 			r.Patch("/auth/mpin", authH.ChangeMpin)
-			r.Post("/auth/email/send-verification", authH.SendEmailVerification)
-			r.Post("/auth/phone/verify", authH.VerifyPhone)
 
 			// Members
 			r.Route("/members", func(r chi.Router) {
 				r.Get("/", memberH.List)
 				r.Post("/", memberH.Create)
 				r.Patch("/me", memberH.UpdateMe)
-				r.Patch("/me/email", memberH.UpdateEmail)
 				r.Get("/me/coins", coinH.GetMyCoins)
 				r.Get("/me/referral-link", coinH.GetOrCreateReferralLink)
 				r.Get("/{id}", memberH.Get)
