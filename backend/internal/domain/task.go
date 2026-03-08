@@ -32,7 +32,7 @@ type Task struct {
 	Notes       string     `json:"notes"`
 	Category    Category   `json:"category"`
 	Priority    Priority   `json:"priority"`
-	AssigneeID  uuid.UUID  `json:"assignee_id"`
+	AssigneeID  *uuid.UUID `json:"assignee_id"`
 	HouseholdID uuid.UUID  `json:"household_id"`
 	Done        bool       `json:"done"`
 	DoneAt      *time.Time `json:"done_at,omitempty"`
@@ -41,7 +41,7 @@ type Task struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 
 	// Populated from joins
-	Assignee *Member   `json:"assignee,omitempty"`
+	Assignee *Member   `json:"assignee"`
 	Comments []Comment `json:"comments,omitempty"`
 }
 
@@ -62,7 +62,7 @@ type CreateTaskInput struct {
 	Notes       string     `json:"notes"`
 	Category    Category   `json:"category"`
 	Priority    Priority   `json:"priority"`
-	AssigneeID  uuid.UUID  `json:"assignee_id"`
+	AssigneeID  *uuid.UUID `json:"assignee_id"`
 	HouseholdID uuid.UUID  `json:"household_id"`
 	DueAt       *time.Time `json:"due_at,omitempty"`
 	ActorID     uuid.UUID  `json:"-"` // who triggered the action (not from client body)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { CATEGORIES, PRIORITIES, type Task, type Member, type UpdateTaskPayload, type Category, type Priority, type Activity } from '../../types'
 import { tasksApi } from '../../api/tasks'
@@ -62,6 +62,35 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
     }
   }
 
+  // Swipe-to-close gesture state
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  const startYRef = useRef(0)
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startYRef.current = e.touches[0].clientY
+    setIsDragging(true)
+    setDragY(0)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const delta = e.touches[0].clientY - startYRef.current
+    if (delta > 0) {
+      setDragY(delta)
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setIsDragging(false)
+    const endY = e.changedTouches[0].clientY
+    if (endY - startYRef.current > 80) {
+      onClose()
+    } else {
+      setDragY(0)
+    }
+  }
+
   // Merge comments + activities into a single chronological feed
   type FeedItem = { type: 'comment'; data: NonNullable<Task['comments']>[number]; ts: string }
               | { type: 'activity'; data: Activity; ts: string }
@@ -78,12 +107,21 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
       style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
     >
       <div
+        ref={sheetRef}
         className="slide-up"
-        style={{ background: '#f4f4f5', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 -4px 24px rgba(0,0,0,0.10)' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          background: '#f4f4f5', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0',
+          maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 -4px 24px rgba(0,0,0,0.10)',
+          transform: dragY > 0 ? `translateY(${dragY}px)` : '',
+          transition: isDragging ? 'none' : 'transform 0.2s',
+        }}
       >
         {/* Handle + close */}
         <div style={{ position: 'sticky', top: 0, background: '#f4f4f5', padding: '14px 16px 10px', zIndex: 1 }}>
-          <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '0 auto 14px' }} />
+          <div style={{ width: 40, height: 4, background: '#d4cfc8', borderRadius: 99, margin: '8px auto 8px' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 15 }}>{CATEGORIES[current.category].icon}</span>

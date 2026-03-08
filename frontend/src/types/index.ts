@@ -36,9 +36,9 @@ export const CATEGORIES: Record<Category, { label: string; icon: string; color: 
   repair: { label: 'Repair', icon: '🔧', color: '#ef4444' },
 }
 export const PRIORITIES: Record<Priority, { label: string; color: string }> = {
-  urgent: { label: 'Urgent', color: '#ef4444' },
-  high: { label: 'High', color: '#f97316' },
   normal: { label: 'Normal', color: '#6b7280' },
+  high: { label: 'High', color: '#f97316' },
+  urgent: { label: 'Urgent', color: '#ef4444' },
 }
 
 export type ActivityKind =

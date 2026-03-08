@@ -100,7 +100,14 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
 
       {/* Right: Avatar + priority dot */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-        {task.assignee && <Avatar member={task.assignee} size={26} />}
+        {task.assignee ? (
+          <Avatar member={task.assignee} size={26} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', backgroundColor: '#d4cfc8', flexShrink: 0 }} />
+            <span style={{ color: '#a8a29e', fontSize: 11, whiteSpace: 'nowrap' }}>Unassigned</span>
+          </div>
+        )}
         <span style={{
           width: 7, height: 7, borderRadius: '50%', display: 'block',
           background: PRIORITIES[task.priority].color,
