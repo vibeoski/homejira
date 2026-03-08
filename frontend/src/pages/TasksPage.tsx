@@ -69,10 +69,11 @@ export function TasksPage() {
                 style={{
                   marginLeft: i === 0 ? 0 : -8, zIndex: members.length - i,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 28, height: 28, borderRadius: '50%', fontSize: 13,
-                  background: m.color + '20', border: `2px solid ${m.color}`,
+                  width: 28, height: 28, borderRadius: '50%', fontSize: 11, fontWeight: 700,
+                  background: m.color, color: 'white', border: '2px solid white',
+                  fontFamily: 'system-ui, sans-serif',
                 }}
-              >{m.avatar}</span>
+              >{m.name?.charAt(0).toUpperCase() || '?'}</span>
             ))}
             {members.length > 4 && (
               <span style={{

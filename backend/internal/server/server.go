@@ -120,6 +120,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			r.Post("/auth/refresh", authH.Refresh)
 			r.Patch("/auth/mpin", authH.ChangeMpin)
 			r.Post("/auth/email/send-verification", authH.SendEmailVerification)
+			r.Post("/auth/phone/verify", authH.VerifyPhone)
 
 			// Members
 			r.Route("/members", func(r chi.Router) {
