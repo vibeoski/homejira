@@ -6,6 +6,7 @@ interface Props {
   phone: string
   onSuccess: (token: string, member: Member) => void
   onBack: () => void
+  firebaseToken?: string
 }
 
 const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
@@ -55,7 +56,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function RegisterStep({ phone, onSuccess, onBack }: Props) {
+export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props) {
   const [name, setName] = useState('')
   const [avatar, setAvatar] = useState('🧑')
   const [mpin, setMpin] = useState(['', '', '', ''])
@@ -102,7 +103,7 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
     setError(null)
     try {
       const referralToken = localStorage.getItem('hj_pending_referral') ?? undefined
-      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin, referral_token: referralToken, ...(email.trim() ? { email: email.trim() } : {}) })
+      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin, referral_token: referralToken, ...(email.trim() ? { email: email.trim() } : {}), ...(firebaseToken ? { firebase_token: firebaseToken } : {}) })
       localStorage.removeItem('hj_pending_referral')
       onSuccess(token, member)
     } catch (e: unknown) {

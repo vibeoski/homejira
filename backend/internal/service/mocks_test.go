@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -493,6 +494,17 @@ func (r *mockActivityRepo) FindByTask(taskID uuid.UUID) ([]domain.Activity, erro
 		}
 	}
 	return out, nil
+}
+
+// ── Firebase verifier mock ────────────────────────────────────────────────────
+
+type mockFirebaseVerifier struct {
+	phone string
+	err   error
+}
+
+func (m *mockFirebaseVerifier) VerifyIDToken(_ context.Context, _ string) (string, error) {
+	return m.phone, m.err
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

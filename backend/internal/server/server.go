@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/homejira/api/config"
+	"github.com/homejira/api/internal/firebase"
 	"github.com/homejira/api/internal/handler"
 	"github.com/homejira/api/internal/mailer"
 	"github.com/homejira/api/internal/middleware"
@@ -41,10 +42,18 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	stubMailer := mailer.NewStubMailer()
 	verificationRepo := repository.NewVerificationRepository(db)
 
+	// Initialise Firebase client for phone OTP verification at registration.
+	// A missing or invalid credentials file is fatal — the app must not start
+	// without the ability to verify phone ownership.
+	firebaseClient, err := firebase.New(cfg.FirebaseCredentialsJSON, cfg.FirebaseCredentialsFile)
+	if err != nil {
+		log.Fatalf("firebase: failed to initialise client: %v", err)
+	}
+
 	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
-	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo)
+	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo, firebaseClient)
 	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
 	hub := sse.NewHub()

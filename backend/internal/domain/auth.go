@@ -26,6 +26,7 @@ type RegisterInput struct {
 	Avatar        string
 	Mpin          string // raw 4-digit PIN; hashed inside AuthService
 	ReferralToken string // optional — if set, the referrer earns 10 coins
+	FirebaseToken string // optional Firebase ID token; when present, phone ownership is verified against it
 }
 
 // Claims holds the data embedded in a JWT token.

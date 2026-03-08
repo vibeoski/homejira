@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -12,24 +13,33 @@ import (
 	"github.com/homejira/api/internal/domain"
 )
 
-// AuthService handles phone+mPIN authentication and JWT issuance.
-type AuthService struct {
-	members       domain.MemberRepository
-	coins         *CoinService
-	jwtSecret     []byte
-	jwtTTL        time.Duration
-	mailer        domain.Mailer
-	verifications domain.VerificationRepository
+// FirebaseVerifier verifies a Firebase ID token and returns the phone number
+// embedded in the token's phone_number claim. A nil implementation is accepted
+// by AuthService (useful in tests where Firebase is not available).
+type FirebaseVerifier interface {
+	VerifyIDToken(ctx context.Context, idToken string) (phone string, err error)
 }
 
-func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository) *AuthService {
+// AuthService handles phone+mPIN authentication and JWT issuance.
+type AuthService struct {
+	members        domain.MemberRepository
+	coins          *CoinService
+	jwtSecret      []byte
+	jwtTTL         time.Duration
+	mailer         domain.Mailer
+	verifications  domain.VerificationRepository
+	firebaseClient FirebaseVerifier // may be nil (skips Firebase verification)
+}
+
+func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository, firebaseClient FirebaseVerifier) *AuthService {
 	return &AuthService{
-		members:       members,
-		coins:         coins,
-		jwtSecret:     []byte(jwtSecret),
-		jwtTTL:        7 * 24 * time.Hour,
-		mailer:        mailer,
-		verifications: verifications,
+		members:        members,
+		coins:          coins,
+		jwtSecret:      []byte(jwtSecret),
+		jwtTTL:         7 * 24 * time.Hour,
+		mailer:         mailer,
+		verifications:  verifications,
+		firebaseClient: firebaseClient,
 	}
 }
 
@@ -58,6 +68,17 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 
 // Register creates a new member with phone+mPIN credentials and returns a JWT.
 func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Member, error) {
+	// Verify Firebase ID token when provided — ensures the caller actually owns the phone number.
+	if input.FirebaseToken != "" && s.firebaseClient != nil {
+		verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), input.FirebaseToken)
+		if err != nil {
+			return "", nil, fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
+		}
+		if verifiedPhone != input.Phone {
+			return "", nil, fmt.Errorf("%w: firebase token phone does not match", domain.ErrUnauthorized)
+		}
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Mpin), bcrypt.DefaultCost)
 	if err != nil {
 		return "", nil, fmt.Errorf("hash mPIN: %w", err)
