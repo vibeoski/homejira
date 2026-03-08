@@ -38,6 +38,8 @@ export function HouseholdPanel() {
 
   const [copied, setCopied] = useState(false)
   const [sharingLink, setSharingLink] = useState(false)
+  const [shareSheet, setShareSheet] = useState<{ url: string; text: string } | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
 
   const [waitingRequest, setWaitingRequest] = useState<{ id: string; householdName: string } | null>(null)
   const [cancelBusy, setCancelBusy] = useState(false)
@@ -263,19 +265,36 @@ export function HouseholdPanel() {
     try {
       const { token } = await householdsApi.createInviteLink()
       const url = `https://homejira.app/join/${token}`
-      const shareTitle = `Join ${household?.name ?? 'our household'} on HomeJira`
-      const shareText = `Join ${household?.name ?? 'our household'} on HomeJira 🏠 — the easiest way to manage your household tasks together.`
-      if (navigator.share) {
-        await navigator.share({ title: shareTitle, text: shareText, url })
-      } else {
-        await navigator.clipboard.writeText(`${shareText} Tap to join: ${url}`)
-        setMessage('Invite link copied to clipboard!')
-        setTimeout(() => setMessage(null), 3000)
-      }
+      const text = `Join ${household?.name ?? 'our household'} on HomeJira 🏠 — manage household tasks together. Tap to join:`
+      setShareSheet({ url, text })
     } catch {
-      // user cancelled share or clipboard failed — no-op
+      // no-op
     } finally {
       setSharingLink(false)
+    }
+  }
+
+  const handleShareCopy = async () => {
+    if (!shareSheet) return
+    try {
+      await navigator.clipboard.writeText(`${shareSheet.text} ${shareSheet.url}`)
+    } catch {
+      // fallback: select text manually
+    }
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2000)
+  }
+
+  const handleNativeShare = async () => {
+    if (!shareSheet) return
+    try {
+      await navigator.share({
+        title: `Join ${household?.name ?? 'our household'} on HomeJira`,
+        text: shareSheet.text,
+        url: shareSheet.url,
+      })
+    } catch {
+      // user cancelled
     }
   }
 
@@ -575,6 +594,92 @@ export function HouseholdPanel() {
               onClick={openLeave}
               style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1px solid #fecaca', background: 'white', color: '#ef4444', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             >Leave household</button>
+          </div>
+        </div>
+      )}
+
+      {/* Share sheet */}
+      {shareSheet && (
+        <div
+          className="fade-in"
+          onClick={() => setShareSheet(null)}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div
+            className="slide-up"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+          >
+            <div style={{ width: 36, height: 3, background: '#e4e4e7', borderRadius: 99, margin: '14px auto 20px' }} />
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b', marginBottom: 4 }}>Invite to {household?.name}</p>
+            <p style={{ fontSize: 12, color: '#a1a1aa', marginBottom: 20, lineHeight: 1.5 }}>
+              Share this link and they'll land directly in your household.
+            </p>
+
+            {/* Link preview */}
+            <div style={{ background: '#f4f4f5', borderRadius: 8, padding: '10px 12px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ flex: 1, fontSize: 12, color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {shareSheet.url}
+              </span>
+              <button
+                type="button"
+                onClick={handleShareCopy}
+                style={{ border: 'none', background: shareCopied ? '#f0fdf4' : 'white', color: shareCopied ? '#15803d' : ACCENT, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+              >{shareCopied ? 'Copied!' : 'Copy'}</button>
+            </div>
+
+            {/* Platform buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(shareSheet.text + ' ' + shareSheet.url)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '13px 16px', borderRadius: 12, textDecoration: 'none',
+                  background: '#25D366', color: 'white',
+                }}
+              >
+                {/* WhatsApp icon */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>Share on WhatsApp</span>
+              </a>
+
+              <a
+                href={`sms:?body=${encodeURIComponent(shareSheet.text + ' ' + shareSheet.url)}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '13px 16px', borderRadius: 12, textDecoration: 'none',
+                  background: '#18181b', color: 'white',
+                }}
+              >
+                {/* Message bubble icon */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>Send via iMessage / SMS</span>
+              </a>
+
+              {typeof navigator.share === 'function' && (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '13px 16px', borderRadius: 12,
+                    border: '1px solid #e4e4e7', background: 'white', color: '#18181b', cursor: 'pointer',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>More options…</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
