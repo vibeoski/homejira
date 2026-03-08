@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { CATEGORIES, PRIORITIES, type Category, type Priority, type Member, type CreateTaskPayload } from '../../types'
 import { useStore } from '../../store'
 import { useAuthStore } from '../../store/authStore'
-import { GUEST_MEMBER } from '../../store/guest'
 
 interface Props {
   members: Member[]
@@ -72,9 +71,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function AddTaskSheet({ members, onClose, onAdded }: Props) {
   const { createTask } = useStore()
-  const { member, isGuest } = useAuthStore()
+  const { member } = useAuthStore()
 
-  const defaultAssignee = isGuest ? GUEST_MEMBER.id : (members[0]?.id ?? '')
+  const defaultAssignee = members[0]?.id ?? ''
   const initialCategory: Category = 'grocery'
 
   const [form, setForm] = useState<CreateTaskPayload>({
@@ -185,21 +184,17 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           }}
         />
 
-        {!isGuest && (
-          <>
-            <SectionLabel>Assign to</SectionLabel>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-              {members.map((m) => (
-                <button key={m.id} onClick={() => set('assignee_id', m.id)} style={{
-                  padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
-                  borderColor: form.assignee_id === m.id ? m.color : '#e4e4e7',
-                  background: form.assignee_id === m.id ? m.color + '14' : 'white',
-                  color: form.assignee_id === m.id ? m.color : '#71717a',
-                }}>{m.avatar} {m.name}</button>
-              ))}
-            </div>
-          </>
-        )}
+        <SectionLabel>Assign to</SectionLabel>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+          {members.map((m) => (
+            <button key={m.id} onClick={() => set('assignee_id', m.id)} style={{
+              padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+              borderColor: form.assignee_id === m.id ? m.color : '#e4e4e7',
+              background: form.assignee_id === m.id ? m.color + '14' : 'white',
+              color: form.assignee_id === m.id ? m.color : '#71717a',
+            }}>{m.avatar} {m.name}</button>
+          ))}
+        </div>
 
         <button
           onClick={submit}

@@ -138,6 +138,55 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, envelope{"token": token, "member": member})
 }
 
+// POST /auth/email/send-verification
+// Body:     { "email": "user@example.com", "app_base_url": "https://homejira.app" }
+// Response: 204 No Content
+func (h *AuthHandler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+
+	var body struct {
+		Email      string `json:"email"`
+		AppBaseURL string `json:"app_base_url"`
+	}
+	if err := decode(r, &body); err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
+		return
+	}
+	if body.Email == "" {
+		respond(w, http.StatusBadRequest, envelope{"error": "email is required"})
+		return
+	}
+
+	if err := h.svc.SendEmailVerification(memberID, body.Email, body.AppBaseURL); err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusNoContent, nil)
+}
+
+// GET /auth/email/verify?token=xxx  (public route)
+func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		respond(w, http.StatusBadRequest, envelope{"error": "token is required"})
+		return
+	}
+	if err := h.svc.VerifyEmail(token); err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusOK, envelope{"verified": true})
+}
+
 // POST /auth/register
 // Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "referral_token": "optional" }
 // Response: { "token": "...", "member": {...} }

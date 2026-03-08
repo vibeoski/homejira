@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,18 +14,22 @@ import (
 
 // AuthService handles phone+mPIN authentication and JWT issuance.
 type AuthService struct {
-	members   domain.MemberRepository
-	coins     *CoinService
-	jwtSecret []byte
-	jwtTTL    time.Duration
+	members       domain.MemberRepository
+	coins         *CoinService
+	jwtSecret     []byte
+	jwtTTL        time.Duration
+	mailer        domain.Mailer
+	verifications domain.VerificationRepository
 }
 
-func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string) *AuthService {
+func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository) *AuthService {
 	return &AuthService{
-		members:   members,
-		coins:     coins,
-		jwtSecret: []byte(jwtSecret),
-		jwtTTL:    7 * 24 * time.Hour,
+		members:       members,
+		coins:         coins,
+		jwtSecret:     []byte(jwtSecret),
+		jwtTTL:        7 * 24 * time.Hour,
+		mailer:        mailer,
+		verifications: verifications,
 	}
 }
 
@@ -46,6 +51,8 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 	if err != nil {
 		return "", nil, err
 	}
+	// Mark phone verified on successful login — non-fatal
+	_ = s.members.SetPhoneVerified(m.ID)
 	return token, m, nil
 }
 
@@ -168,6 +175,53 @@ func (s *AuthService) ChangeMpin(memberID uuid.UUID, currentMpin, newMpin string
 		return fmt.Errorf("hash mPIN: %w", err)
 	}
 	return s.members.UpdateMpin(memberID, string(hash))
+}
+
+// SendEmailVerification stores the email and sends a verification link.
+func (s *AuthService) SendEmailVerification(memberID uuid.UUID, email, appBaseURL string) error {
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		return fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
+	}
+	member, err := s.members.UpdateEmail(memberID, email)
+	if err != nil {
+		return err
+	}
+	token := fmt.Sprintf("%s-%s", uuid.New().String(), uuid.New().String())
+	_, err = s.verifications.CreateEmailToken(memberID, token, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return err
+	}
+	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", appBaseURL, token)
+	return s.mailer.SendEmailVerification(email, member.Name, verifyURL)
+}
+
+// VerifyEmail marks the member's email as verified using the given token.
+func (s *AuthService) VerifyEmail(token string) error {
+	v, err := s.verifications.FindEmailToken(token)
+	if err != nil {
+		return err
+	}
+	if v.Used {
+		return fmt.Errorf("%w: token already used", domain.ErrInvalidInput)
+	}
+	if time.Now().After(v.ExpiresAt) {
+		return fmt.Errorf("%w: token has expired", domain.ErrInvalidInput)
+	}
+	if err := s.members.SetEmailVerified(v.MemberID); err != nil {
+		return err
+	}
+	return s.verifications.MarkEmailTokenUsed(v.ID)
+}
+
+// UpdateEmail updates the member's email and sends a verification link.
+func (s *AuthService) UpdateEmail(memberID uuid.UUID, email, appBaseURL string) (*domain.Member, error) {
+	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+		return nil, fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
+	}
+	if err := s.SendEmailVerification(memberID, email, appBaseURL); err != nil {
+		return nil, err
+	}
+	return s.members.FindByID(memberID)
 }
 
 func (s *AuthService) issueToken(m *domain.Member) (string, error) {

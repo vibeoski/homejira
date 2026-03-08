@@ -10,7 +10,7 @@ import (
 )
 
 func newAuthSvc(members *mockMemberRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!")
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{})
 }
 
 // ── CheckPhone ────────────────────────────────────────────────────────────────
@@ -232,6 +232,103 @@ func TestAuthService_ChangeMpin_InvalidLength(t *testing.T) {
 	svc := newAuthSvc(repo)
 
 	err := svc.ChangeMpin(m.ID, "1234", "12")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput, got %v", err)
+	}
+}
+
+// ── SendEmailVerification ─────────────────────────────────────────────────────
+
+func TestAuthService_SendEmailVerification_Success(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1000000001", MpinHash: mustHashMpin("1234"), Name: "Jay"}
+	repo.seed(m)
+	svc := newAuthSvc(repo)
+
+	if err := svc.SendEmailVerification(m.ID, "jay@example.com", "http://localhost:3000"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// email should be stored on the member
+	got, _ := repo.FindByID(m.ID)
+	if got.Email != "jay@example.com" {
+		t.Errorf("email not stored, got %q", got.Email)
+	}
+}
+
+func TestAuthService_SendEmailVerification_InvalidEmail(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1000000002", MpinHash: mustHashMpin("1234"), Name: "Kay"}
+	repo.seed(m)
+	svc := newAuthSvc(repo)
+
+	err := svc.SendEmailVerification(m.ID, "not-an-email", "http://localhost:3000")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput, got %v", err)
+	}
+}
+
+// ── VerifyEmail ───────────────────────────────────────────────────────────────
+
+func newAuthSvcWithVerification(members *mockMemberRepo, verifications *recordingVerificationRepo) *AuthService {
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications)
+}
+
+func TestAuthService_VerifyEmail_Success(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1000000003", MpinHash: mustHashMpin("1234"), Name: "Lee"}
+	repo.seed(m)
+
+	vRepo := newRecordingVerificationRepo()
+	svc := newAuthSvcWithVerification(repo, vRepo)
+
+	// First send a verification (records the token in vRepo)
+	if err := svc.SendEmailVerification(m.ID, "lee@example.com", "http://localhost:3000"); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+
+	token := vRepo.lastToken
+	if err := svc.VerifyEmail(token); err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+
+	got, _ := repo.FindByID(m.ID)
+	if !got.EmailVerified {
+		t.Error("expected EmailVerified=true")
+	}
+}
+
+func TestAuthService_VerifyEmail_NotFound(t *testing.T) {
+	svc := newAuthSvc(newMockMemberRepo())
+	err := svc.VerifyEmail("nonexistent-token")
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("want ErrNotFound, got %v", err)
+	}
+}
+
+// ── UpdateEmail ───────────────────────────────────────────────────────────────
+
+func TestAuthService_UpdateEmail_Success(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1000000004", MpinHash: mustHashMpin("1234"), Name: "Max"}
+	repo.seed(m)
+	svc := newAuthSvc(repo)
+
+	got, err := svc.UpdateEmail(m.ID, "max@example.com", "http://localhost:3000")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Email != "max@example.com" {
+		t.Errorf("email not updated, got %q", got.Email)
+	}
+}
+
+func TestAuthService_UpdateEmail_InvalidEmail(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1000000005", MpinHash: mustHashMpin("1234"), Name: "Nan"}
+	repo.seed(m)
+	svc := newAuthSvc(repo)
+
+	_, err := svc.UpdateEmail(m.ID, "bad", "http://localhost:3000")
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
 	}

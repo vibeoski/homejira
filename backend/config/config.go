@@ -11,6 +11,7 @@ type Config struct {
 	Env         string
 	CORSOrigins string
 	JWTSecret   string
+	AppBaseURL  string // APP_BASE_URL env var
 }
 
 func Load() Config {
@@ -20,6 +21,7 @@ func Load() Config {
 		Env:         getEnv("ENV", "development"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "http://localhost:3000"),
 		JWTSecret:   getEnv("JWT_SECRET", "CHANGE_ME_IN_PRODUCTION_32_CHARS!"),
+		AppBaseURL:  getEnv("APP_BASE_URL", "http://localhost:3000"),
 	}
 	log.Printf("Config loaded: env=%s port=%s", cfg.Env, cfg.Port)
 	return cfg
