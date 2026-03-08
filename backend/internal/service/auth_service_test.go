@@ -10,7 +10,7 @@ import (
 )
 
 func newAuthSvc(members *mockMemberRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{})
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, nil)
 }
 
 // ── CheckPhone ────────────────────────────────────────────────────────────────
@@ -270,7 +270,7 @@ func TestAuthService_SendEmailVerification_InvalidEmail(t *testing.T) {
 // ── VerifyEmail ───────────────────────────────────────────────────────────────
 
 func newAuthSvcWithVerification(members *mockMemberRepo, verifications *recordingVerificationRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications, nil)
 }
 
 func TestAuthService_VerifyEmail_Success(t *testing.T) {

@@ -188,7 +188,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/register
-// Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "referral_token": "optional" }
+// Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "firebase_token": "...", "referral_token": "optional" }
 // Response: { "token": "...", "member": {...} }
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -196,6 +196,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Name          string `json:"name"`
 		Avatar        string `json:"avatar"`
 		Mpin          string `json:"mpin"`
+		FirebaseToken string `json:"firebase_token"`
 		ReferralToken string `json:"referral_token"`
 	}
 	if err := decode(r, &body); err != nil {
@@ -212,6 +213,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Name:          body.Name,
 		Avatar:        body.Avatar,
 		Mpin:          body.Mpin,
+		FirebaseToken: body.FirebaseToken,
 		ReferralToken: body.ReferralToken,
 	})
 	if errors.Is(err, domain.ErrAlreadyExists) {
