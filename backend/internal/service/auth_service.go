@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,35 +11,22 @@ import (
 	"github.com/homejira/api/internal/domain"
 )
 
-// FirebaseVerifier verifies a Firebase ID token and returns the phone number
-// embedded in the token's phone_number claim. A nil implementation is accepted
-// by AuthService (useful in tests where Firebase is not available).
-type FirebaseVerifier interface {
-	VerifyIDToken(ctx context.Context, idToken string) (phone string, err error)
-}
-
 // AuthService handles phone+mPIN authentication and JWT issuance.
 type AuthService struct {
-	members        domain.MemberRepository
-	coins          *CoinService
-	jwtSecret      []byte
-	jwtTTL         time.Duration
-	mailer         domain.Mailer
-	verifications  domain.VerificationRepository
-	firebaseClient FirebaseVerifier // may be nil (skips Firebase verification)
-	flags          *FeatureFlagService // may be nil (skips flag checks)
+	members   domain.MemberRepository
+	coins     *CoinService
+	jwtSecret []byte
+	jwtTTL    time.Duration
+	flags     *FeatureFlagService // may be nil (skips flag checks)
 }
 
-func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository, firebaseClient FirebaseVerifier, flags *FeatureFlagService) *AuthService {
+func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, flags *FeatureFlagService) *AuthService {
 	return &AuthService{
-		members:        members,
-		coins:          coins,
-		jwtSecret:      []byte(jwtSecret),
-		jwtTTL:         7 * 24 * time.Hour,
-		mailer:         mailer,
-		verifications:  verifications,
-		firebaseClient: firebaseClient,
-		flags:          flags,
+		members:   members,
+		coins:     coins,
+		jwtSecret: []byte(jwtSecret),
+		jwtTTL:    7 * 24 * time.Hour,
+		flags:     flags,
 	}
 }
 
@@ -63,25 +48,11 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 	if err != nil {
 		return "", nil, err
 	}
-	// Mark phone verified on successful login — non-fatal
-	_ = s.members.SetPhoneVerified(m.ID)
 	return token, m, nil
 }
 
-
 // Register creates a new member with phone+mPIN credentials and returns a JWT.
 func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Member, error) {
-	// Verify Firebase ID token when provided — ensures the caller actually owns the phone number.
-	if input.FirebaseToken != "" && s.firebaseClient != nil {
-		verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), input.FirebaseToken)
-		if err != nil {
-			return "", nil, fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
-		}
-		if verifiedPhone != input.Phone {
-			return "", nil, fmt.Errorf("%w: firebase token phone does not match", domain.ErrUnauthorized)
-		}
-	}
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Mpin), bcrypt.DefaultCost)
 	if err != nil {
 		return "", nil, fmt.Errorf("hash mPIN: %w", err)
@@ -199,78 +170,6 @@ func (s *AuthService) ChangeMpin(memberID uuid.UUID, currentMpin, newMpin string
 		return fmt.Errorf("hash mPIN: %w", err)
 	}
 	return s.members.UpdateMpin(memberID, string(hash))
-}
-
-// SendEmailVerification stores the email and sends a verification link.
-func (s *AuthService) SendEmailVerification(memberID uuid.UUID, email, appBaseURL string) error {
-	if s.flags != nil && !s.flags.IsEnabled("email_verification") {
-		return fmt.Errorf("%w: email verification is not enabled", domain.ErrInvalidInput)
-	}
-	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
-		return fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
-	}
-	member, err := s.members.UpdateEmail(memberID, email)
-	if err != nil {
-		return err
-	}
-	token := fmt.Sprintf("%s-%s", uuid.New().String(), uuid.New().String())
-	_, err = s.verifications.CreateEmailToken(memberID, token, time.Now().Add(24*time.Hour))
-	if err != nil {
-		return err
-	}
-	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", appBaseURL, token)
-	return s.mailer.SendEmailVerification(email, member.Name, verifyURL)
-}
-
-// VerifyEmail marks the member's email as verified using the given token.
-func (s *AuthService) VerifyEmail(token string) error {
-	v, err := s.verifications.FindEmailToken(token)
-	if err != nil {
-		return err
-	}
-	if v.Used {
-		return fmt.Errorf("%w: token already used", domain.ErrInvalidInput)
-	}
-	if time.Now().After(v.ExpiresAt) {
-		return fmt.Errorf("%w: token has expired", domain.ErrInvalidInput)
-	}
-	if err := s.members.SetEmailVerified(v.MemberID); err != nil {
-		return err
-	}
-	return s.verifications.MarkEmailTokenUsed(v.ID)
-}
-
-// UpdateEmail updates the member's email and sends a verification link.
-func (s *AuthService) UpdateEmail(memberID uuid.UUID, email, appBaseURL string) (*domain.Member, error) {
-	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
-		return nil, fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
-	}
-	if err := s.SendEmailVerification(memberID, email, appBaseURL); err != nil {
-		return nil, err
-	}
-	return s.members.FindByID(memberID)
-}
-
-// VerifyPhone verifies phone ownership via Firebase ID token for an already-authenticated member.
-// The token's phone_number claim must match the member's own phone.
-// Returns ErrInvalidInput if the phone_verification feature flag is disabled.
-func (s *AuthService) VerifyPhone(memberID uuid.UUID, phone, firebaseToken string) (*domain.Member, error) {
-	if s.flags != nil && !s.flags.IsEnabled("phone_verification") {
-		return nil, fmt.Errorf("%w: phone verification is not enabled", domain.ErrInvalidInput)
-	}
-	if s.firebaseClient != nil {
-		verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), firebaseToken)
-		if err != nil {
-			return nil, fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
-		}
-		if verifiedPhone != phone {
-			return nil, fmt.Errorf("%w: token phone does not match account phone", domain.ErrUnauthorized)
-		}
-	}
-	if err := s.members.SetPhoneVerified(memberID); err != nil {
-		return nil, err
-	}
-	return s.members.FindByID(memberID)
 }
 
 func (s *AuthService) issueToken(m *domain.Member) (string, error) {

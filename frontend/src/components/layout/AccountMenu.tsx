@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
-import { useConfigStore, isFeatureEnabled } from '../../store/configStore'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
@@ -34,15 +33,8 @@ export function AccountMenu() {
 
   const [coinInfo, setCoinInfo] = useState<CoinInfo | null>(null)
 
-  const [editEmail, setEditEmail] = useState('')
-  const [emailSending, setEmailSending] = useState(false)
-  const [emailMessage, setEmailMessage] = useState<string | null>(null)
-
   const navigate = useNavigate()
   const { member, clearAuth, updateMember } = useAuthStore()
-  const { flags } = useConfigStore()
-  const phoneVerificationEnabled = isFeatureEnabled(flags, 'phone_verification')
-  const emailVerificationEnabled = isFeatureEnabled(flags, 'email_verification')
 
   useEffect(() => {
     if (member) {
@@ -56,40 +48,7 @@ export function AccountMenu() {
     setEditName(member.name)
     setEditAvatar(member.avatar)
     setEditColor(member.color)
-    setEditEmail('')
-    setEmailMessage(null)
     setSheet('profile')
-  }
-
-  const handleAddEmail = async () => {
-    if (!editEmail.trim()) return
-    setEmailSending(true)
-    try {
-      const updated = await membersApi.updateMe({ name: member!.name, avatar: member!.avatar, color: member!.color, email: editEmail.trim() })
-      updateMember(updated)
-      await authApi.sendEmailVerification(editEmail.trim())
-      setEmailMessage('Verification email sent! Check your inbox.')
-      setEditEmail('')
-      setTimeout(() => setEmailMessage(null), 5000)
-    } catch {
-      setEmailMessage('Could not add email. Please try again.')
-    } finally {
-      setEmailSending(false)
-    }
-  }
-
-  const handleResendVerification = async () => {
-    if (!member?.email) return
-    setEmailSending(true)
-    try {
-      await authApi.sendEmailVerification(member.email)
-      setEmailMessage('Verification email resent!')
-      setTimeout(() => setEmailMessage(null), 3000)
-    } catch {
-      // no-op
-    } finally {
-      setEmailSending(false)
-    }
   }
 
   const openPin = () => {
@@ -267,85 +226,6 @@ export function AccountMenu() {
                   fontSize: 14, outline: 'none', background: '#f9f9f9', boxSizing: 'border-box', marginBottom: 20, color: '#18181b',
                 }}
               />
-
-              {/* Verification status */}
-              <div style={{ marginBottom: 20 }}>
-                <FieldLabel>Account security</FieldLabel>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-                  {/* Phone verified status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: '#f9f9f9', border: '1px solid #e4e4e7' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
-                      </svg>
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>Phone number</p>
-                        <p style={{ fontSize: 11, color: '#a1a1aa', margin: '1px 0 0' }}>{member?.phone}</p>
-                      </div>
-                    </div>
-                    {member?.phone_verified ? (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
-                    ) : phoneVerificationEnabled ? (
-                      <button type="button" onClick={() => { closeSheet(); navigate('/auth') }}
-                        style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: 'none', padding: '3px 8px', borderRadius: 999, cursor: 'pointer' }}>
-                        Verify now
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', background: '#f4f4f5', padding: '3px 8px', borderRadius: 999 }}>Unverified</span>
-                    )}
-                  </div>
-
-                  {/* Email row */}
-                  <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f9f9f9', border: '1px solid #e4e4e7' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: member?.email ? 6 : 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                          <polyline points="22,6 12,13 2,6" />
-                        </svg>
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>Recovery email</p>
-                          {member?.email && <p style={{ fontSize: 11, color: '#a1a1aa', margin: '1px 0 0' }}>{member.email}</p>}
-                        </div>
-                      </div>
-                      {member?.email ? (
-                        member?.email_verified ? (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
-                        ) : emailVerificationEnabled ? (
-                          <button type="button" onClick={handleResendVerification} disabled={emailSending}
-                            style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: 'none', padding: '3px 8px', borderRadius: 999, cursor: 'pointer' }}>
-                            {emailSending ? 'Sending…' : 'Resend'}
-                          </button>
-                        ) : null
-                      ) : null}
-                    </div>
-                    {!member?.email && emailVerificationEnabled && (
-                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                        <input
-                          type="email"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          placeholder="Add recovery email"
-                          style={{ flex: 1, padding: '8px 10px', borderRadius: 7, border: '1px solid #e4e4e7', fontSize: 13, outline: 'none', background: 'white', color: '#18181b' }}
-                        />
-                        <button type="button" onClick={handleAddEmail} disabled={!editEmail.trim() || emailSending}
-                          style={{ padding: '0 12px', borderRadius: 7, border: 'none', background: !editEmail.trim() || emailSending ? '#e4e4e7' : '#6366f1', color: !editEmail.trim() || emailSending ? '#a1a1aa' : 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                          {emailSending ? '…' : 'Add'}
-                        </button>
-                      </div>
-                    )}
-                    {!member?.email && emailVerificationEnabled && (
-                      <p style={{ fontSize: 11, color: '#a1a1aa', margin: '6px 0 0', lineHeight: 1.5 }}>
-                        🔒 Used only to recover your account if you forget your PIN.
-                      </p>
-                    )}
-                    {emailMessage && (
-                      <p style={{ fontSize: 11, color: '#15803d', margin: '6px 0 0' }}>{emailMessage}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={closeSheet} style={{
