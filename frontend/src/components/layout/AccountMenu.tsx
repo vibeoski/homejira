@@ -34,14 +34,14 @@ export function AccountMenu() {
   const [coinInfo, setCoinInfo] = useState<CoinInfo | null>(null)
 
   const navigate = useNavigate()
-  const { member, isGuest, clearAuth, clearGuest, updateMember } = useAuthStore()
+  const { member, clearAuth, updateMember } = useAuthStore()
 
   useEffect(() => {
-    if (!isGuest && member) {
+    if (member) {
       coinsApi.getMyCoins().then(setCoinInfo).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [member?.id, isGuest])
+  }, [member?.id])
 
   const openProfile = () => {
     if (!member) return
@@ -87,7 +87,6 @@ export function AccountMenu() {
   }
 
   const handleSignOut = () => { setOpen(false); clearAuth(); navigate('/auth') }
-  const handleSignIn = () => { setOpen(false); clearGuest(); navigate('/auth') }
 
   return (
     <>
@@ -104,7 +103,7 @@ export function AccountMenu() {
           outline: 'none',
         }}
       >
-        {isGuest ? '👤' : (member?.avatar ?? '👤')}
+        {member?.avatar ?? '👤'}
       </button>
 
       {/* Main sheet */}
@@ -129,21 +128,20 @@ export function AccountMenu() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 22, flexShrink: 0,
               }}>
-                {isGuest ? '👤' : (member?.avatar ?? '👤')}
+                {member?.avatar ?? '👤'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#18181b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {isGuest ? 'Guest' : (member?.name ?? '')}
+                  {member?.name ?? ''}
                 </p>
-                {!isGuest && member?.phone && (
+                {member?.phone && (
                   <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>{member.phone}</p>
                 )}
-                {isGuest && <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>Browsing as guest</p>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                  {!isGuest && member?.role === 'admin' && (
+                  {member?.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>Admin</span>
                   )}
-                  {!isGuest && coinInfo != null && (
+                  {coinInfo != null && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setOpen(false); setSheet('coins') }}
@@ -157,17 +155,13 @@ export function AccountMenu() {
             <div style={{ height: 1, background: '#f4f4f5' }} />
 
             <div style={{ padding: '6px 0' }}>
-              {isGuest ? (
-                <MenuItem label="Sign in" onClick={handleSignIn} accent />
-              ) : (
-                <>
-                  <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
-                  <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
-                  <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
-                  <div style={{ height: 1, background: '#f4f4f5', margin: '4px 0' }} />
-                  <MenuItem label="Sign out" onClick={handleSignOut} danger />
-                </>
-              )}
+              <>
+                <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
+                <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
+                <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
+                <div style={{ height: 1, background: '#f4f4f5', margin: '4px 0' }} />
+                <MenuItem label="Sign out" onClick={handleSignOut} danger />
+              </>
             </div>
           </div>
         </div>

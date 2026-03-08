@@ -16,7 +16,7 @@ type LeaveStep = 'confirm' | 'last_admin_choice' | 'pick_admin' | 'confirm_delet
 let _cache: { household: HouseholdData; requests: RequestsData } | null = null
 
 export function HouseholdPanel() {
-  const { isGuest, member, updateMember, setAuth, clearAuth } = useAuthStore()
+  const { member, updateMember, setAuth, clearAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, members, sseVersion } = useStore()
   const navigate = useNavigate()
 
@@ -54,7 +54,7 @@ export function HouseholdPanel() {
   const hasHousehold = !!member?.household_id
 
   useEffect(() => {
-    if (isGuest || !member) return
+    if (!member) return
 
     householdsApi.getMine().then(async ({ household: h }) => {
       const hh = h ?? null
@@ -85,13 +85,13 @@ export function HouseholdPanel() {
       }).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGuest, member?.id])
+  }, [member?.id])
 
   // Refresh join requests whenever the SSE fires a household update
   useEffect(() => {
-    if (isGuest || !member || member.role !== 'admin') return
+    if (!member || member.role !== 'admin') return
     householdsApi.listRequests().then(({ requests }) => setRequests(requests)).catch(() => {})
-  }, [isGuest, member, sseVersion])
+  }, [member, sseVersion])
 
   // When SSE fires (triggered by approve/reject on the member channel), check request status
   useEffect(() => {
@@ -115,7 +115,7 @@ export function HouseholdPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sseVersion])
 
-  if (isGuest || !member) return null
+  if (!member) return null
 
   const handleCancelRequest = async () => {
     if (!waitingRequest) return

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { tasksApi } from '../api/tasks'
 import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
-import { loadGuestTasks, saveGuestTasks } from '../store/guest'
 import { Spinner } from '../components/ui/Spinner'
 import type { Task } from '../types'
 
@@ -12,7 +11,7 @@ const ACCENT = '#6366f1'
 let _cache: { active: Task[]; done: Task[] } | null = null
 
 export function GroceryPage() {
-  const { isGuest, member } = useAuthStore()
+  const { member } = useAuthStore()
   const { sseVersion } = useStore()
 
   const [active, setActive] = useState<Task[]>(_cache?.active ?? [])
@@ -27,16 +26,7 @@ export function GroceryPage() {
   const [adding, setAdding] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // ── Data fetching ─────────────────────────────────────────────
   const load = async () => {
-    if (isGuest) {
-      const all = loadGuestTasks().filter((t) => t.category === 'grocery')
-      const a = all.filter((t) => !t.done).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      const d = all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-      _cache = { active: a, done: d }
-      setActive(a); setDone(d); setLoading(false)
-      return
-    }
     try {
       const all = await tasksApi.list({ category: 'grocery' })
       const a = all.filter((t) => !t.done)
@@ -48,32 +38,19 @@ export function GroceryPage() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load() }, [isGuest])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (sseVersion > 0) load() }, [sseVersion])
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (sseVersion > 0) load() }, [sseVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Quick add ────────────────────────────────────────────────
   const handleAdd = async () => {
     const title = newTitle.trim()
     if (!title) return
     setAdding(true)
     try {
-      if (isGuest) {
-        const now = new Date().toISOString()
-        const task: Task = {
-          id: crypto.randomUUID(), title, notes: '', category: 'grocery', priority: 'normal',
-          assignee_id: '', done: false, created_at: now, updated_at: now, comments: [],
-        }
-        saveGuestTasks([...loadGuestTasks(), task])
-        setActive((prev) => [task, ...prev])
-      } else {
-        const task = await tasksApi.create({
-          title, notes: '', category: 'grocery', priority: 'normal',
-          assignee_id: member?.id ?? '', household_id: member?.household_id ?? '',
-        })
-        setActive((prev) => [task, ...prev])
-      }
+      const task = await tasksApi.create({
+        title, notes: '', category: 'grocery', priority: 'normal',
+        assignee_id: member?.id ?? '', household_id: member?.household_id ?? '',
+      })
+      setActive((prev) => [task, ...prev])
       setNewTitle('')
       inputRef.current?.focus()
     } finally {
@@ -81,9 +58,7 @@ export function GroceryPage() {
     }
   }
 
-  // ── Toggle done ──────────────────────────────────────────────
   const handleToggle = async (task: Task, checked: boolean) => {
-    // Optimistic
     if (checked) {
       setActive((prev) => prev.filter((t) => t.id !== task.id))
       setDone((prev) => [{ ...task, done: true }, ...prev])
@@ -92,14 +67,9 @@ export function GroceryPage() {
       setDone((prev) => prev.filter((t) => t.id !== task.id))
       setActive((prev) => [{ ...task, done: false }, ...prev])
     }
-    if (isGuest) {
-      saveGuestTasks(loadGuestTasks().map((t) => t.id === task.id ? { ...t, done: checked } : t))
-      return
-    }
     try {
       await tasksApi.update(task.id, { done: checked })
     } catch {
-      // Revert
       if (checked) {
         setDone((prev) => prev.filter((t) => t.id !== task.id))
         setActive((prev) => [task, ...prev])
@@ -110,67 +80,44 @@ export function GroceryPage() {
     }
   }
 
-  // ── Check all ─────────────────────────────────────────────────
   const handleCheckAll = async () => {
     const toCheck = [...active]
     setDone((prev) => [...toCheck.map((t) => ({ ...t, done: true })), ...prev])
     setActive([])
     setShowDone(true)
-    if (isGuest) {
-      saveGuestTasks(loadGuestTasks().map((t) =>
-        toCheck.some((c) => c.id === t.id) ? { ...t, done: true } : t
-      ))
-      return
-    }
     await Promise.allSettled(toCheck.map((t) => tasksApi.update(t.id, { done: true })))
   }
 
-  // ── Clear done (hide from active view, stays in history) ──────
   const handleClearDone = () => setShowDone(false)
 
-  // ── Edit item title ───────────────────────────────────────────
   const handleEdit = async (task: Task, newTitle: string) => {
     const title = newTitle.trim()
     if (!title || title === task.title) return
     const update = (list: Task[]) => list.map((t) => t.id === task.id ? { ...t, title } : t)
     setActive((prev) => update(prev))
     setDone((prev) => update(prev))
-    if (isGuest) {
-      saveGuestTasks(loadGuestTasks().map((t) => t.id === task.id ? { ...t, title } : t))
-      return
-    }
     try {
       await tasksApi.update(task.id, { title })
     } catch {
-      load() // revert on error
+      load()
     }
   }
 
-  // ── Delete item ───────────────────────────────────────────────
   const handleDelete = async (id: string, fromActive = false) => {
     if (fromActive) setActive((prev) => prev.filter((t) => t.id !== id))
     else setDone((prev) => prev.filter((t) => t.id !== id))
-    if (isGuest) {
-      saveGuestTasks(loadGuestTasks().filter((t) => t.id !== id))
-      return
-    }
     try {
       await tasksApi.remove(id)
     } catch {
-      load() // revert on error
+      load()
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-
-  if (loading) {
-    return <Spinner />
-  }
+  if (loading) return <Spinner />
 
   if (historyMode) {
     return (
       <div style={{ paddingBottom: 80 }}>
-        {/* History header */}
         <div style={{
           background: 'white', padding: '16px 16px 14px',
           borderBottom: '1px solid #e4e4e7',
@@ -243,7 +190,6 @@ export function GroceryPage() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      {/* Sub-header */}
       <div style={{
         background: 'white', padding: '10px 16px',
         borderBottom: '1px solid #e4e4e7',
@@ -263,7 +209,6 @@ export function GroceryPage() {
         </button>
       </div>
 
-      {/* Quick-add */}
       <div style={{ padding: '10px 12px 12px', display: 'flex', gap: 8 }}>
         <input
           ref={inputRef}
@@ -289,7 +234,6 @@ export function GroceryPage() {
         >Add</button>
       </div>
 
-      {/* Check all */}
       {active.length > 1 && (
         <div style={{ padding: '0 12px 8px', display: 'flex', justifyContent: 'flex-end' }}>
           <button
@@ -308,7 +252,6 @@ export function GroceryPage() {
         </div>
       )}
 
-      {/* Active items */}
       {active.length === 0 && done.length === 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '56px 24px 32px', textAlign: 'center' }}>
           <div style={{
@@ -334,7 +277,6 @@ export function GroceryPage() {
         </div>
       )}
 
-      {/* Done section */}
       {done.length > 0 && (
         <div style={{ padding: '8px 12px 0' }}>
           <div style={{
@@ -377,8 +319,6 @@ export function GroceryPage() {
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
-
 function groupByDay(tasks: Task[]): { key: string; label: string; tasks: Task[] }[] {
   const now = new Date()
   const today = new Date(now); today.setHours(0, 0, 0, 0)
@@ -403,8 +343,6 @@ function groupByDay(tasks: Task[]): { key: string; label: string; tasks: Task[] 
       return { key, label, tasks }
     })
 }
-
-// ── Sub-components ────────────────────────────────────────────────
 
 interface RowProps {
   task: Task

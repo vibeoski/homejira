@@ -13,31 +13,26 @@ import { GroceryPage } from './pages/GroceryPage'
 
 export default function App() {
   const { fetchTasks, fetchMembers } = useStore()
-  const { isAuthenticated, isGuest } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
 
-  const canAccessApp = isAuthenticated || isGuest
-
-  // Fetch app data once authenticated or in guest mode
   useEffect(() => {
-    if (canAccessApp) {
+    if (isAuthenticated) {
       fetchMembers()
       fetchTasks()
     }
-  }, [canAccessApp, fetchTasks, fetchMembers])
+  }, [isAuthenticated, fetchTasks, fetchMembers])
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth page: authenticated users go home; guests can still visit to login */}
         <Route
           path="/auth"
           element={isAuthenticated ? <Navigate to="/" replace /> : <AuthPage />}
         />
 
-        {/* App routes: accessible when authenticated or in guest mode */}
         <Route
           path="/"
-          element={canAccessApp ? <AppLayout /> : <Navigate to="/auth" replace />}
+          element={isAuthenticated ? <AppLayout /> : <Navigate to="/auth" replace />}
         >
           <Route index element={<TasksPage />} />
           <Route path="grocery" element={<GroceryPage />} />
@@ -45,14 +40,10 @@ export default function App() {
           <Route path="household" element={<MembersPage />} />
         </Route>
 
-        {/* Public: shareable household invite link — always accessible */}
         <Route path="/join/:token" element={<JoinPage />} />
-
-        {/* Public: app referral landing page */}
         <Route path="/refer/:token" element={<ReferralPage />} />
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to={canAccessApp ? '/' : '/auth'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/auth'} replace />} />
       </Routes>
     </BrowserRouter>
   )
