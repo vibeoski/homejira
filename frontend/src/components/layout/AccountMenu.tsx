@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { useConfigStore, isFeatureEnabled } from '../../store/configStore'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
@@ -39,6 +40,9 @@ export function AccountMenu() {
 
   const navigate = useNavigate()
   const { member, clearAuth, updateMember } = useAuthStore()
+  const { flags } = useConfigStore()
+  const phoneVerificationEnabled = isFeatureEnabled(flags, 'phone_verification')
+  const emailVerificationEnabled = isFeatureEnabled(flags, 'email_verification')
 
   useEffect(() => {
     if (member) {
@@ -282,6 +286,11 @@ export function AccountMenu() {
                     </div>
                     {member?.phone_verified ? (
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
+                    ) : phoneVerificationEnabled ? (
+                      <button type="button" onClick={() => { closeSheet(); navigate('/auth') }}
+                        style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: 'none', padding: '3px 8px', borderRadius: 999, cursor: 'pointer' }}>
+                        Verify now
+                      </button>
                     ) : (
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', background: '#f4f4f5', padding: '3px 8px', borderRadius: 999 }}>Unverified</span>
                     )}
@@ -303,15 +312,15 @@ export function AccountMenu() {
                       {member?.email ? (
                         member?.email_verified ? (
                           <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
-                        ) : (
+                        ) : emailVerificationEnabled ? (
                           <button type="button" onClick={handleResendVerification} disabled={emailSending}
                             style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', border: 'none', padding: '3px 8px', borderRadius: 999, cursor: 'pointer' }}>
                             {emailSending ? 'Sending…' : 'Resend'}
                           </button>
-                        )
+                        ) : null
                       ) : null}
                     </div>
-                    {!member?.email && (
+                    {!member?.email && emailVerificationEnabled && (
                       <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                         <input
                           type="email"
@@ -326,7 +335,7 @@ export function AccountMenu() {
                         </button>
                       </div>
                     )}
-                    {!member?.email && (
+                    {!member?.email && emailVerificationEnabled && (
                       <p style={{ fontSize: 11, color: '#a1a1aa', margin: '6px 0 0', lineHeight: 1.5 }}>
                         🔒 Used only to recover your account if you forget your PIN.
                       </p>

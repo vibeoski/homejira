@@ -4,6 +4,7 @@ import { MPINStep } from '../components/auth/MPINStep'
 import { OTPStep } from '../components/auth/OTPStep'
 import { RegisterStep } from '../components/auth/RegisterStep'
 import { useAuthStore } from '../store/authStore'
+import { useConfigStore, isFeatureEnabled } from '../store/configStore'
 import { householdsApi } from '../api/households'
 import { AppLogo } from '../components/ui/AppLogo'
 import type { Member } from '../types'
@@ -15,6 +16,8 @@ export function AuthPage() {
   const [phone, setPhone] = useState('')
   const [firebaseToken, setFirebaseToken] = useState<string | null>(null)
   const { setAuth } = useAuthStore()
+  const { flags } = useConfigStore()
+  const phoneVerificationEnabled = isFeatureEnabled(flags, 'phone_verification')
 
   const handleSuccess = async (token: string, member: Member) => {
     const pendingJoin = localStorage.getItem('hj_pending_join')
@@ -51,7 +54,14 @@ export function AuthPage() {
       {step === 'phone' && (
         <PhoneStep
           onRegistered={(p) => { setPhone(p); setStep('mpin') }}
-          onUnregistered={(p) => { setPhone(p); setStep('otp') }}
+          onUnregistered={(p) => {
+            setPhone(p)
+            if (phoneVerificationEnabled) {
+              setStep('otp')
+            } else {
+              setStep('register')
+            }
+          }}
         />
       )}
       {step === 'mpin' && (

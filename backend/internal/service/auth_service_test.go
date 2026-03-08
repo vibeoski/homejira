@@ -10,7 +10,7 @@ import (
 )
 
 func newAuthSvc(members *mockMemberRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, nil)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, nil, nil)
 }
 
 // ── CheckPhone ────────────────────────────────────────────────────────────────
@@ -240,7 +240,7 @@ func TestAuthService_ChangeMpin_InvalidLength(t *testing.T) {
 // ── Register with Firebase token ──────────────────────────────────────────────
 
 func newAuthSvcWithFirebase(members *mockMemberRepo, fbVerifier *mockFirebaseVerifier) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, fbVerifier)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, fbVerifier, nil)
 }
 
 func TestAuthService_Register_FirebaseToken_Success(t *testing.T) {
@@ -319,7 +319,7 @@ func TestAuthService_SendEmailVerification_InvalidEmail(t *testing.T) {
 // ── VerifyEmail ───────────────────────────────────────────────────────────────
 
 func newAuthSvcWithVerification(members *mockMemberRepo, verifications *recordingVerificationRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications, nil)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications, nil, nil)
 }
 
 func TestAuthService_VerifyEmail_Success(t *testing.T) {
@@ -380,5 +380,81 @@ func TestAuthService_UpdateEmail_InvalidEmail(t *testing.T) {
 	_, err := svc.UpdateEmail(m.ID, "bad", "http://localhost:3000")
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
+	}
+}
+
+// ── Feature flag gates ────────────────────────────────────────────────────────
+
+func newAuthSvcWithFlags(members *mockMemberRepo, flags map[string]bool) *AuthService {
+	flagRepo := newMockFeatureFlagRepo(flags)
+	flagSvc := NewFeatureFlagService(flagRepo)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, nil, flagSvc)
+}
+
+func TestAuthService_SendEmailVerification_FlagDisabled(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1100000001", MpinHash: mustHashMpin("1234"), Name: "Oscar"}
+	repo.seed(m)
+	svc := newAuthSvcWithFlags(repo, map[string]bool{"email_verification": false})
+
+	err := svc.SendEmailVerification(m.ID, "oscar@example.com", "http://localhost:3000")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput when email_verification disabled, got %v", err)
+	}
+}
+
+func TestAuthService_SendEmailVerification_FlagEnabled(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1100000002", MpinHash: mustHashMpin("1234"), Name: "Petra"}
+	repo.seed(m)
+	svc := newAuthSvcWithFlags(repo, map[string]bool{"email_verification": true})
+
+	if err := svc.SendEmailVerification(m.ID, "petra@example.com", "http://localhost:3000"); err != nil {
+		t.Fatalf("unexpected error when email_verification enabled: %v", err)
+	}
+}
+
+func TestAuthService_VerifyPhone_FlagDisabled(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1200000001", MpinHash: mustHashMpin("1234"), Name: "Quinn"}
+	repo.seed(m)
+	svc := newAuthSvcWithFlags(repo, map[string]bool{"phone_verification": false})
+
+	err := svc.VerifyPhone(m.ID, "firebase-token")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput when phone_verification disabled, got %v", err)
+	}
+}
+
+func TestAuthService_VerifyPhone_FlagEnabled_NoFirebaseClient(t *testing.T) {
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: "+1200000002", MpinHash: mustHashMpin("1234"), Name: "Rosa"}
+	repo.seed(m)
+	svc := newAuthSvcWithFlags(repo, map[string]bool{"phone_verification": true})
+
+	// firebaseClient is nil — should return ErrInvalidInput (not available)
+	err := svc.VerifyPhone(m.ID, "firebase-token")
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("want ErrInvalidInput when firebase client nil, got %v", err)
+	}
+}
+
+func TestAuthService_VerifyPhone_FlagEnabled_Success(t *testing.T) {
+	const phone = "+1200000003"
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: phone, MpinHash: mustHashMpin("1234"), Name: "Sam"}
+	repo.seed(m)
+
+	flagRepo := newMockFeatureFlagRepo(map[string]bool{"phone_verification": true})
+	flagSvc := NewFeatureFlagService(flagRepo)
+	fbVerifier := &mockFirebaseVerifier{phone: phone}
+	svc := NewAuthService(repo, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, fbVerifier, flagSvc)
+
+	if err := svc.VerifyPhone(m.ID, "valid-firebase-token"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got, _ := repo.FindByID(m.ID)
+	if !got.PhoneVerified {
+		t.Error("expected PhoneVerified=true")
 	}
 }

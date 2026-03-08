@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useStore } from './store'
 import { useAuthStore } from './store/authStore'
+import { useConfigStore } from './store/configStore'
 import { AppLayout } from './components/layout/AppLayout'
 import { TasksPage } from './pages/TasksPage'
 import { StatsPage } from './pages/StatsPage'
@@ -15,6 +16,11 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage'
 export default function App() {
   const { fetchTasks, fetchMembers } = useStore()
   const { isAuthenticated } = useAuthStore()
+  const { fetchConfig } = useConfigStore()
+
+  useEffect(() => {
+    fetchConfig()
+  }, [fetchConfig])
 
   useEffect(() => {
     if (isAuthenticated) {

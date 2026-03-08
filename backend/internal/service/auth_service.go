@@ -29,9 +29,10 @@ type AuthService struct {
 	mailer         domain.Mailer
 	verifications  domain.VerificationRepository
 	firebaseClient FirebaseVerifier // may be nil (skips Firebase verification)
+	flags          *FeatureFlagService // may be nil (skips flag checks)
 }
 
-func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository, firebaseClient FirebaseVerifier) *AuthService {
+func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecret string, mailer domain.Mailer, verifications domain.VerificationRepository, firebaseClient FirebaseVerifier, flags *FeatureFlagService) *AuthService {
 	return &AuthService{
 		members:        members,
 		coins:          coins,
@@ -40,6 +41,7 @@ func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecr
 		mailer:         mailer,
 		verifications:  verifications,
 		firebaseClient: firebaseClient,
+		flags:          flags,
 	}
 }
 
@@ -64,6 +66,33 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 	// Mark phone verified on successful login — non-fatal
 	_ = s.members.SetPhoneVerified(m.ID)
 	return token, m, nil
+}
+
+// VerifyPhone verifies phone ownership using a Firebase ID token and marks the
+// member's phone as verified. Returns ErrInvalidInput if the phone_verification
+// feature flag is disabled.
+func (s *AuthService) VerifyPhone(memberID uuid.UUID, firebaseToken string) error {
+	if s.flags != nil && !s.flags.IsEnabled("phone_verification") {
+		return fmt.Errorf("%w: phone verification is not enabled", domain.ErrInvalidInput)
+	}
+	if firebaseToken == "" {
+		return fmt.Errorf("%w: firebase token is required", domain.ErrInvalidInput)
+	}
+	if s.firebaseClient == nil {
+		return fmt.Errorf("%w: phone verification is not available", domain.ErrInvalidInput)
+	}
+	m, err := s.members.FindByID(memberID)
+	if err != nil {
+		return err
+	}
+	verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), firebaseToken)
+	if err != nil {
+		return fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
+	}
+	if verifiedPhone != m.Phone {
+		return fmt.Errorf("%w: firebase token phone does not match", domain.ErrUnauthorized)
+	}
+	return s.members.SetPhoneVerified(memberID)
 }
 
 // Register creates a new member with phone+mPIN credentials and returns a JWT.
@@ -200,6 +229,9 @@ func (s *AuthService) ChangeMpin(memberID uuid.UUID, currentMpin, newMpin string
 
 // SendEmailVerification stores the email and sends a verification link.
 func (s *AuthService) SendEmailVerification(memberID uuid.UUID, email, appBaseURL string) error {
+	if s.flags != nil && !s.flags.IsEnabled("email_verification") {
+		return fmt.Errorf("%w: email verification is not enabled", domain.ErrInvalidInput)
+	}
 	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
 		return fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
 	}

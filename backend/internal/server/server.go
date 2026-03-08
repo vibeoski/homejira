@@ -50,10 +50,13 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		log.Fatalf("firebase: failed to initialise client: %v", err)
 	}
 
+	featureFlagRepo := repository.NewFeatureFlagRepository(db)
+	featureFlagSvc := service.NewFeatureFlagService(featureFlagRepo)
+
 	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
-	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo, firebaseClient)
+	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo, firebaseClient, featureFlagSvc)
 	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
 	hub := sse.NewHub()
@@ -64,6 +67,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	householdH := handler.NewHouseholdHandler(householdSvc, hub)
 	eventH := handler.NewEventHandler(hub, authSvc, taskSvc)
 	coinH := handler.NewCoinHandler(coinSvc)
+	configH := handler.NewConfigHandler(featureFlagSvc)
 
 	// ── Router ────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -111,6 +115,9 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 
 		// Public: resolve a referral token to the referrer's public profile
 		r.Get("/referral/{token}", coinH.GetReferrer)
+
+		// Public: app configuration (feature flags)
+		r.Get("/config", configH.GetConfig)
 
 		// Protected: all app routes require a valid JWT
 		r.Group(func(r chi.Router) {

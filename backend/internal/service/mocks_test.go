@@ -507,6 +507,28 @@ func (m *mockFirebaseVerifier) VerifyIDToken(_ context.Context, _ string) (strin
 	return m.phone, m.err
 }
 
+// ── Feature flag mock ─────────────────────────────────────────────────────────
+
+type mockFeatureFlagRepo struct {
+	flags map[string]bool
+}
+
+func newMockFeatureFlagRepo(flags map[string]bool) *mockFeatureFlagRepo {
+	return &mockFeatureFlagRepo{flags: flags}
+}
+
+func (r *mockFeatureFlagRepo) IsEnabled(key string) (bool, error) {
+	return r.flags[key], nil
+}
+
+func (r *mockFeatureFlagRepo) List() ([]domain.FeatureFlag, error) {
+	out := make([]domain.FeatureFlag, 0, len(r.flags))
+	for k, v := range r.flags {
+		out = append(out, domain.FeatureFlag{Key: k, Enabled: v})
+	}
+	return out, nil
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func mustHashMpin(mpin string) string {
