@@ -109,7 +109,8 @@ func (s *TaskService) recordUpdateActivities(old, new *domain.Task, input domain
 		s.activities.Create(new.ID, actorID, kind, nil) //nolint:errcheck
 	}
 
-	if input.AssigneeID != nil && *input.AssigneeID != old.AssigneeID {
+	assigneeChanged := input.AssigneeID != nil && (old.AssigneeID == nil || *input.AssigneeID != *old.AssigneeID)
+	if assigneeChanged {
 		fromName := ""
 		toName := ""
 		if old.Assignee != nil {
@@ -160,7 +161,7 @@ func (s *TaskService) recordUpdateActivities(old, new *domain.Task, input domain
 	}
 }
 
-func (s *TaskService) validateTaskInput(title string, category domain.Category, priority domain.Priority, assigneeID uuid.UUID) error {
+func (s *TaskService) validateTaskInput(title string, category domain.Category, priority domain.Priority, assigneeID *uuid.UUID) error {
 	if title == "" {
 		return fmt.Errorf("%w: title required", domain.ErrInvalidInput)
 	}
@@ -170,8 +171,10 @@ func (s *TaskService) validateTaskInput(title string, category domain.Category, 
 	if !validPriority(priority) {
 		return fmt.Errorf("%w: invalid priority", domain.ErrInvalidInput)
 	}
-	if _, err := s.members.FindByID(assigneeID); err != nil {
-		return fmt.Errorf("%w: assignee not found", domain.ErrInvalidInput)
+	if assigneeID != nil {
+		if _, err := s.members.FindByID(*assigneeID); err != nil {
+			return fmt.Errorf("%w: assignee not found", domain.ErrInvalidInput)
+		}
 	}
 	return nil
 }

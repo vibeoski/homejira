@@ -14,6 +14,29 @@ import (
 	"github.com/homejira/api/internal/domain"
 )
 
+// nullUUID is a helper for scanning a potentially-NULL UUID column.
+type nullUUID struct {
+	UUID  uuid.UUID
+	Valid bool
+}
+
+func (n *nullUUID) Scan(v any) error {
+	if v == nil {
+		n.Valid = false
+		return nil
+	}
+	n.Valid = true
+	if u, ok := v.(uuid.UUID); ok {
+		n.UUID = u
+		return nil
+	}
+	if b, ok := v.([16]byte); ok {
+		n.UUID = uuid.UUID(b)
+		return nil
+	}
+	return fmt.Errorf("nullUUID: cannot scan type %T", v)
+}
+
 type taskRepo struct {
 	db *pgxpool.Pool
 }
@@ -26,16 +49,18 @@ func NewTaskRepository(db *pgxpool.Pool) domain.TaskRepository {
 const taskSelectCols = `
 	t.id, t.title, t.notes, t.category, t.priority,
 	t.assignee_id, t.household_id, t.done, t.done_at, t.due_at, t.created_at, t.updated_at,
-	m.id, m.name, m.avatar, m.color, m.created_at
+	m.id, COALESCE(m.name, ''), COALESCE(m.avatar, ''), COALESCE(m.color, ''), m.created_at
 `
 
 func scanTaskWithMember(row pgx.Row) (*domain.Task, error) {
 	var t domain.Task
-	var m domain.Member
+	var mID nullUUID
+	var mName, mAvatar, mColor string
+	var mCreatedAt *time.Time
 	err := row.Scan(
 		&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
 		&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.CreatedAt, &t.UpdatedAt,
-		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.CreatedAt,
+		&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrNotFound
@@ -43,7 +68,18 @@ func scanTaskWithMember(row pgx.Row) (*domain.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Assignee = &m
+	if mID.Valid {
+		m := domain.Member{
+			ID:     mID.UUID,
+			Name:   mName,
+			Avatar: mAvatar,
+			Color:  mColor,
+		}
+		if mCreatedAt != nil {
+			m.CreatedAt = *mCreatedAt
+		}
+		t.Assignee = &m
+	}
 	return &t, nil
 }
 
@@ -76,7 +112,7 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 	q := fmt.Sprintf(`
 		SELECT %s
 		FROM tasks t
-		JOIN members m ON m.id = t.assignee_id
+		LEFT JOIN members m ON m.id = t.assignee_id
 		WHERE %s
 		ORDER BY
 			CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
@@ -93,15 +129,28 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 	var tasks []domain.Task
 	for rows.Next() {
 		var t domain.Task
-		var m domain.Member
+		var mID nullUUID
+		var mName, mAvatar, mColor string
+		var mCreatedAt *time.Time
 		if err := rows.Scan(
 			&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
 			&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.CreatedAt, &t.UpdatedAt,
-			&m.ID, &m.Name, &m.Avatar, &m.Color, &m.CreatedAt,
+			&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 		); err != nil {
 			return nil, err
 		}
-		t.Assignee = &m
+		if mID.Valid {
+			m := domain.Member{
+				ID:     mID.UUID,
+				Name:   mName,
+				Avatar: mAvatar,
+				Color:  mColor,
+			}
+			if mCreatedAt != nil {
+				m.CreatedAt = *mCreatedAt
+			}
+			t.Assignee = &m
+		}
 		tasks = append(tasks, t)
 	}
 
@@ -119,7 +168,7 @@ func (r *taskRepo) FindByID(id uuid.UUID) (*domain.Task, error) {
 	row := r.db.QueryRow(context.Background(), fmt.Sprintf(`
 		SELECT %s
 		FROM tasks t
-		JOIN members m ON m.id = t.assignee_id
+		LEFT JOIN members m ON m.id = t.assignee_id
 		WHERE t.id = $1
 	`, taskSelectCols), id)
 
@@ -144,7 +193,7 @@ func (r *taskRepo) Create(input domain.CreateTaskInput) (*domain.Task, error) {
 			RETURNING *
 		)
 		SELECT %s FROM ins t
-		JOIN members m ON m.id = t.assignee_id
+		LEFT JOIN members m ON m.id = t.assignee_id
 	`, taskSelectCols),
 		input.Title, input.Notes, input.Category, input.Priority, input.AssigneeID, input.HouseholdID, input.DueAt,
 	)
@@ -220,7 +269,7 @@ func (r *taskRepo) Update(id uuid.UUID, input domain.UpdateTaskInput) (*domain.T
 			UPDATE tasks SET %s WHERE id = $%d RETURNING *
 		)
 		SELECT %s FROM upd t
-		JOIN members m ON m.id = t.assignee_id
+		LEFT JOIN members m ON m.id = t.assignee_id
 	`, strings.Join(setClauses, ", "), i, taskSelectCols), args...)
 
 	return scanTaskWithMember(row)

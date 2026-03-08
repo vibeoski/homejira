@@ -346,8 +346,11 @@ Household-specific types (`Household`, `JoinRequest`, `HouseholdInvite`) live in
   - Text primary: `#1c1917`
   - Text secondary: `#78716c`
   - Text muted: `#a8a29e`
-  - Brand orange: `#f97316`
-  - Brand orange light: `#fff4ee`
+  - Indigo (primary interactive): `#6366f1`
+  - Indigo light (active backgrounds): `#eef2ff`
+  - Semantic orange `#f97316` — used only for Chore category and High priority data badges. Do not use for interactive chrome.
+  - Semantic red (overdue/error): `#ef4444` text, `#fecaca` light border
+  - Semantic amber (due-soon/warning): `#d97706` text, `#fde68a` border, `#fffbeb` pill background
 - Border radius convention: `8–10px` for small elements, `12–14px` for cards/inputs, `20–24px` for panels, `99px` for pills.
 - Font: `Fraunces, serif` for headings, system sans-serif for body text.
 - Transitions: `all .15s` or `background 0.2s` for interactive elements.
@@ -470,3 +473,9 @@ Pages are route-level components in `src/pages/`. They:
 16. **Do not add ORM, query builder, or any abstraction over pgx.** Raw SQL with parameterized queries is the pattern.
 
 17. **Do not introduce new packages without discussion.** The current dependency set is intentionally minimal.
+
+18. **Any API change must update the Postman collection.** When adding, removing, or modifying any route, request body, response shape, or query parameter:
+    1. Update `postman/HomeJira.postman_collection.json` to reflect the change (add/edit/remove the relevant request item).
+    2. Use the Postman MCP tool (`putCollection` with `collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`) to push the updated JSON to Postman.
+    3. Stage the collection file alongside the API change — the pre-commit hook blocks commits where handler/server files change but the collection does not.
+    The collection JSON is the source of truth; the live Postman collection is always derived from it.

@@ -1,0 +1,606 @@
+{
+  "info": {
+    "name": "HomeJira API",
+    "description": "Complete API collection for HomeJira — household task management app (Jira for home).\n\nBase URL: {{baseUrl}} = http://localhost:8080/api/v1\n\nQuick start:\n1. Run 'Login' (or Register) — JWT auto-saved to {{token}}\n2. All protected requests inherit Bearer auth from collection level\n3. Key IDs auto-saved by test scripts: {{taskId}}, {{memberId}}, {{linkToken}}\n\nAuth: Phone + 4-digit mPIN → JWT (30-day TTL).\nAll routes except /auth/check-phone, /auth/login, /auth/register, /config, /health, /referral/:token, /households/link/:token require Bearer token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:8080/api/v1", "description": "API base URL" },
+    { "key": "token",         "value": "", "description": "JWT Bearer token — auto-set by Login/Register" },
+    { "key": "taskId",        "value": "", "description": "Task UUID — auto-set by Create Task" },
+    { "key": "memberId",      "value": "", "description": "Member UUID — auto-set by Login/Register/Create Member" },
+    { "key": "requestId",     "value": "", "description": "Join request UUID" },
+    { "key": "inviteId",      "value": "", "description": "Invite UUID" },
+    { "key": "linkToken",     "value": "", "description": "Invite link token — auto-set by Create Invite Link" },
+    { "key": "referralToken", "value": "", "description": "Referral token — from Get My Referral Link" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication — phone + 4-digit mPIN. Login/Register auto-save JWT to {{token}}.",
+      "item": [
+        {
+          "name": "Check Phone",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/check-phone",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phone\": \"+1234567890\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Check if a phone number is already registered.\n\nResponse: `{ \"registered\": true|false }`"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    pm.collectionVariables.set('memberId', json.member.id);",
+                  "    console.log('Token saved successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phone\": \"+1234567890\", \"mpin\": \"1234\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Authenticate with phone + 4-digit mPIN. JWT auto-saved to {{token}}, memberId to {{memberId}}.\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    pm.collectionVariables.set('memberId', json.member.id);",
+                  "    console.log('Token + memberId saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+1234567890\",\n  \"name\": \"Alice\",\n  \"avatar\": \"A\",\n  \"mpin\": \"1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new account. Optional: `referral_token` field.\nToken + memberId auto-saved.\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Get a fresh JWT reflecting current DB state (e.g. after household approval).\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Change mPIN",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/mpin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"current_mpin\": \"1234\", \"new_mpin\": \"5678\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Change mPIN for authenticated member. Returns 204 No Content."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "description": "Task CRUD + comments + activity log. All scoped to the authenticated member's household.",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"],
+              "query": [
+                { "key": "category", "value": "grocery",  "disabled": true, "description": "grocery|chore|errand|repair" },
+                { "key": "done",     "value": "false",    "disabled": true, "description": "true|false" },
+                { "key": "search",   "value": "",         "disabled": true, "description": "Search by title or notes" }
+              ]
+            },
+            "description": "List all tasks in the household. Enable query params to filter.\n\nResponse: `{ \"tasks\": [...] }`"
+          }
+        },
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('taskId', pm.response.json().task.id);",
+                  "    console.log('taskId saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/tasks",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy milk\",\n  \"notes\": \"Get 2L whole milk\",\n  \"category\": \"grocery\",\n  \"priority\": \"normal\",\n  \"assignee_id\": null,\n  \"due_at\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new task. taskId auto-saved to {{taskId}}.\n\ncategory: `grocery | chore | errand | repair`\npriority: `urgent | high | normal`\nassignee_id: UUID or null\ndue_at: ISO 8601 timestamp or null\n\nTriggers SSE notification to household."
+          }
+        },
+        {
+          "name": "Get Task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "description": "Get a task by ID (includes comments).\n\nResponse: `{ \"task\": {...} }`"
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy milk and eggs\",\n  \"done\": true,\n  \"priority\": \"urgent\",\n  \"clear_due_at\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Partial update — all fields optional.\nSet `clear_due_at: true` to remove the due date.\nAuto-logs activity events for each field changed.\nTriggers SSE.\n\nResponse: `{ \"task\": {...} }`"
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "description": "Delete a task. Triggers SSE. Returns 204 No Content."
+          }
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/tasks/{{taskId}}/comments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"author_id\": \"{{memberId}}\", \"body\": \"Looks urgent!\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Add a comment to a task. Triggers SSE.\n\nResponse: `{ \"comment\": {...} }`"
+          }
+        },
+        {
+          "name": "Get Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/tasks/{{taskId}}/activity",
+            "description": "Chronological activity log for a task.\n\nActivity kinds: created, completed, reopened, assigned, priority_changed, category_changed, title_changed, notes_changed, due_set, due_cleared\n\nResponse: `{ \"activities\": [...] }`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "description": "Member profiles, coins, and referrals.",
+      "item": [
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/members",
+            "description": "List all members in the household.\n\nResponse: `{ \"members\": [...] }`"
+          }
+        },
+        {
+          "name": "Create Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('memberId', pm.response.json().member.id);",
+                  "    console.log('memberId saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/members",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Bob\", \"avatar\": \"B\", \"color\": \"#6366f1\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a standalone member (no household). memberId auto-saved.\n\nResponse: `{ \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Get Member",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/members/{{memberId}}",
+            "description": "Get a specific member by ID.\n\nResponse: `{ \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/members/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Alice Updated\", \"avatar\": \"A\", \"color\": \"#ef4444\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update authenticated member's own profile. All fields optional.\n\nResponse: `{ \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Get My Coins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/members/me/coins",
+            "description": "Coin balance and transaction history.\n\nResponse: `{ \"balance\": 100, \"transactions\": [...] }`"
+          }
+        },
+        {
+          "name": "Get My Referral Link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/members/me/referral-link",
+            "description": "Get or create the authenticated member's referral token.\n\nResponse: `{ \"token\": \"...\" }`"
+          }
+        },
+        {
+          "name": "Resolve Referral Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/referral/{{referralToken}}",
+            "description": "Public: resolve referral token to referrer's public profile.\n\nResponse: `{ \"referrer\": { name, avatar, color } }`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Households",
+      "description": "Household management — create, join, invites, member management.",
+      "item": [
+        {
+          "name": "Get My Household",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/households/me",
+            "description": "Get authenticated member's household. null if not in one.\n\nResponse: `{ \"household\": {...} | null }`"
+          }
+        },
+        {
+          "name": "Create Household",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/households",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Smith Family\", \"kind\": \"home\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a new household. Creator becomes admin.\n\nkind: `home | group`\n\nResponse: `{ \"household\": {...}, \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Join by Code",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/households/join-by-code",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"ABCD1234\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Submit a join request via the household's 8-char join code. Triggers SSE to admins.\n\nResponse: `{ \"request\": {...}, \"household\": {...} }`"
+          }
+        },
+        {
+          "name": "Leave Household",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/leave",
+            "description": "Leave current household. Triggers SSE.\n\nResponse: `{ \"member\": {...with household_id null} }`"
+          }
+        },
+        {
+          "name": "Delete Household",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/households",
+            "description": "Admin-only: permanently delete the household and clear all members. Returns 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Households — Join Requests",
+      "description": "Manage join requests for household membership approval.",
+      "item": [
+        {
+          "name": "Get My Join Request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/households/requests/mine",
+            "description": "Get authenticated member's pending join request.\n\nResponse: `{ \"request\": {...} | null }`"
+          }
+        },
+        {
+          "name": "List Join Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/households/requests",
+            "description": "Admin: list all pending join requests for the household.\n\nResponse: `{ \"requests\": [...] }`"
+          }
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/requests/{{requestId}}/approve",
+            "description": "Admin: approve a join request. Triggers SSE to household + requester.\n\nResponse: `{ \"request\": {...}, \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/requests/{{requestId}}/reject",
+            "description": "Admin: reject a join request. Triggers SSE to requester."
+          }
+        },
+        {
+          "name": "Cancel Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/requests/{{requestId}}/cancel",
+            "description": "Requester: cancel their own pending join request. Returns 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Households — Invites",
+      "description": "Direct phone-number invites sent by household admins.",
+      "item": [
+        {
+          "name": "Send Invite",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/households/invites",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phone\": \"+1987654321\", \"name\": \"Jane Doe\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Admin: send direct invite to a phone number. `name` is optional.\n\nResponse: `{ \"invite\": {...} }`"
+          }
+        },
+        {
+          "name": "Get My Invites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/households/invites/me",
+            "description": "List pending invites for authenticated member's phone.\n\nResponse: `{ \"invites\": [...] }`"
+          }
+        },
+        {
+          "name": "Accept Invite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/invites/{{inviteId}}/accept",
+            "description": "Accept a household invite. Triggers SSE.\n\nResponse: `{ \"invite\": {...}, \"member\": {...} }`"
+          }
+        },
+        {
+          "name": "Reject Invite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/invites/{{inviteId}}/reject",
+            "description": "Reject a household invite."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Households — Invite Links",
+      "description": "Shareable invite links (7-day expiry).",
+      "item": [
+        {
+          "name": "Create Invite Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('linkToken', pm.response.json().token);",
+                  "    console.log('linkToken saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/invite-link",
+            "description": "Admin: create shareable invite link (7-day expiry). Token auto-saved to {{linkToken}}.\n\nResponse: `{ \"token\": \"...\", \"household\": {...} }`"
+          }
+        },
+        {
+          "name": "Resolve Invite Link",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/households/link/{{linkToken}}",
+            "description": "Public: resolve invite link to household info.\n\nResponse: `{ \"household\": {...} }`"
+          }
+        },
+        {
+          "name": "Join via Link",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/link/{{linkToken}}/join",
+            "description": "Join a household via invite link. Triggers SSE.\n\nResponse: `{ \"member\": {...} }`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Households — Member Management",
+      "description": "Admin operations on existing household members.",
+      "item": [
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/members/{{memberId}}/remove",
+            "description": "Admin: remove a member from the household. Triggers SSE.\n\nResponse: `{ \"member\": {...with household_id null} }`"
+          }
+        },
+        {
+          "name": "Promote to Admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/households/members/{{memberId}}/promote",
+            "description": "Admin: promote a member to admin role. Triggers SSE.\n\nResponse: `{ \"member\": {...with role=admin} }`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Config & SSE",
+      "description": "Feature flags, health check, and real-time event stream.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8080/health",
+            "description": "Server health check.\n\nResponse: `{ \"status\": \"ok\" }`"
+          }
+        },
+        {
+          "name": "Get Feature Flags",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/config",
+            "description": "Public: all feature flags from database.\n\nResponse: `{ \"flags\": { \"feature_name\": true|false } }`"
+          }
+        },
+        {
+          "name": "SSE Events Stream",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "text/event-stream" }],
+            "url": {
+              "raw": "{{baseUrl}}/events?token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                { "key": "token", "value": "{{token}}", "description": "JWT as query param (EventSource cannot set headers)" }
+              ]
+            },
+            "description": "Subscribe to real-time updates via Server-Sent Events.\n\nToken passed as query param (EventSource limitation).\n\nMessages:\n- `data: update` — household/member data changed\n- `: ping` — keepalive every 20 seconds\n- `: connected` — initial handshake\n\nSubscribes to household channel if member is in one, otherwise member channel."
+          }
+        }
+      ]
+    }
+  ]
+}
