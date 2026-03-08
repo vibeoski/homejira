@@ -15,7 +15,7 @@ const ACCENT = '#6366f1'
 
 export function TasksPage() {
   const { tasks, members, loading, fetchTasks, toggleTask, deleteTask } = useStore()
-  const { member, isGuest } = useAuthStore()
+  const { member } = useAuthStore()
   const [catTab, setCatTab] = useState<Category | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('open')
   const [sortBy, setSortBy] = useState<SortBy>('priority')
@@ -25,7 +25,7 @@ export function TasksPage() {
   const [showAdd, setShowAdd] = useState(false)
   const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
-  if (!isGuest && member && !member.household_id) {
+  if (member && !member.household_id) {
     return <Navigate to="/household" replace />
   }
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/homejira/api/config"
 	"github.com/homejira/api/internal/handler"
+	"github.com/homejira/api/internal/mailer"
 	"github.com/homejira/api/internal/middleware"
 	"github.com/homejira/api/internal/repository"
 	"github.com/homejira/api/internal/service"
@@ -37,15 +38,18 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	coinRepo := repository.NewCoinRepository(db)
 	referralRepo := repository.NewReferralRepository(db)
 
+	stubMailer := mailer.NewStubMailer()
+	verificationRepo := repository.NewVerificationRepository(db)
+
 	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
-	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret)
+	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, stubMailer, verificationRepo)
 	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
 	hub := sse.NewHub()
 
-	memberH := handler.NewMemberHandler(memberSvc)
+	memberH := handler.NewMemberHandler(memberSvc, authSvc, cfg.AppBaseURL)
 	taskH := handler.NewTaskHandler(taskSvc, hub)
 	authH := handler.NewAuthHandler(authSvc)
 	householdH := handler.NewHouseholdHandler(householdSvc, hub)
@@ -87,6 +91,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			r.Post("/check-phone", authH.CheckPhone)
 			r.Post("/login", authH.Login)
 			r.Post("/register", authH.Register)
+			r.Get("/email/verify", authH.VerifyEmail)
 		})
 
 		// SSE stream — auth via ?token= query param (EventSource can't set headers)
@@ -105,12 +110,14 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			// Auth refresh — reissues JWT with current DB state
 			r.Post("/auth/refresh", authH.Refresh)
 			r.Patch("/auth/mpin", authH.ChangeMpin)
+			r.Post("/auth/email/send-verification", authH.SendEmailVerification)
 
 			// Members
 			r.Route("/members", func(r chi.Router) {
 				r.Get("/", memberH.List)
 				r.Post("/", memberH.Create)
 				r.Patch("/me", memberH.UpdateMe)
+				r.Patch("/me/email", memberH.UpdateEmail)
 				r.Get("/me/coins", coinH.GetMyCoins)
 				r.Get("/me/referral-link", coinH.GetOrCreateReferralLink)
 				r.Get("/{id}", memberH.Get)

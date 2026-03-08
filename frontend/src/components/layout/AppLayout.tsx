@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
-import { GuestBanner } from './GuestBanner'
 import { AccountMenu } from './AccountMenu'
 import { AppLogo } from '../ui/AppLogo'
 import { useAuthStore } from '../../store/authStore'
@@ -9,7 +8,7 @@ import { authApi } from '../../api/auth'
 import { useStore } from '../../store'
 
 export function AppLayout() {
-  const { isGuest, isAuthenticated, token, setAuth } = useAuthStore()
+  const { isAuthenticated, token, setAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, bumpSse } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
@@ -54,22 +53,8 @@ export function AppLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token])
 
-  // Guest mode: poll every 2s (local storage only, no network cost)
-  useEffect(() => {
-    if (!isGuest) return
-    fetchTasks()
-    fetchMembers()
-    const interval = setInterval(() => {
-      fetchTasks()
-      fetchMembers()
-    }, 2000)
-    return () => clearInterval(interval)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGuest])
-
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', background: '#f4f4f5', position: 'relative' }}>
-      {isGuest && <GuestBanner />}
       {/* Persistent top bar — visible on every screen */}
       <div style={{
         background: 'white', borderBottom: '1px solid #e4e4e7',
