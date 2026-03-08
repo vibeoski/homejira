@@ -1,0 +1,10 @@
+{
+  "collection_name": "HomeJira API",
+  "collection_id": "82632e0b-9da4-47b9-a5a9-5a0830650160",
+  "collection_uid": "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160",
+  "workspace_id": "54e06356-f6a5-416e-856d-769839a364d5",
+  "workspace_name": "My Workspace",
+  "source_of_truth": "HomeJira.postman_collection.json",
+  "sync_note": "Always edit HomeJira.postman_collection.json first, then push via putCollection MCP tool or the sync script below.",
+  "sync_curl": "curl -s -X PUT 'https://api.getpostman.com/collections/82632e0b-9da4-47b9-a5a9-5a0830650160' -H 'X-Api-Key: $POSTMAN_API_KEY' -H 'Content-Type: application/json' -d '{\"collection\": '$(cat postman/HomeJira.postman_collection.json)'}'"
+}

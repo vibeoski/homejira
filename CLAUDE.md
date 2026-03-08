@@ -473,3 +473,9 @@ Pages are route-level components in `src/pages/`. They:
 16. **Do not add ORM, query builder, or any abstraction over pgx.** Raw SQL with parameterized queries is the pattern.
 
 17. **Do not introduce new packages without discussion.** The current dependency set is intentionally minimal.
+
+18. **Any API change must update the Postman collection.** When adding, removing, or modifying any route, request body, response shape, or query parameter:
+    1. Update `postman/HomeJira.postman_collection.json` to reflect the change (add/edit/remove the relevant request item).
+    2. Use the Postman MCP tool (`putCollection` with `collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`) to push the updated JSON to Postman.
+    3. Stage the collection file alongside the API change — the pre-commit hook blocks commits where handler/server files change but the collection does not.
+    The collection JSON is the source of truth; the live Postman collection is always derived from it.
