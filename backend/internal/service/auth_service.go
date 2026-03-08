@@ -245,6 +245,24 @@ func (s *AuthService) UpdateEmail(memberID uuid.UUID, email, appBaseURL string) 
 	return s.members.FindByID(memberID)
 }
 
+// VerifyPhone verifies phone ownership via Firebase ID token for an already-authenticated member.
+// The token's phone_number claim must match the member's own phone.
+func (s *AuthService) VerifyPhone(memberID uuid.UUID, phone, firebaseToken string) (*domain.Member, error) {
+	if s.firebaseClient != nil {
+		verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), firebaseToken)
+		if err != nil {
+			return nil, fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
+		}
+		if verifiedPhone != phone {
+			return nil, fmt.Errorf("%w: token phone does not match account phone", domain.ErrUnauthorized)
+		}
+	}
+	if err := s.members.SetPhoneVerified(memberID); err != nil {
+		return nil, err
+	}
+	return s.members.FindByID(memberID)
+}
+
 func (s *AuthService) issueToken(m *domain.Member) (string, error) {
 	claims := jwt.MapClaims{
 		"member_id": m.ID.String(),

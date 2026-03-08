@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth'
+import { auth } from '../../firebase'
 import { useAuthStore } from '../../store/authStore'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
 import { timeAgo } from '../../utils'
-
-const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
-  '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐯', '🦄', '🌟']
 
 const COLORS = ['#6366f1', '#0ea5e9', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#ec4899', '#14b8a6']
 
@@ -20,7 +19,6 @@ export function AccountMenu() {
   const [sheet, setSheet] = useState<Sheet>(null)
 
   const [editName, setEditName] = useState('')
-  const [editAvatar, setEditAvatar] = useState('')
   const [editColor, setEditColor] = useState('')
   const [saveBusy, setSaveBusy] = useState(false)
 
@@ -37,6 +35,13 @@ export function AccountMenu() {
   const [emailSending, setEmailSending] = useState(false)
   const [emailMessage, setEmailMessage] = useState<string | null>(null)
 
+  const [verifyingPhone, setVerifyingPhone] = useState(false)
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [phoneVerifyError, setPhoneVerifyError] = useState<string | null>(null)
+  const [phoneVerifySaving, setPhoneVerifySaving] = useState(false)
+  const confirmationRef = useRef<ConfirmationResult | null>(null)
+
   const navigate = useNavigate()
   const { member, clearAuth, updateMember } = useAuthStore()
 
@@ -50,7 +55,6 @@ export function AccountMenu() {
   const openProfile = () => {
     if (!member) return
     setEditName(member.name)
-    setEditAvatar(member.avatar)
     setEditColor(member.color)
     setEditEmail('')
     setEmailMessage(null)
@@ -61,7 +65,7 @@ export function AccountMenu() {
     if (!editEmail.trim()) return
     setEmailSending(true)
     try {
-      const updated = await membersApi.updateMe({ name: member!.name, avatar: member!.avatar, color: member!.color, email: editEmail.trim() })
+      const updated = await membersApi.updateMe({ name: member!.name, avatar: member?.avatar ?? '', color: member!.color, email: editEmail.trim() })
       updateMember(updated)
       await authApi.sendEmailVerification(editEmail.trim())
       setEmailMessage('Verification email sent! Check your inbox.')
@@ -94,13 +98,54 @@ export function AccountMenu() {
     setSheet('pin')
   }
 
-  const closeSheet = () => setSheet(null)
+  const closeSheet = () => {
+    setSheet(null)
+    setVerifyingPhone(false)
+    setPhoneOtpSent(false)
+    setPhoneOtp('')
+    setPhoneVerifyError(null)
+    setPhoneVerifySaving(false)
+  }
+
+  const handleStartPhoneVerify = async () => {
+    if (!member?.phone) return
+    setVerifyingPhone(true)
+    setPhoneVerifyError(null)
+    try {
+      const recaptcha = new RecaptchaVerifier(auth, 'recaptcha-container-account', { size: 'invisible' })
+      const result = await signInWithPhoneNumber(auth, member.phone, recaptcha)
+      confirmationRef.current = result
+      setPhoneOtpSent(true)
+    } catch {
+      setPhoneVerifyError('Failed to send OTP. Please try again.')
+      setVerifyingPhone(false)
+    }
+  }
+
+  const handleConfirmPhoneOtp = async () => {
+    if (!confirmationRef.current || phoneOtp.length !== 6) return
+    setPhoneVerifySaving(true)
+    setPhoneVerifyError(null)
+    try {
+      const credential = await confirmationRef.current.confirm(phoneOtp)
+      const idToken = await credential.user.getIdToken()
+      const updated = await authApi.verifyPhone(idToken)
+      updateMember(updated)
+      setPhoneOtp('')
+      setPhoneOtpSent(false)
+      setVerifyingPhone(false)
+    } catch {
+      setPhoneVerifyError('Invalid code. Please try again.')
+    } finally {
+      setPhoneVerifySaving(false)
+    }
+  }
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) return
     setSaveBusy(true)
     try {
-      const updated = await membersApi.updateMe({ name: editName.trim(), avatar: editAvatar, color: editColor })
+      const updated = await membersApi.updateMe({ name: editName.trim(), avatar: member?.avatar ?? '', color: editColor })
       updateMember(updated)
       closeSheet()
     } finally {
@@ -134,13 +179,15 @@ export function AccountMenu() {
         style={{
           width: 32, height: 32, borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15, cursor: 'pointer',
-          border: `2px solid ${member ? member.color : '#d4d4d8'}`,
-          background: member ? member.color + '20' : '#f4f4f5',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          background: member ? member.color : '#d4d4d8',
+          color: 'white',
+          border: 'none',
           outline: 'none',
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {member?.avatar ?? '👤'}
+        {member ? (member.name?.charAt(0).toUpperCase() || '?') : '?'}
       </button>
 
       {/* Main sheet */}
@@ -160,12 +207,12 @@ export function AccountMenu() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 16px' }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
-                background: member ? member.color + '20' : '#f4f4f5',
-                border: `2px solid ${member ? member.color : '#d4d4d8'}`,
+                background: member ? member.color : '#d4d4d8',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
+                fontSize: 20, fontWeight: 700, color: 'white', flexShrink: 0,
+                fontFamily: 'system-ui, sans-serif',
               }}>
-                {member?.avatar ?? '👤'}
+                {member ? (member.name?.charAt(0).toUpperCase() || '?') : '?'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#18181b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -221,26 +268,17 @@ export function AccountMenu() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 16px' }}>
               <div style={{
                 width: 72, height: 72, borderRadius: '50%',
-                background: editColor + '20', border: `2.5px solid ${editColor}`,
+                background: editColor,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 34, marginBottom: 8, transition: 'border-color 0.15s',
-              }}>{editAvatar}</div>
+                fontSize: 30, fontWeight: 700, color: 'white', marginBottom: 8,
+                fontFamily: 'system-ui, sans-serif', transition: 'background 0.15s',
+              }}>
+                {editName?.charAt(0).toUpperCase() || '?'}
+              </div>
               <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b' }}>{editName || 'Your name'}</p>
             </div>
 
             <div style={{ padding: '0 20px' }}>
-              <FieldLabel>Avatar</FieldLabel>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 18 }}>
-                {AVATARS.map((e) => (
-                  <button key={e} type="button" onClick={() => setEditAvatar(e)} style={{
-                    fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${editAvatar === e ? editColor : '#e4e4e7'}`,
-                    background: editAvatar === e ? editColor + '14' : 'white',
-                    transition: 'border-color 0.12s',
-                  }}>{e}</button>
-                ))}
-              </div>
-
               <FieldLabel>Color</FieldLabel>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
                 {COLORS.map((c) => (
@@ -270,21 +308,76 @@ export function AccountMenu() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
                   {/* Phone verified status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: '#f9f9f9', border: '1px solid #e4e4e7' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
-                      </svg>
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>Phone number</p>
-                        <p style={{ fontSize: 11, color: '#a1a1aa', margin: '1px 0 0' }}>{member?.phone}</p>
+                  <div style={{ borderRadius: 8, background: '#f9f9f9', border: '1px solid #e4e4e7', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
+                        </svg>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>Phone number</p>
+                          <p style={{ fontSize: 11, color: '#a1a1aa', margin: '1px 0 0' }}>{member?.phone}</p>
+                        </div>
                       </div>
+                      {member?.phone_verified ? (
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
+                      ) : !verifyingPhone ? (
+                        <button
+                          type="button"
+                          onClick={handleStartPhoneVerify}
+                          style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', background: '#eef2ff', border: 'none', padding: '3px 8px', borderRadius: 999, cursor: 'pointer' }}
+                        >Verify now</button>
+                      ) : !phoneOtpSent ? (
+                        <span style={{ fontSize: 11, color: '#a1a1aa' }}>Sending…</span>
+                      ) : null}
                     </div>
-                    {member?.phone_verified ? (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '3px 8px', borderRadius: 999 }}>Verified</span>
-                    ) : (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', background: '#f4f4f5', padding: '3px 8px', borderRadius: 999 }}>Unverified</span>
+
+                    {/* Inline OTP entry */}
+                    {verifyingPhone && phoneOtpSent && (
+                      <div style={{ padding: '10px 12px', borderTop: '1px solid #e4e4e7' }}>
+                        <p style={{ fontSize: 12, color: '#71717a', margin: '0 0 8px' }}>
+                          Enter the 6-digit code sent to {member?.phone}
+                        </p>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={phoneOtp}
+                            onChange={(e) => { if (/^\d{0,6}$/.test(e.target.value)) setPhoneOtp(e.target.value) }}
+                            placeholder="000000"
+                            style={{
+                              flex: 1, padding: '9px 10px', borderRadius: 7, border: '1px solid #e4e4e7',
+                              fontSize: 16, fontWeight: 700, letterSpacing: 4, outline: 'none',
+                              background: 'white', color: '#18181b', textAlign: 'center',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleConfirmPhoneOtp}
+                            disabled={phoneVerifySaving || phoneOtp.length !== 6}
+                            style={{
+                              padding: '0 14px', borderRadius: 7, border: 'none',
+                              background: phoneVerifySaving || phoneOtp.length !== 6 ? '#e4e4e7' : '#6366f1',
+                              color: phoneVerifySaving || phoneOtp.length !== 6 ? '#a1a1aa' : 'white',
+                              fontSize: 12, fontWeight: 700, cursor: phoneVerifySaving || phoneOtp.length !== 6 ? 'not-allowed' : 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >{phoneVerifySaving ? '…' : 'Confirm'}</button>
+                        </div>
+                        {phoneVerifyError && (
+                          <p style={{ fontSize: 11, color: '#ef4444', margin: '6px 0 0' }}>{phoneVerifyError}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { setVerifyingPhone(false); setPhoneOtpSent(false); setPhoneOtp(''); setPhoneVerifyError(null) }}
+                          style={{ background: 'none', border: 'none', fontSize: 11, color: '#a1a1aa', cursor: 'pointer', padding: '4px 0', marginTop: 4 }}
+                        >Cancel</button>
+                      </div>
                     )}
+
+                    {/* Invisible recaptcha container */}
+                    <div id="recaptcha-container-account" />
                   </div>
 
                   {/* Email row */}

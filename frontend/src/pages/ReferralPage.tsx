@@ -66,12 +66,12 @@ export function ReferralPage() {
         {/* Referrer avatar */}
         <div style={{
           width: 64, height: 64, borderRadius: '50%',
-          background: referrer ? referrer.color + '20' : '#f4f4f5',
-          border: `3px solid ${referrer?.color ?? '#e4e4e7'}`,
+          background: referrer ? referrer.color : '#d4d4d8',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 30, marginBottom: 14,
+          fontSize: 26, fontWeight: 700, color: 'white', marginBottom: 14,
+          fontFamily: 'system-ui, sans-serif',
         }}>
-          {referrer?.avatar ?? '👤'}
+          {referrer?.name?.charAt(0).toUpperCase() ?? '?'}
         </div>
 
         <h1 style={{ fontSize: 20, fontWeight: 800, color: '#18181b', margin: '0 0 8px', textAlign: 'center', letterSpacing: -0.3 }}>

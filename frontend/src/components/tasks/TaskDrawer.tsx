@@ -149,7 +149,7 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
             {members.map((m) => (
               <PillBtn key={m.id} active={current.assignee_id === m.id} color={m.color} onClick={() => patch({ assignee_id: m.id })}>
-                {m.avatar} {m.name}
+                {m.name}
               </PillBtn>
             ))}
           </div>
