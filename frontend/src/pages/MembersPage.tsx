@@ -2,8 +2,6 @@ import { useStore } from '../store'
 import { useAuthStore } from '../store/authStore'
 import { MembersScreen } from '../components/members/MembersScreen'
 import { HouseholdPanel } from '../components/members/HouseholdPanel'
-import { HouseholdPromo } from '../components/members/HouseholdPromo'
-
 export function MembersPage() {
   const { tasks, members } = useStore()
   const { member } = useAuthStore()
@@ -25,7 +23,6 @@ export function MembersPage() {
           isAdmin={member.role === 'admin'}
         />
       )}
-      <HouseholdPromo />
     </>
   )
 }

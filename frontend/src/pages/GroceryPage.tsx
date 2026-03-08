@@ -264,7 +264,7 @@ export function GroceryPage() {
       </div>
 
       {/* Quick-add */}
-      <div style={{ padding: '0 12px 12px', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '10px 12px 12px', display: 'flex', gap: 8 }}>
         <input
           ref={inputRef}
           value={newTitle}

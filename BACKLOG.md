@@ -346,6 +346,58 @@ Attach an optional cost to grocery/errand tasks. Monthly spend summary in Stats.
 Save a set of tasks as a reusable template (e.g. "Spring cleaning checklist") that can be
 bulk-applied to the household.
 
+### RD-09 · Push notifications
+**Status:** `todo`
+Web Push API (works on mobile browsers without a native app). Notify the assigned member when
+a task is assigned to them, and all members when a task is due in 24 h or overdue.
+- Backend: store `PushSubscription` JSON per member; trigger via existing activity events
+- Frontend: `Notification.requestPermission()` prompt in AccountMenu; SW registration
+
+### RD-10 · Grocery → shared cart link
+**Status:** `todo`
+"Open in Instacart / Amazon Fresh" button that pre-populates the cart with active grocery
+items. Primary monetisation path via affiliate links. No backend change — pure frontend URL
+construction using retailer deep-link formats.
+
+### RD-11 · Photo attachments on tasks
+**Status:** `todo`
+Attach up to 3 photos per task (e.g. "broken shelf" before + "fixed" after). Presigned S3
+upload URLs from backend; stored as `task_attachments` table. Renders as thumbnail row in
+TaskDrawer.
+- Migration: `task_attachments (id, task_id, uploader_id, url, created_at)`
+- Backend: `POST /tasks/{id}/attachments` → presign + store; `DELETE /tasks/{id}/attachments/{aid}`
+- Frontend: photo picker in TaskDrawer, thumbnail strip below notes
+
+### RD-12 · Activity feed on home screen
+**Status:** `todo`
+A live household feed on the Tasks page showing recent actions — "Alex checked off Vacuum",
+"Sam added Restock paper towels". Powered by existing `task_activities` table + SSE.
+Increases accountability and keeps members engaged without being pushy.
+
+### RD-13 · Streaks & household score
+**Status:** `todo`
+Weekly household "cleanliness score" (tasks completed on time / tasks due that week × 100).
+Shown as a badge on the Stats page. Per-member streak counter (consecutive days with a
+task completed). Drives friendly competition between members.
+
+### RD-14 · Task reactions
+**Status:** `todo`
+Emoji reactions on completed tasks (👏 🔥 💀). Stored as a `task_reactions` table
+`(task_id, member_id, emoji)`. Renders as a compact emoji row in TaskCard and TaskDrawer.
+Small feature, high engagement impact for roommate households.
+
+### RD-15 · Guest preview before sign-up
+**Status:** `todo`
+When tapping an invite link, show the household task board in read-only mode before
+prompting to register. Removes the biggest conversion drop-off point on the invite flow.
+Requires a scoped read-only token from the invite link endpoint.
+
+### RD-16 · WhatsApp / iMessage invite deep link
+**Status:** `todo`
+Pre-compose a share message for WhatsApp and iMessage with the invite URL, household name,
+and a short pitch. Uses `navigator.share` on mobile (already partially wired) with explicit
+fallback buttons for each platform. Converts significantly better than raw code sharing.
+
 ---
 
 ## Changelog
