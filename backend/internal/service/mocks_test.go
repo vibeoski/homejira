@@ -32,6 +32,40 @@ func (r *stubVerificationRepo) FindEmailToken(token string) (*domain.EmailVerifi
 
 func (r *stubVerificationRepo) MarkEmailTokenUsed(id uuid.UUID) error { return nil }
 
+// recordingVerificationRepo records the last token created — lets tests call VerifyEmail.
+type recordingVerificationRepo struct {
+	tokens    map[string]*domain.EmailVerification
+	lastToken string
+}
+
+func newRecordingVerificationRepo() *recordingVerificationRepo {
+	return &recordingVerificationRepo{tokens: make(map[string]*domain.EmailVerification)}
+}
+
+func (r *recordingVerificationRepo) CreateEmailToken(memberID uuid.UUID, token string, expiresAt time.Time) (*domain.EmailVerification, error) {
+	v := &domain.EmailVerification{ID: uuid.New(), MemberID: memberID, Token: token, ExpiresAt: expiresAt}
+	r.tokens[token] = v
+	r.lastToken = token
+	return v, nil
+}
+
+func (r *recordingVerificationRepo) FindEmailToken(token string) (*domain.EmailVerification, error) {
+	if v, ok := r.tokens[token]; ok {
+		cp := *v
+		return &cp, nil
+	}
+	return nil, domain.ErrNotFound
+}
+
+func (r *recordingVerificationRepo) MarkEmailTokenUsed(id uuid.UUID) error {
+	for _, v := range r.tokens {
+		if v.ID == id {
+			v.Used = true
+		}
+	}
+	return nil
+}
+
 // ── Member mock ───────────────────────────────────────────────────────────────
 
 type mockMemberRepo struct {
