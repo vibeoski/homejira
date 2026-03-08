@@ -10,7 +10,7 @@ import (
 )
 
 func newAuthSvc(members *mockMemberRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{})
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, nil)
 }
 
 // ── CheckPhone ────────────────────────────────────────────────────────────────
@@ -237,6 +237,55 @@ func TestAuthService_ChangeMpin_InvalidLength(t *testing.T) {
 	}
 }
 
+// ── Register with Firebase token ──────────────────────────────────────────────
+
+func newAuthSvcWithFirebase(members *mockMemberRepo, fbVerifier *mockFirebaseVerifier) *AuthService {
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, fbVerifier)
+}
+
+func TestAuthService_Register_FirebaseToken_Success(t *testing.T) {
+	const phone = "+1500000001"
+	fbVerifier := &mockFirebaseVerifier{phone: phone}
+	svc := newAuthSvcWithFirebase(newMockMemberRepo(), fbVerifier)
+
+	_, m, err := svc.Register(domain.RegisterInput{
+		Name: "Zara", Avatar: "🌟", Phone: phone, Mpin: "1234",
+		FirebaseToken: "valid-token",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if m.Phone != phone {
+		t.Errorf("got phone %q, want %q", m.Phone, phone)
+	}
+}
+
+func TestAuthService_Register_FirebaseToken_PhoneMismatch(t *testing.T) {
+	fbVerifier := &mockFirebaseVerifier{phone: "+1999999999"}
+	svc := newAuthSvcWithFirebase(newMockMemberRepo(), fbVerifier)
+
+	_, _, err := svc.Register(domain.RegisterInput{
+		Name: "Bad", Avatar: "❌", Phone: "+1500000002", Mpin: "1234",
+		FirebaseToken: "mismatched-token",
+	})
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatalf("want ErrUnauthorized, got %v", err)
+	}
+}
+
+func TestAuthService_Register_FirebaseToken_VerifyFails(t *testing.T) {
+	fbVerifier := &mockFirebaseVerifier{err: errors.New("token expired")}
+	svc := newAuthSvcWithFirebase(newMockMemberRepo(), fbVerifier)
+
+	_, _, err := svc.Register(domain.RegisterInput{
+		Name: "Bad", Avatar: "❌", Phone: "+1500000003", Mpin: "1234",
+		FirebaseToken: "expired-token",
+	})
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatalf("want ErrUnauthorized, got %v", err)
+	}
+}
+
 // ── SendEmailVerification ─────────────────────────────────────────────────────
 
 func TestAuthService_SendEmailVerification_Success(t *testing.T) {
@@ -270,7 +319,7 @@ func TestAuthService_SendEmailVerification_InvalidEmail(t *testing.T) {
 // ── VerifyEmail ───────────────────────────────────────────────────────────────
 
 func newAuthSvcWithVerification(members *mockMemberRepo, verifications *recordingVerificationRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications)
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, verifications, nil)
 }
 
 func TestAuthService_VerifyEmail_Success(t *testing.T) {
