@@ -81,7 +81,7 @@ export function HouseholdPanel() {
 
     if (!member.household_id) {
       householdsApi.getMyRequest().then(({ request }) => {
-        if (request) setWaitingRequest({ id: request.id, householdName: 'household' })
+        if (request) setWaitingRequest({ id: request.id, householdName: '' })
       }).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,18 +145,10 @@ export function HouseholdPanel() {
         </div>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 8px' }}>Waiting for approval</h2>
-        <p style={{ fontSize: 13, color: '#71717a', lineHeight: 1.6, maxWidth: 260, margin: '0 0 12px' }}>
-          Your request to join
-        </p>
-        <div style={{
-          fontSize: 14, fontWeight: 700, color: ACCENT,
-          background: '#eef2ff', padding: '5px 14px', borderRadius: 99,
-          margin: '0 0 12px', border: '1px solid #c7d2fe',
-        }}>
-          {waitingRequest.householdName}
-        </div>
         <p style={{ fontSize: 13, color: '#71717a', lineHeight: 1.6, maxWidth: 260, margin: '0 0 36px' }}>
-          is pending. The admin will approve or decline. This page updates automatically.
+          You've requested to join{waitingRequest.householdName
+            ? <> <strong style={{ color: ACCENT }}>{waitingRequest.householdName}</strong></>
+            : ' a household'}. The admin will review your request shortly — this page updates in real time.
         </p>
 
         {error && (
@@ -317,116 +309,127 @@ export function HouseholdPanel() {
   if (!hasHousehold && !household) {
     return (
       <div style={{ padding: '28px 16px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{
-          width: 56, height: 56, borderRadius: 16, background: '#eef2ff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18,
-        }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <polyline points="9,22 9,12 15,12 15,22" />
-          </svg>
+
+        {/* Step indicator — static: step 1 active, step 2 upcoming */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, width: '100%', maxWidth: 280 }}>
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginBottom: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: ACCENT }} />
+            <div style={{ flex: 1, height: 2, background: '#e4e4e7' }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: '#e4e4e7', border: '1.5px solid #d4d4d8' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+            <span style={{ fontSize: 11, color: ACCENT, fontWeight: 600 }}>Step 1: Set up</span>
+            <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 400 }}>Step 2: Invite</span>
+          </div>
         </div>
 
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 6px', textAlign: 'center' }}>
-          Set up your household
-        </h2>
-        <p style={{ fontSize: 13, color: '#71717a', margin: '0 0 28px', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
-          Create a shared space or join an existing one.
-        </p>
+        <>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16, background: '#eef2ff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                <polyline points="9,22 9,12 15,12 15,22" />
+              </svg>
+            </div>
 
-        <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Create */}
-          <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 6px', textAlign: 'center' }}>
+              Set up your household
+            </h2>
+            <p style={{ fontSize: 13, color: '#71717a', margin: '0 0 28px', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
+              Create a shared space or join an existing one.
+            </p>
 
-            <div style={{ display: 'flex', background: '#f4f4f5', padding: 3, borderRadius: 8, marginBottom: 12 }}>
-              {(['home', 'group'] as const).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setCreateKind(k)}
+            <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Create */}
+              <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
+
+                <div style={{ display: 'flex', background: '#f4f4f5', padding: 3, borderRadius: 8, marginBottom: 12 }}>
+                  {(['home', 'group'] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setCreateKind(k)}
+                      style={{
+                        flex: 1, padding: '8px 0', borderRadius: 6, border: 'none',
+                        background: createKind === k ? 'white' : 'transparent',
+                        color: createKind === k ? ACCENT : '#71717a',
+                        fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                        boxShadow: createKind === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        transition: 'all 0.15s',
+                      }}
+                    >{k === 'home' ? 'Home' : 'Group'}</button>
+                  ))}
+                </div>
+
+                <input
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder={createKind === 'home' ? 'e.g. The Apartment' : 'e.g. Chore Squad'}
                   style={{
-                    flex: 1, padding: '8px 0', borderRadius: 6, border: 'none',
-                    background: createKind === k ? 'white' : 'transparent',
-                    color: createKind === k ? ACCENT : '#71717a',
-                    fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                    boxShadow: createKind === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                    transition: 'all 0.15s',
+                    width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
+                    fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: '#f9f9f9', outline: 'none', color: '#18181b',
                   }}
-                >{k === 'home' ? 'Home' : 'Group'}</button>
-              ))}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={createBusy || !createName.trim()}
+                  style={{
+                    width: '100%', padding: '11px 0', borderRadius: 8, border: 'none',
+                    background: createBusy || !createName.trim() ? '#e4e4e7' : ACCENT,
+                    color: createBusy || !createName.trim() ? '#a1a1aa' : 'white',
+                    fontSize: 13, fontWeight: 700, cursor: createBusy || !createName.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >{createBusy ? 'Creating…' : `Create ${createKind === 'home' ? 'home' : 'group'}`}</button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.3 }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
+              </div>
+
+              {/* Join */}
+              <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>JOIN EXISTING</p>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    placeholder="INVITE CODE"
+                    style={{
+                      flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
+                      fontSize: 14, textTransform: 'uppercase', boxSizing: 'border-box',
+                      background: '#f9f9f9', outline: 'none', letterSpacing: 1, color: '#18181b',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleJoin}
+                    disabled={joinBusy || !code.trim()}
+                    style={{
+                      padding: '0 18px', borderRadius: 8, border: 'none',
+                      background: joinBusy || !code.trim() ? '#e4e4e7' : '#18181b',
+                      color: joinBusy || !code.trim() ? '#a1a1aa' : 'white',
+                      fontSize: 13, fontWeight: 700, cursor: joinBusy || !code.trim() ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >{joinBusy ? 'Sending…' : 'Join'}</button>
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca' }}>
+                  {error}
+                </div>
+              )}
             </div>
-
-            <input
-              value={createName}
-              onChange={(e) => setCreateName(e.target.value)}
-              placeholder={createKind === 'home' ? 'e.g. The Apartment' : 'e.g. Chore Squad'}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
-                fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: '#f9f9f9', outline: 'none', color: '#18181b',
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={createBusy || !createName.trim()}
-              style={{
-                width: '100%', padding: '11px 0', borderRadius: 8, border: 'none',
-                background: createBusy || !createName.trim() ? '#e4e4e7' : ACCENT,
-                color: createBusy || !createName.trim() ? '#a1a1aa' : 'white',
-                fontSize: 13, fontWeight: 700, cursor: createBusy || !createName.trim() ? 'not-allowed' : 'pointer',
-              }}
-            >{createBusy ? 'Creating…' : `Create ${createKind === 'home' ? 'home' : 'group'}`}</button>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.3 }}>OR</span>
-            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
-          </div>
-
-          {/* Join */}
-          <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #e4e4e7' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, marginBottom: 12 }}>JOIN EXISTING</p>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="INVITE CODE"
-                style={{
-                  flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
-                  fontSize: 14, textTransform: 'uppercase', boxSizing: 'border-box',
-                  background: '#f9f9f9', outline: 'none', letterSpacing: 1, color: '#18181b',
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleJoin}
-                disabled={joinBusy || !code.trim()}
-                style={{
-                  padding: '0 18px', borderRadius: 8, border: 'none',
-                  background: joinBusy || !code.trim() ? '#e4e4e7' : '#18181b',
-                  color: joinBusy || !code.trim() ? '#a1a1aa' : 'white',
-                  fontSize: 13, fontWeight: 700, cursor: joinBusy || !code.trim() ? 'not-allowed' : 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >{joinBusy ? 'Sending…' : 'Join'}</button>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca' }}>
-              {error}
-            </div>
-          )}
-          {message && !error && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f0fdf4', color: '#15803d', fontSize: 12, border: '1px solid #bbf7d0' }}>
-              {message}
-            </div>
-          )}
-        </div>
+          </>
       </div>
     )
   }
@@ -702,7 +705,7 @@ export function HouseholdPanel() {
               <>
                 <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 8 }}>Leave household?</p>
                 <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
-                  Your open tasks will be reassigned. You can rejoin with an invite code.
+                  Your open tasks will become unassigned. You can rejoin with an invite code.
                 </p>
                 {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
                 <div style={{ display: 'flex', gap: 8 }}>
