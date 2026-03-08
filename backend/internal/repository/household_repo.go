@@ -59,3 +59,10 @@ func (r *householdRepo) FindByJoinCode(joinCode string) (*domain.Household, erro
 	return &h, nil
 }
 
+// Delete removes the household and cascades to tasks, join requests, and invite links.
+// Members have their household_id cleared (ON DELETE SET NULL).
+func (r *householdRepo) Delete(id uuid.UUID) error {
+	_, err := r.db.Exec(context.Background(), `DELETE FROM households WHERE id = $1`, id)
+	return err
+}
+

@@ -2,7 +2,6 @@ import { useStore } from '../store'
 import { useAuthStore } from '../store/authStore'
 import { MembersScreen } from '../components/members/MembersScreen'
 import { HouseholdPanel } from '../components/members/HouseholdPanel'
-
 export function MembersPage() {
   const { tasks, members } = useStore()
   const { member } = useAuthStore()
