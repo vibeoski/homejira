@@ -23,7 +23,30 @@ export function TasksPage() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Task | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [undoTask, setUndoTask] = useState<{ id: string } | null>(null)
+  const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const refresh = useCallback(() => fetchTasks(), [fetchTasks])
+
+  const handleToggle = useCallback(async (id: string, done: boolean) => {
+    await toggleTask(id, done)
+    if (done) {
+      const openAfter = useStore.getState().tasks
+        .filter((t) => t.category !== 'grocery' && !t.done)
+      if (openAfter.length === 0) {
+        if (undoTimer) clearTimeout(undoTimer)
+        setUndoTask({ id })
+        const timer = setTimeout(() => {
+          setUndoTask(null)
+          setUndoTimer(null)
+        }, 4000)
+        setUndoTimer(timer)
+      }
+    } else if (undoTask?.id === id) {
+      if (undoTimer) clearTimeout(undoTimer)
+      setUndoTask(null)
+      setUndoTimer(null)
+    }
+  }, [toggleTask, undoTask, undoTimer])
 
   if (member && !member.household_id) {
     return <Navigate to="/household" replace />
@@ -234,7 +257,7 @@ export function TasksPage() {
             >Reset filters</button>
           </div>
         ) : visible.map((task) => (
-          <TaskCard key={task.id} task={task} onToggle={toggleTask} onOpen={setSelected} />
+          <TaskCard key={task.id} task={task} onToggle={handleToggle} onOpen={setSelected} />
         ))}
       </div>
 
@@ -263,6 +286,30 @@ export function TasksPage() {
       )}
       {showAdd && (
         <AddTaskSheet members={members} onClose={() => setShowAdd(false)} onAdded={refresh} />
+      )}
+      {undoTask && (
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          background: '#18181b', color: 'white', borderRadius: 10,
+          padding: '10px 16px', fontSize: 13, fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: 12,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.20)', zIndex: 200,
+          whiteSpace: 'nowrap',
+        }}>
+          🎉 All tasks done!
+          <button
+            onClick={async () => {
+              if (undoTimer) clearTimeout(undoTimer)
+              await toggleTask(undoTask.id, false)
+              setUndoTask(null)
+              setUndoTimer(null)
+            }}
+            style={{
+              background: 'none', border: 'none', color: '#f97316',
+              fontWeight: 700, fontSize: 13, cursor: 'pointer', padding: 0,
+            }}
+          >Undo</button>
+        </div>
       )}
     </>
   )

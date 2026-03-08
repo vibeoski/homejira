@@ -346,8 +346,11 @@ Household-specific types (`Household`, `JoinRequest`, `HouseholdInvite`) live in
   - Text primary: `#1c1917`
   - Text secondary: `#78716c`
   - Text muted: `#a8a29e`
-  - Brand orange: `#f97316`
-  - Brand orange light: `#fff4ee`
+  - Indigo (primary interactive): `#6366f1`
+  - Indigo light (active backgrounds): `#eef2ff`
+  - Semantic orange `#f97316` — used only for Chore category and High priority data badges. Do not use for interactive chrome.
+  - Semantic red (overdue/error): `#ef4444` text, `#fecaca` light border
+  - Semantic amber (due-soon/warning): `#d97706` text, `#fde68a` border, `#fffbeb` pill background
 - Border radius convention: `8–10px` for small elements, `12–14px` for cards/inputs, `20–24px` for panels, `99px` for pills.
 - Font: `Fraunces, serif` for headings, system sans-serif for body text.
 - Transitions: `all .15s` or `background 0.2s` for interactive elements.
