@@ -393,7 +393,7 @@ prompting to register. Removes the biggest conversion drop-off point on the invi
 Requires a scoped read-only token from the invite link endpoint.
 
 ### RD-16 · WhatsApp / iMessage invite deep link
-**Status:** `todo`
+**Status:** `done`
 Pre-compose a share message for WhatsApp and iMessage with the invite URL, household name,
 and a short pitch. Uses `navigator.share` on mobile (already partially wired) with explicit
 fallback buttons for each platform. Converts significantly better than raw code sharing.
@@ -437,3 +437,6 @@ fallback buttons for each platform. Converts significantly better than raw code 
 | UX-17 | Sort toggle label prefixed with "Sort: " for clarity | 2026-03-07 |
 | UX-18 | Stats "By member" section hidden when no members exist | 2026-03-07 |
 | UX-19 | Stats urgency summary cards (overdue + urgent counts) added | 2026-03-07 |
+| RD-16 | WhatsApp/iMessage share sheet — platform-specific deep links for invite sharing | 2026-03-08 |
+| — | Guest mode removed — authentication required to use the app | 2026-03-08 |
+| — | Phone + email verification — phone marked verified on login, optional recovery email, token-based email confirm, migration 000012 | 2026-03-08 |
