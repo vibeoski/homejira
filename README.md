@@ -82,6 +82,34 @@ make ps          List running containers
 
 ---
 
+## Design & API Tooling
+
+### Postman Collection
+
+A complete Postman collection covering all 39 API endpoints lives at [`postman/HomeJira.postman_collection.json`](./postman/HomeJira.postman_collection.json).
+
+- Import the JSON file into Postman for the fully folder-organised version
+- Collection variables: `{{baseUrl}}`, `{{token}}` (auto-set by Login/Register), `{{taskId}}`, `{{memberId}}`, `{{linkToken}}`
+- Test scripts auto-save key IDs after each create request
+- Collection metadata (UID, workspace) at [`postman/postman.json`](./postman/postman.json)
+
+> A git pre-commit hook blocks commits where handler or router files change but the collection JSON was not also staged — keeping the collection in sync automatically.
+
+### FigJam Diagrams
+
+All diagrams are hosted in FigJam. Claim the links below to add them to your workspace.
+
+| Diagram | Type | Link |
+|---------|------|------|
+| System Architecture | Architecture | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/f425fc6a-796f-49f6-b8b9-d2adc37ff04f) |
+| Auth Flow | User flow | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/f326dd42-b9dc-41dc-99a5-900867f996be) |
+| Task Lifecycle Flow | User flow | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/56504635-14af-4a8f-967a-0155b16398f4) |
+| Household Membership Flow | User flow | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/1d54d21c-096b-4ea5-94e6-1f5b1316a4bb) |
+| TasksPage + TaskDrawer Layout | Screen wireframe | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/f35af8f5-7685-47cb-bef8-3ee4b2c41f08) |
+| Auth Screens Layout | Screen wireframe | [Open in FigJam](https://www.figma.com/online-whiteboard/create-diagram/0b61dea7-7a3d-4882-94b4-82c08a8d32fa) |
+
+---
+
 ## Project Structure
 
 ```
@@ -89,6 +117,9 @@ homejira/
 ├── Makefile
 ├── docker-compose.yml
 ├── BACKLOG.md
+├── postman/
+│   ├── HomeJira.postman_collection.json  # Postman collection v2.1 (source of truth)
+│   └── postman.json                      # Collection UID + workspace metadata
 │
 ├── backend/
 │   ├── cmd/server/main.go           # Entry point — connects DB, runs migrations, starts server
@@ -187,13 +218,14 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 ### Members
 
-| Method | Endpoint              | Description              |
-|--------|-----------------------|--------------------------|
-| GET    | `/members`            | List household members   |
-| GET    | `/members/:id`        | Get member               |
-| PATCH  | `/members/me`         | Update profile           |
-| GET    | `/members/me/coins`   | Get coin balance + history |
-| GET    | `/members/me/referral-link` | Get or create referral link |
+| Method | Endpoint                    | Description                     |
+|--------|-----------------------------|---------------------------------|
+| GET    | `/members`                  | List household members          |
+| POST   | `/members`                  | Create standalone member        |
+| GET    | `/members/:id`              | Get member                      |
+| PATCH  | `/members/me`               | Update profile                  |
+| GET    | `/members/me/coins`         | Get coin balance + history      |
+| GET    | `/members/me/referral-link` | Get or create referral link     |
 
 ### Households
 
@@ -202,23 +234,34 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 | GET    | `/households/me`                   | Get current household            |
 | POST   | `/households`                      | Create household                 |
 | DELETE | `/households`                      | Delete household (admin only)    |
-| POST   | `/households/join-by-code`         | Submit join request              |
+| POST   | `/households/join-by-code`         | Submit join request via code     |
 | POST   | `/households/leave`                | Leave household                  |
 | POST   | `/households/members/:id/remove`   | Remove member (admin)            |
 | POST   | `/households/members/:id/promote`  | Promote to admin                 |
 | GET    | `/households/requests`             | List pending join requests       |
-| POST   | `/households/requests/:id/approve` | Approve join request             |
-| POST   | `/households/requests/:id/reject`  | Reject join request              |
+| GET    | `/households/requests/mine`        | Get own pending join request     |
+| POST   | `/households/requests/:id/approve` | Approve join request (admin)     |
+| POST   | `/households/requests/:id/reject`  | Reject join request (admin)      |
 | POST   | `/households/requests/:id/cancel`  | Cancel own join request          |
-| POST   | `/households/invite-link`          | Generate shareable invite link   |
+| POST   | `/households/invites`              | Send direct invite by phone (admin) |
+| GET    | `/households/invites/me`           | Get pending invites for my phone |
+| POST   | `/households/invites/:id/accept`   | Accept a household invite        |
+| POST   | `/households/invites/:id/reject`   | Reject a household invite        |
+| POST   | `/households/invite-link`          | Generate shareable invite link (admin) |
 | GET    | `/households/link/:token`          | Resolve invite link (public)     |
 | POST   | `/households/link/:token/join`     | Join via invite link             |
 
+### Config
+
+| Method | Endpoint   | Auth | Description                  |
+|--------|------------|------|------------------------------|
+| GET    | `/config`  | No   | Get all feature flags        |
+
 ### Referral
 
-| Method | Endpoint              | Auth | Description                          |
-|--------|-----------------------|------|--------------------------------------|
-| GET    | `/referral/:token`    | No   | Get referrer info for landing page   |
+| Method | Endpoint           | Auth | Description                        |
+|--------|--------------------|------|------------------------------------|
+| GET    | `/referral/:token` | No   | Get referrer info for landing page |
 
 ### Realtime
 

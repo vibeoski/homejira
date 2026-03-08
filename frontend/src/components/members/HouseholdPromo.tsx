@@ -60,22 +60,6 @@ export function HouseholdPromo() {
         </button>
       </div>
 
-      {/* Buy me a coffee */}
-      <div style={{ textAlign: 'center', paddingTop: 4 }}>
-        <a
-          href="https://buymeacoffee.com/vibeoski"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontSize: 12, color: '#a1a1aa', textDecoration: 'none',
-            padding: '6px 12px', borderRadius: 99, border: '1px solid #e4e4e7',
-            background: 'white', transition: 'all 0.15s',
-          }}
-        >
-          ☕ Buy me a coffee
-        </a>
-      </div>
     </div>
   )
 }
