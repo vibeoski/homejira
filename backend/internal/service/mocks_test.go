@@ -160,6 +160,11 @@ func (r *mockHouseholdRepo) FindByJoinCode(code string) (*domain.Household, erro
 	return nil, domain.ErrNotFound
 }
 
+func (r *mockHouseholdRepo) Delete(id uuid.UUID) error {
+	delete(r.households, id)
+	return nil
+}
+
 // ── Join request mock ─────────────────────────────────────────────────────────
 
 type mockJoinRepo struct {

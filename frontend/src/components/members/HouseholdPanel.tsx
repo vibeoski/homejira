@@ -5,19 +5,19 @@ import { useStore } from '../../store'
 import { householdsApi } from '../../api/households'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
-import { coinsApi } from '../../api/coins'
 
 const ACCENT = '#6366f1'
 
 type HouseholdData = Awaited<ReturnType<typeof householdsApi.getMine>>['household']
 type RequestsData = Awaited<ReturnType<typeof householdsApi.listRequests>>['requests']
+type LeaveStep = 'confirm' | 'last_admin_choice' | 'pick_admin' | 'confirm_delete' | null
 
 // Persists across tab navigations so re-entering the page is instant
 let _cache: { household: HouseholdData; requests: RequestsData } | null = null
 
 export function HouseholdPanel() {
-  const { isGuest, member, updateMember, setAuth } = useAuthStore()
-  const { fetchTasks, fetchMembers, sseVersion } = useStore()
+  const { isGuest, member, updateMember, setAuth, clearAuth } = useAuthStore()
+  const { fetchTasks, fetchMembers, members, sseVersion } = useStore()
   const navigate = useNavigate()
 
   const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
@@ -38,11 +38,15 @@ export function HouseholdPanel() {
 
   const [copied, setCopied] = useState(false)
   const [sharingLink, setSharingLink] = useState(false)
-  const [sharingReferral, setSharingReferral] = useState(false)
-  const [referralCopied, setReferralCopied] = useState(false)
 
   const [waitingRequest, setWaitingRequest] = useState<{ id: string; householdName: string } | null>(null)
   const [cancelBusy, setCancelBusy] = useState(false)
+
+  const [showMore, setShowMore] = useState(false)
+  const [leaveStep, setLeaveStep] = useState<LeaveStep>(null)
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null)
+  const [leaveBusy, setLeaveBusy] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
 
   const isAdmin = !!member && member.role === 'admin'
   const hasHousehold = !!member?.household_id
@@ -173,6 +177,48 @@ export function HouseholdPanel() {
     )
   }
 
+  const adminCount = members.filter((m) => m.role === 'admin').length
+  const isOnlyAdmin = member?.role === 'admin' && adminCount <= 1
+  const isSoleMember = members.length === 1
+
+  const openLeave = () => {
+    setLeaveError(null)
+    setSelectedAdminId(null)
+    setShowMore(false)
+    if (isOnlyAdmin && isSoleMember) setLeaveStep('confirm_delete')
+    else if (isOnlyAdmin) setLeaveStep('last_admin_choice')
+    else setLeaveStep('confirm')
+  }
+
+  const handleLeave = async () => {
+    setLeaveBusy(true)
+    setLeaveError(null)
+    try {
+      if (selectedAdminId) await householdsApi.promoteMember(selectedAdminId)
+      const { member: updated } = await householdsApi.leave()
+      updateMember(updated)
+      await Promise.all([fetchMembers(), fetchTasks()])
+      setLeaveStep(null)
+    } catch (e: unknown) {
+      setLeaveError((e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not leave household.')
+    } finally {
+      setLeaveBusy(false)
+    }
+  }
+
+  const handleDeleteHousehold = async () => {
+    setLeaveBusy(true)
+    setLeaveError(null)
+    try {
+      await householdsApi.deleteHousehold()
+      clearAuth()
+    } catch (e: unknown) {
+      setLeaveError((e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not delete household.')
+    } finally {
+      setLeaveBusy(false)
+    }
+  }
+
   const handleCreate = async () => {
     const trimmed = createName.trim()
     if (!trimmed) { setError('Name is required'); return }
@@ -230,27 +276,6 @@ export function HouseholdPanel() {
       // user cancelled share or clipboard failed — no-op
     } finally {
       setSharingLink(false)
-    }
-  }
-
-  const handleShareReferral = async () => {
-    setSharingReferral(true)
-    try {
-      const token = await coinsApi.getOrCreateReferralLink()
-      const url = `https://homejira.app/refer/${token}`
-      const shareTitle = 'Join me on HomeJira'
-      const shareText = `I've been using HomeJira to manage household tasks with my family — it's really handy! Join me:`
-      if (navigator.share) {
-        await navigator.share({ title: shareTitle, text: shareText, url })
-      } else {
-        await navigator.clipboard.writeText(`${shareText} ${url}`)
-        setReferralCopied(true)
-        setTimeout(() => setReferralCopied(false), 3000)
-      }
-    } catch {
-      // user cancelled or clipboard failed — no-op
-    } finally {
-      setSharingReferral(false)
     }
   }
 
@@ -406,11 +431,18 @@ export function HouseholdPanel() {
               {loadingHousehold ? 'Loading…' : (household?.name ?? 'Your household')}
             </span>
           </div>
-          {isAdmin && (
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>
-              Admin
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {isAdmin && (
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>
+                Admin
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowMore(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 6, color: '#a1a1aa', fontSize: 16, lineHeight: 1 }}
+            >···</button>
+          </div>
         </div>
 
         {/* Invite code */}
@@ -525,53 +557,134 @@ export function HouseholdPanel() {
         </div>
       )}
 
-      {/* Refer friends card */}
-      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e4e4e7', padding: '16px 16px', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fef9c3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-            🪙
-          </div>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#18181b', margin: 0 }}>Love HomeJira?</p>
-            <p style={{ fontSize: 11, color: '#71717a', margin: '2px 0 0' }}>Refer friends &amp; family — earn 10 coins each</p>
+      {/* More sheet */}
+      {showMore && (
+        <div
+          className="fade-in"
+          onClick={() => setShowMore(false)}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div
+            className="slide-up"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+          >
+            <div style={{ width: 36, height: 3, background: '#e4e4e7', borderRadius: 99, margin: '14px auto 20px' }} />
+            <button
+              type="button"
+              onClick={openLeave}
+              style={{ width: '100%', padding: '14px 0', borderRadius: 10, border: '1px solid #fecaca', background: 'white', color: '#ef4444', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >Leave household</button>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleShareReferral}
-          disabled={sharingReferral}
-          style={{
-            width: '100%', padding: '9px 0', borderRadius: 8,
-            border: '1px solid #e4e4e7',
-            background: sharingReferral ? '#f4f4f5' : 'white',
-            color: sharingReferral ? '#a1a1aa' : '#18181b',
-            fontSize: 13, fontWeight: 600, cursor: sharingReferral ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          {sharingReferral ? 'Generating…' : referralCopied ? 'Link copied!' : 'Share with friends & family'}
-        </button>
-      </div>
+      )}
 
-      <div style={{ textAlign: 'center', paddingBottom: 24, paddingTop: 4 }}>
-        <a
-          href="https://buymeacoffee.com/vibeoski"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontSize: 12, color: '#a1a1aa', textDecoration: 'none',
-            padding: '6px 12px', borderRadius: 99, border: '1px solid #e4e4e7',
-            background: 'white', transition: 'all 0.15s',
-          }}
+      {/* Leave flow modal */}
+      {leaveStep && (
+        <div
+          className="fade-in"
+          onClick={() => { if (!leaveBusy) setLeaveStep(null) }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
-          ☕ Buy me a coffee
-        </a>
-      </div>
+          <div
+            className="slide-up"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+          >
+            <div style={{ width: 36, height: 3, background: '#e4e4e7', borderRadius: 99, margin: '14px auto 20px' }} />
+
+            {leaveStep === 'confirm' && (
+              <>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 8 }}>Leave household?</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
+                  Your open tasks will be reassigned. You can rejoin with an invite code.
+                </p>
+                {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setLeaveStep(null)} style={cancelBtnStyle}>Cancel</button>
+                  <button type="button" onClick={handleLeave} disabled={leaveBusy} style={dangerBtnStyle}>
+                    {leaveBusy ? 'Leaving…' : 'Yes, leave'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {leaveStep === 'last_admin_choice' && (
+              <>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 8 }}>You are the only admin</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
+                  Before leaving, assign a new admin or delete the group.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button type="button" onClick={() => setLeaveStep('pick_admin')} style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1px solid #6366f1', background: '#eef2ff', color: '#6366f1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    Assign new admin &amp; leave
+                  </button>
+                  <button type="button" onClick={() => setLeaveStep('confirm_delete')} style={dangerBtnStyle}>Delete group</button>
+                  <button type="button" onClick={() => setLeaveStep(null)} style={cancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            )}
+
+            {leaveStep === 'pick_admin' && (
+              <>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 6 }}>Choose a new admin</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 16, lineHeight: 1.5 }}>
+                  They will take over as admin. You will leave after promoting them.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20, maxHeight: 240, overflowY: 'auto' }}>
+                  {members.filter((m) => m.id !== member?.id).map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setSelectedAdminId(m.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${selectedAdminId === m.id ? '#6366f1' : '#e4e4e7'}`, background: selectedAdminId === m.id ? '#eef2ff' : '#f9f9f9', cursor: 'pointer', textAlign: 'left' }}
+                    >
+                      <span style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: m.color + '20', border: `2px solid ${m.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>{m.avatar}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#18181b' }}>{m.name}</span>
+                      {selectedAdminId === m.id && <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#6366f1' }}>Selected</span>}
+                    </button>
+                  ))}
+                </div>
+                {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setLeaveStep('last_admin_choice')} style={cancelBtnStyle}>Back</button>
+                  <button type="button" onClick={handleLeave} disabled={!selectedAdminId || leaveBusy} style={{ ...dangerBtnStyle, background: !selectedAdminId || leaveBusy ? '#e4e4e7' : '#ef4444', color: !selectedAdminId || leaveBusy ? '#a1a1aa' : 'white', cursor: !selectedAdminId || leaveBusy ? 'not-allowed' : 'pointer' }}>
+                    {leaveBusy ? 'Saving…' : 'Make admin & leave'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {leaveStep === 'confirm_delete' && (
+              <>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Delete group?</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
+                  This will permanently delete the household, all tasks, and remove all members. This cannot be undone.
+                </p>
+                {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setLeaveStep(isSoleMember ? null : 'last_admin_choice')} style={cancelBtnStyle}>Cancel</button>
+                  <button type="button" onClick={handleDeleteHousehold} disabled={leaveBusy} style={dangerBtnStyle}>
+                    {leaveBusy ? 'Deleting…' : 'Delete group'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+const cancelBtnStyle: React.CSSProperties = {
+  flex: 1, padding: '12px 0', borderRadius: 10,
+  border: '1px solid #e4e4e7', background: 'white',
+  color: '#71717a', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+}
+
+const dangerBtnStyle: React.CSSProperties = {
+  flex: 2, padding: '12px 0', borderRadius: 10,
+  border: 'none', background: '#ef4444',
+  color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
 }

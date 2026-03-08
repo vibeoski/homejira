@@ -137,6 +137,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			r.Post("/link/{token}/join", householdH.JoinByInviteToken)
 
 			r.Post("/leave", householdH.Leave)
+				r.Delete("/", householdH.Delete)
 				r.Post("/members/{id}/remove", householdH.RemoveMember)
 				r.Post("/members/{id}/promote", householdH.PromoteMember)
 

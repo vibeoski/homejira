@@ -53,19 +53,14 @@ export function TasksPage() {
 
   return (
     <>
-      {/* Sub-header: task stats + member avatars */}
+      {/* Sub-header: page title + task stats + member avatars */}
       <div style={{
-        background: 'white', padding: '10px 16px 0',
+        background: 'white', padding: '12px 16px 0',
         borderBottom: '1px solid #e4e4e7',
         position: 'sticky', top: 57, zIndex: 49,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 12, color: '#71717a', margin: 0 }}>
-              {openCount} open
-              {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
-            </p>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2, flex: 1 }}>Tasks</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {members.slice(0, 4).map((m, i) => (
               <span
@@ -88,6 +83,10 @@ export function TasksPage() {
             )}
           </div>
         </div>
+        <p style={{ fontSize: 12, color: '#71717a', margin: '0 0 8px' }}>
+          {openCount} open
+          {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
+        </p>
 
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: 10 }}>

@@ -94,6 +94,7 @@ type HouseholdRepository interface {
 	Create(name string, kind HouseholdKind, createdBy uuid.UUID, joinCode string) (*Household, error)
 	FindByID(id uuid.UUID) (*Household, error)
 	FindByJoinCode(joinCode string) (*Household, error)
+	Delete(id uuid.UUID) error
 }
 
 // HouseholdJoinRequestRepository manages join request persistence.

@@ -11,5 +11,15 @@ export function StatsPage() {
     return <Navigate to="/household" replace />
   }
 
-  return <StatsScreen tasks={tasks} members={members} />
+  return (
+    <>
+      <div style={{
+        background: 'white', padding: '12px 16px',
+        borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 57, zIndex: 49,
+      }}>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2 }}>Stats</h2>
+      </div>
+      <StatsScreen tasks={tasks} members={members} />
+    </>
+  )
 }

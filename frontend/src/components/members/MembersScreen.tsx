@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Avatar } from '../ui/Avatar'
+import { HouseholdPromo } from './HouseholdPromo'
 import { householdsApi } from '../../api/households'
 import { useStore } from '../../store'
-import { useAuthStore } from '../../store/authStore'
 import type { Task, Member } from '../../types'
 
 interface Props {
@@ -15,17 +15,11 @@ interface Props {
 const ACCENT = '#6366f1'
 
 export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props) {
-  const { fetchMembers, fetchTasks } = useStore()
-  const { updateMember } = useAuthStore()
+  const { fetchMembers } = useStore()
   const [removing, setRemoving] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [flashSuccess, setFlashSuccess] = useState<string | null>(null)
-  const [leaveBusy, setLeaveBusy] = useState(false)
-  const [leaveError, setLeaveError] = useState<string | null>(null)
-
-  const adminCount = members.filter((m) => m.role === 'admin').length
-  const isOnlyAdmin = currentMember?.role === 'admin' && adminCount <= 1
 
   const handlePromote = async (id: string) => {
     setPromoting(id)
@@ -51,20 +45,6 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
       // no-op
     } finally {
       setRemoving(null)
-    }
-  }
-
-  const handleLeave = async () => {
-    setLeaveBusy(true)
-    setLeaveError(null)
-    try {
-      const { member: updated } = await householdsApi.leave()
-      updateMember(updated)
-      await Promise.all([fetchMembers(), fetchTasks()])
-    } catch (e: unknown) {
-      setLeaveError((e as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not leave household.')
-    } finally {
-      setLeaveBusy(false)
     }
   }
 
@@ -156,24 +136,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
         )
       })}
 
-      {!isOnlyAdmin && (
-        <div style={{ marginTop: 8 }}>
-          {leaveError && (
-            <p style={{ fontSize: 12, color: '#ef4444', textAlign: 'center', marginBottom: 8 }}>{leaveError}</p>
-          )}
-          <button
-            type="button"
-            onClick={handleLeave}
-            disabled={leaveBusy}
-            style={{
-              width: '100%', padding: '12px 0', borderRadius: 10,
-              border: '1px solid #fecaca', background: 'white',
-              color: leaveBusy ? '#a1a1aa' : '#ef4444',
-              fontSize: 13, fontWeight: 600, cursor: leaveBusy ? 'not-allowed' : 'pointer',
-            }}
-          >{leaveBusy ? 'Leaving…' : 'Leave household'}</button>
-        </div>
-      )}
+      <HouseholdPromo />
     </div>
   )
 }

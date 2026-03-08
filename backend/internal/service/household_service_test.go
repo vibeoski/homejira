@@ -638,6 +638,50 @@ func TestHouseholdService_RejectInvite_Success(t *testing.T) {
 
 // ── JoinByInviteToken_Idempotent ──────────────────────────────────────────────
 
+// ── DeleteHousehold ───────────────────────────────────────────────────────────
+
+func TestHouseholdService_DeleteHousehold_Success(t *testing.T) {
+	memberRepo, householdRepo, admin, h := seedAdmin(t)
+	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), newMockInviteRepo(), newMockInviteLinkRepo(), newMockTaskRepo())
+
+	err := svc.DeleteHousehold(admin.ID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := householdRepo.households[h.ID]; ok {
+		t.Error("household should have been deleted")
+	}
+}
+
+func TestHouseholdService_DeleteHousehold_NotAdmin(t *testing.T) {
+	memberRepo, householdRepo, _, h := seedAdmin(t)
+	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), newMockInviteRepo(), newMockInviteLinkRepo(), newMockTaskRepo())
+
+	memberID := uuid.New()
+	member := &domain.Member{ID: memberID, Name: "Regular", HouseholdID: &h.ID, Role: domain.MemberRoleMember}
+	memberRepo.seed(member)
+
+	err := svc.DeleteHousehold(memberID)
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Errorf("expected ErrUnauthorized, got %v", err)
+	}
+}
+
+func TestHouseholdService_DeleteHousehold_NoHousehold(t *testing.T) {
+	memberRepo := newMockMemberRepo()
+	householdRepo := newMockHouseholdRepo()
+	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), newMockInviteRepo(), newMockInviteLinkRepo(), newMockTaskRepo())
+
+	memberID := uuid.New()
+	member := &domain.Member{ID: memberID, Name: "Lone", HouseholdID: nil, Role: domain.MemberRoleAdmin}
+	memberRepo.seed(member)
+
+	err := svc.DeleteHousehold(memberID)
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput, got %v", err)
+	}
+}
+
 func TestHouseholdService_JoinByInviteToken_Idempotent(t *testing.T) {
 	memberRepo, householdRepo, admin, h := seedAdmin(t)
 	inviteLinkRepo := newMockInviteLinkRepo()
