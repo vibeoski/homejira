@@ -73,4 +73,4 @@ export interface CoinTransaction {
 export interface AuthCheckResponse { registered: boolean }
 export interface AuthResponse { token: string; member: Member }
 export interface LoginPayload { phone: string; mpin: string }
-export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string; email?: string }
+export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string; email?: string; firebase_token?: string }
