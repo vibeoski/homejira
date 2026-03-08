@@ -12,6 +12,29 @@ export function StatsScreen({ tasks, members }: Props) {
   const urgentCount = householdTasks.filter((x) => !x.done && x.priority === 'urgent').length
   const r = 30, circ = 2 * Math.PI * r
 
+  if (tasks.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#f4f4f5',
+                      border: '2px dashed #d4d4d8', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', marginBottom: 24 }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa"
+               strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+          </svg>
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 8px' }}>
+          Nothing to report yet
+        </h2>
+        <p style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.6, maxWidth: 240, margin: 0 }}>
+          Add some tasks to your household and stats will appear here.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ padding: '16px 12px 100px' }}>
       {/* Overall ring */}
