@@ -26,7 +26,7 @@ func seedMemberAndTask(t *testing.T) (*mockMemberRepo, *mockTaskRepo, *domain.Me
 		Title:       "Buy milk",
 		Category:    domain.CategoryGrocery,
 		Priority:    domain.PriorityNormal,
-		AssigneeID:  m.ID,
+		AssigneeID:  &m.ID,
 		HouseholdID: uuid.New(),
 		ActorID:     m.ID,
 	})
@@ -49,7 +49,7 @@ func TestTaskService_CreateTask_Success(t *testing.T) {
 		Title:       "Fix fence",
 		Category:    domain.CategoryRepair,
 		Priority:    domain.PriorityHigh,
-		AssigneeID:  m.ID,
+		AssigneeID:  &m.ID,
 		HouseholdID: uuid.New(),
 		ActorID:     m.ID,
 	})
@@ -71,7 +71,7 @@ func TestTaskService_CreateTask_EmptyTitle(t *testing.T) {
 		Title:      "",
 		Category:   domain.CategoryChore,
 		Priority:   domain.PriorityNormal,
-		AssigneeID: m.ID,
+		AssigneeID: &m.ID,
 		ActorID:    m.ID,
 	})
 	if !errors.Is(err, domain.ErrInvalidInput) {
@@ -89,7 +89,7 @@ func TestTaskService_CreateTask_InvalidCategory(t *testing.T) {
 		Title:      "Something",
 		Category:   "invalid",
 		Priority:   domain.PriorityNormal,
-		AssigneeID: m.ID,
+		AssigneeID: &m.ID,
 		ActorID:    m.ID,
 	})
 	if !errors.Is(err, domain.ErrInvalidInput) {
@@ -107,7 +107,7 @@ func TestTaskService_CreateTask_InvalidPriority(t *testing.T) {
 		Title:      "Something",
 		Category:   domain.CategoryChore,
 		Priority:   "critical",
-		AssigneeID: m.ID,
+		AssigneeID: &m.ID,
 		ActorID:    m.ID,
 	})
 	if !errors.Is(err, domain.ErrInvalidInput) {
@@ -118,11 +118,12 @@ func TestTaskService_CreateTask_InvalidPriority(t *testing.T) {
 func TestTaskService_CreateTask_AssigneeNotFound(t *testing.T) {
 	svc := newTaskSvc(newMockTaskRepo(), newMockMemberRepo())
 
+	unknownID := uuid.New()
 	_, err := svc.CreateTask(domain.CreateTaskInput{
 		Title:      "Something",
 		Category:   domain.CategoryChore,
 		Priority:   domain.PriorityNormal,
-		AssigneeID: uuid.New(), // not seeded
+		AssigneeID: &unknownID, // not seeded
 		ActorID:    uuid.New(),
 	})
 	if !errors.Is(err, domain.ErrInvalidInput) {

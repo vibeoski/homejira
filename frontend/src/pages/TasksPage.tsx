@@ -195,7 +195,7 @@ export function TasksPage() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: '4px 12px 100px' }}>
+      <div style={{ padding: '4px 12px 140px' }}>
         {loading ? (
           <Spinner />
         ) : nonGroceryTasks.length === 0 ? (
