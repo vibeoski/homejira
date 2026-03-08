@@ -10,9 +10,6 @@ export interface Member {
   phone?: string
   household_id?: string | null
   role?: 'admin' | 'member'
-  email?: string
-  email_verified?: boolean
-  phone_verified?: boolean
 }
 export interface Comment {
   id: string; task_id: string; author_id: string; body: string; created_at: string; author?: Member
@@ -73,4 +70,4 @@ export interface CoinTransaction {
 export interface AuthCheckResponse { registered: boolean }
 export interface AuthResponse { token: string; member: Member }
 export interface LoginPayload { phone: string; mpin: string }
-export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string; email?: string; firebase_token?: string }
+export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string }

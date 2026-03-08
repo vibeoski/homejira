@@ -1,19 +1,17 @@
 import { useState } from 'react'
 import { PhoneStep } from '../components/auth/PhoneStep'
 import { MPINStep } from '../components/auth/MPINStep'
-import { OTPStep } from '../components/auth/OTPStep'
 import { RegisterStep } from '../components/auth/RegisterStep'
 import { useAuthStore } from '../store/authStore'
 import { householdsApi } from '../api/households'
 import { AppLogo } from '../components/ui/AppLogo'
 import type { Member } from '../types'
 
-type Step = 'phone' | 'mpin' | 'otp' | 'register'
+type Step = 'phone' | 'mpin' | 'register'
 
 export function AuthPage() {
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
-  const [firebaseToken, setFirebaseToken] = useState<string | null>(null)
   const { setAuth } = useAuthStore()
 
   const handleSuccess = async (token: string, member: Member) => {
@@ -51,21 +49,14 @@ export function AuthPage() {
       {step === 'phone' && (
         <PhoneStep
           onRegistered={(p) => { setPhone(p); setStep('mpin') }}
-          onUnregistered={(p) => { setPhone(p); setStep('otp') }}
+          onUnregistered={(p) => { setPhone(p); setStep('register') }}
         />
       )}
       {step === 'mpin' && (
         <MPINStep phone={phone} onSuccess={handleSuccess} onBack={() => setStep('phone')} />
       )}
-      {step === 'otp' && (
-        <OTPStep
-          phone={phone}
-          onVerified={(token) => { setFirebaseToken(token); setStep('register') }}
-          onBack={() => setStep('phone')}
-        />
-      )}
       {step === 'register' && (
-        <RegisterStep phone={phone} onSuccess={handleSuccess} onBack={() => setStep('phone')} firebaseToken={firebaseToken ?? undefined} />
+        <RegisterStep phone={phone} onSuccess={handleSuccess} onBack={() => setStep('phone')} />
       )}
 
     </div>

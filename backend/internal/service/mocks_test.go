@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,63 +8,6 @@ import (
 
 	"github.com/homejira/api/internal/domain"
 )
-
-// ── Stub mailer ───────────────────────────────────────────────────────────────
-
-type stubMailer struct{}
-
-func (s *stubMailer) SendEmailVerification(_, _, _ string) error { return nil }
-
-// ── Stub verification repo ────────────────────────────────────────────────────
-
-type stubVerificationRepo struct{}
-
-func (r *stubVerificationRepo) CreateEmailToken(memberID uuid.UUID, token string, expiresAt time.Time) (*domain.EmailVerification, error) {
-	return &domain.EmailVerification{
-		ID: uuid.New(), MemberID: memberID, Token: token, ExpiresAt: expiresAt,
-		Used: false, CreatedAt: time.Now(),
-	}, nil
-}
-
-func (r *stubVerificationRepo) FindEmailToken(token string) (*domain.EmailVerification, error) {
-	return nil, domain.ErrNotFound
-}
-
-func (r *stubVerificationRepo) MarkEmailTokenUsed(id uuid.UUID) error { return nil }
-
-// recordingVerificationRepo records the last token created — lets tests call VerifyEmail.
-type recordingVerificationRepo struct {
-	tokens    map[string]*domain.EmailVerification
-	lastToken string
-}
-
-func newRecordingVerificationRepo() *recordingVerificationRepo {
-	return &recordingVerificationRepo{tokens: make(map[string]*domain.EmailVerification)}
-}
-
-func (r *recordingVerificationRepo) CreateEmailToken(memberID uuid.UUID, token string, expiresAt time.Time) (*domain.EmailVerification, error) {
-	v := &domain.EmailVerification{ID: uuid.New(), MemberID: memberID, Token: token, ExpiresAt: expiresAt}
-	r.tokens[token] = v
-	r.lastToken = token
-	return v, nil
-}
-
-func (r *recordingVerificationRepo) FindEmailToken(token string) (*domain.EmailVerification, error) {
-	if v, ok := r.tokens[token]; ok {
-		cp := *v
-		return &cp, nil
-	}
-	return nil, domain.ErrNotFound
-}
-
-func (r *recordingVerificationRepo) MarkEmailTokenUsed(id uuid.UUID) error {
-	for _, v := range r.tokens {
-		if v.ID == id {
-			v.Used = true
-		}
-	}
-	return nil
-}
 
 // ── Member mock ───────────────────────────────────────────────────────────────
 
@@ -178,36 +120,6 @@ func (m *mockMemberRepo) UpdateMpin(id uuid.UUID, mpinHash string) error {
 	if mem.Phone != "" {
 		m.byPhone[mem.Phone] = mem
 	}
-	return nil
-}
-
-func (m *mockMemberRepo) UpdateEmail(id uuid.UUID, email string) (*domain.Member, error) {
-	mem, err := m.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-	mem.Email = email
-	m.members[id] = mem
-	return mem, nil
-}
-
-func (m *mockMemberRepo) SetPhoneVerified(id uuid.UUID) error {
-	mem, err := m.FindByID(id)
-	if err != nil {
-		return err
-	}
-	mem.PhoneVerified = true
-	m.members[id] = mem
-	return nil
-}
-
-func (m *mockMemberRepo) SetEmailVerified(id uuid.UUID) error {
-	mem, err := m.FindByID(id)
-	if err != nil {
-		return err
-	}
-	mem.EmailVerified = true
-	m.members[id] = mem
 	return nil
 }
 
@@ -496,15 +408,26 @@ func (r *mockActivityRepo) FindByTask(taskID uuid.UUID) ([]domain.Activity, erro
 	return out, nil
 }
 
-// ── Firebase verifier mock ────────────────────────────────────────────────────
+// ── Feature flag mock ─────────────────────────────────────────────────────────
 
-type mockFirebaseVerifier struct {
-	phone string
-	err   error
+type mockFeatureFlagRepo struct {
+	flags map[string]bool
 }
 
-func (m *mockFirebaseVerifier) VerifyIDToken(_ context.Context, _ string) (string, error) {
-	return m.phone, m.err
+func newMockFeatureFlagRepo(flags map[string]bool) *mockFeatureFlagRepo {
+	return &mockFeatureFlagRepo{flags: flags}
+}
+
+func (r *mockFeatureFlagRepo) IsEnabled(key string) (bool, error) {
+	return r.flags[key], nil
+}
+
+func (r *mockFeatureFlagRepo) List() ([]domain.FeatureFlag, error) {
+	out := make([]domain.FeatureFlag, 0, len(r.flags))
+	for k, v := range r.flags {
+		out = append(out, domain.FeatureFlag{Key: k, Enabled: v})
+	}
+	return out, nil
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
