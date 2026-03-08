@@ -9,6 +9,29 @@ import (
 	"github.com/homejira/api/internal/domain"
 )
 
+// ── Stub mailer ───────────────────────────────────────────────────────────────
+
+type stubMailer struct{}
+
+func (s *stubMailer) SendEmailVerification(_, _, _ string) error { return nil }
+
+// ── Stub verification repo ────────────────────────────────────────────────────
+
+type stubVerificationRepo struct{}
+
+func (r *stubVerificationRepo) CreateEmailToken(memberID uuid.UUID, token string, expiresAt time.Time) (*domain.EmailVerification, error) {
+	return &domain.EmailVerification{
+		ID: uuid.New(), MemberID: memberID, Token: token, ExpiresAt: expiresAt,
+		Used: false, CreatedAt: time.Now(),
+	}, nil
+}
+
+func (r *stubVerificationRepo) FindEmailToken(token string) (*domain.EmailVerification, error) {
+	return nil, domain.ErrNotFound
+}
+
+func (r *stubVerificationRepo) MarkEmailTokenUsed(id uuid.UUID) error { return nil }
+
 // ── Member mock ───────────────────────────────────────────────────────────────
 
 type mockMemberRepo struct {
@@ -120,6 +143,36 @@ func (m *mockMemberRepo) UpdateMpin(id uuid.UUID, mpinHash string) error {
 	if mem.Phone != "" {
 		m.byPhone[mem.Phone] = mem
 	}
+	return nil
+}
+
+func (m *mockMemberRepo) UpdateEmail(id uuid.UUID, email string) (*domain.Member, error) {
+	mem, err := m.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	mem.Email = email
+	m.members[id] = mem
+	return mem, nil
+}
+
+func (m *mockMemberRepo) SetPhoneVerified(id uuid.UUID) error {
+	mem, err := m.FindByID(id)
+	if err != nil {
+		return err
+	}
+	mem.PhoneVerified = true
+	m.members[id] = mem
+	return nil
+}
+
+func (m *mockMemberRepo) SetEmailVerified(id uuid.UUID) error {
+	mem, err := m.FindByID(id)
+	if err != nil {
+		return err
+	}
+	mem.EmailVerified = true
+	m.members[id] = mem
 	return nil
 }
 

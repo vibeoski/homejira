@@ -10,7 +10,7 @@ import (
 )
 
 func newAuthSvc(members *mockMemberRepo) *AuthService {
-	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!")
+	return NewAuthService(members, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{})
 }
 
 // ── CheckPhone ────────────────────────────────────────────────────────────────

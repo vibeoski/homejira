@@ -38,8 +38,8 @@ export function GroceryPage() {
     }
   }
 
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (sseVersion > 0) load() }, [sseVersion]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [])
+  useEffect(() => { if (sseVersion > 0) load() }, [sseVersion])
 
   const handleAdd = async () => {
     const title = newTitle.trim()

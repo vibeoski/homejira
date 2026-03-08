@@ -11,11 +11,13 @@ import (
 )
 
 type MemberHandler struct {
-	svc *service.MemberService
+	svc        *service.MemberService
+	authSvc    *service.AuthService
+	appBaseURL string
 }
 
-func NewMemberHandler(svc *service.MemberService) *MemberHandler {
-	return &MemberHandler{svc: svc}
+func NewMemberHandler(svc *service.MemberService, authSvc *service.AuthService, appBaseURL string) *MemberHandler {
+	return &MemberHandler{svc: svc, authSvc: authSvc, appBaseURL: appBaseURL}
 }
 
 // GET /members
@@ -111,4 +113,39 @@ func (h *MemberHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond(w, http.StatusCreated, envelope{"member": member})
+}
+
+// PATCH /members/me/email
+// Body:     { "email": "user@example.com" }
+// Response: { "member": {...} }
+func (h *MemberHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+
+	var body struct {
+		Email string `json:"email"`
+	}
+	if err := decode(r, &body); err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
+		return
+	}
+	if body.Email == "" {
+		respond(w, http.StatusBadRequest, envelope{"error": "email is required"})
+		return
+	}
+
+	member, err := h.authSvc.UpdateEmail(memberID, body.Email, h.appBaseURL)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusOK, envelope{"member": member})
 }

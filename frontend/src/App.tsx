@@ -10,6 +10,7 @@ import { AuthPage } from './pages/AuthPage'
 import { JoinPage } from './pages/JoinPage'
 import { ReferralPage } from './pages/ReferralPage'
 import { GroceryPage } from './pages/GroceryPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
 export default function App() {
   const { fetchTasks, fetchMembers } = useStore()
@@ -42,6 +43,7 @@ export default function App() {
 
         <Route path="/join/:token" element={<JoinPage />} />
         <Route path="/refer/:token" element={<ReferralPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/auth'} replace />} />
       </Routes>
