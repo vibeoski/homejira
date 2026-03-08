@@ -11,10 +11,10 @@ export function MembersPage() {
   return (
     <>
       <div style={{
-        background: 'var(--bg-surface)', padding: '12px 16px',
-        borderBottom: '1px solid var(--border)', position: 'sticky', top: 57, zIndex: 49,
+        background: 'white', padding: '12px 16px',
+        borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 57, zIndex: 49,
       }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', margin: 0, letterSpacing: 0.2 }}>Household</h2>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2 }}>Household</h2>
       </div>
       <HouseholdPanel />
       {!!member?.household_id && (

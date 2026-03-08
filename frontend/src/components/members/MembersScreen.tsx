@@ -114,25 +114,25 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
           <div
             key={m.id}
             className={flashSuccess === m.id ? 'flash-green' : undefined}
-            style={{ background: 'var(--bg-surface)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', marginBottom: 8 }}
+            style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e4e4e7', marginBottom: 8 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: open.length > 0 ? 12 : 0 }}>
               <Avatar member={m} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{m.name}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#18181b' }}>{m.name}</p>
                   {m.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>
                       Admin
                     </span>
                   )}
                   {isSelf && (
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 999, background: 'var(--bg-muted)', color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 999, background: '#f4f4f5', color: '#71717a' }}>
                       You
                     </span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{open.length} open tasks</p>
+                <p style={{ fontSize: 12, color: '#a1a1aa' }}>{open.length} open tasks</p>
               </div>
               {urgent.length > 0 && (
                 <span style={{ background: '#fef2f2', color: '#ef4444', borderRadius: 99, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>
@@ -156,7 +156,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                     <>
                       <button
                         onClick={() => setConfirmRemove(null)}
-                        style={{ border: 'none', background: 'var(--bg-muted)', color: 'var(--text-secondary)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ border: 'none', background: '#f4f4f5', color: '#71717a', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
                       >Cancel</button>
                       <button
                         onClick={() => handleRemove(m.id)}
@@ -167,7 +167,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                   ) : (
                     <button
                       onClick={() => setConfirmRemove(m.id)}
-                      style={{ border: 'none', background: 'var(--bg-muted)', color: 'var(--text-muted)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                      style={{ border: 'none', background: '#f4f4f5', color: '#a1a1aa', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
                     >Remove</button>
                   )}
                 </div>
@@ -176,12 +176,12 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             {open.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {open.slice(0, 3).map((t) => (
-                  <span key={t.id} style={{ background: 'var(--bg-muted)', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: 'var(--text-secondary)' }}>
+                  <span key={t.id} style={{ background: '#f4f4f5', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#71717a' }}>
                     {t.title.length > 22 ? t.title.slice(0, 22) + '…' : t.title}
                   </span>
                 ))}
                 {open.length > 3 && (
-                  <span style={{ background: 'var(--bg-muted)', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: 'var(--text-muted)' }}>
+                  <span style={{ background: '#f4f4f5', borderRadius: 6, padding: '3px 8px', fontSize: 11, color: '#a1a1aa' }}>
                     +{open.length - 3} more
                   </span>
                 )}
@@ -197,7 +197,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
           onClick={openLeave}
           style={{
             width: '100%', padding: '12px 0', borderRadius: 10,
-            border: '1px solid #fecaca', background: 'var(--bg-surface)',
+            border: '1px solid #fecaca', background: 'white',
             color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}
         >Leave household</button>
@@ -208,20 +208,20 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
         <div
           className="fade-in"
           onClick={() => { if (!leaveBusy) setLeaveStep(null) }}
-          style={{ position: 'fixed', inset: 0, background: 'var(--shadow-overlay)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             className="slide-up"
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'var(--bg-surface)', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
           >
-            <div style={{ width: 36, height: 3, background: 'var(--border)', borderRadius: 99, margin: '14px auto 20px' }} />
+            <div style={{ width: 36, height: 3, background: '#e4e4e7', borderRadius: 99, margin: '14px auto 20px' }} />
 
             {/* Simple confirm leave */}
             {leaveStep === 'confirm' && (
               <>
-                <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>Leave household?</p>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 8 }}>Leave household?</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
                   Your open tasks will be reassigned. You can rejoin with an invite code.
                 </p>
                 {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
@@ -237,8 +237,8 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             {/* Sole admin with other members: choose action */}
             {leaveStep === 'last_admin_choice' && (
               <>
-                <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>You are the only admin</p>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 8 }}>You are the only admin</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
                   Before leaving, assign a new admin or delete the group.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -264,8 +264,8 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             {/* Pick who becomes the new admin */}
             {leaveStep === 'pick_admin' && (
               <>
-                <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Choose a new admin</p>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 6 }}>Choose a new admin</p>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 16, lineHeight: 1.5 }}>
                   They will take over as admin. You will leave after promoting them.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20, maxHeight: 240, overflowY: 'auto' }}>
@@ -277,8 +277,8 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         padding: '10px 12px', borderRadius: 10,
-                        border: `1.5px solid ${selectedAdminId === m.id ? '#6366f1' : 'var(--border)'}`,
-                        background: selectedAdminId === m.id ? '#eef2ff' : 'var(--bg-subtle)',
+                        border: `1.5px solid ${selectedAdminId === m.id ? '#6366f1' : '#e4e4e7'}`,
+                        background: selectedAdminId === m.id ? '#eef2ff' : '#f9f9f9',
                         cursor: 'pointer', textAlign: 'left',
                       }}
                     >
@@ -287,7 +287,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                         background: m.color + '20', border: `2px solid ${m.color}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
                       }}>{m.avatar}</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.name}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#18181b' }}>{m.name}</span>
                       {selectedAdminId === m.id && (
                         <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#6366f1' }}>Selected</span>
                       )}
@@ -316,7 +316,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             {leaveStep === 'confirm_delete' && (
               <>
                 <p style={{ fontSize: 17, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Delete group?</p>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: '#71717a', marginBottom: 24, lineHeight: 1.5 }}>
                   This will permanently delete the household, all tasks, and remove all members. This cannot be undone.
                 </p>
                 {leaveError && <p style={{ fontSize: 12, color: '#ef4444', marginBottom: 12 }}>{leaveError}</p>}
@@ -341,8 +341,8 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
 
 const cancelBtnStyle: React.CSSProperties = {
   flex: 1, padding: '12px 0', borderRadius: 10,
-  border: '1px solid var(--border)', background: 'var(--bg-surface)',
-  color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  border: '1px solid #e4e4e7', background: 'white',
+  color: '#71717a', fontSize: 13, fontWeight: 600, cursor: 'pointer',
 }
 
 const dangerBtnStyle: React.CSSProperties = {

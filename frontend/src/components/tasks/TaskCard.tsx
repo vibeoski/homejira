@@ -25,11 +25,11 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
     <div
       onClick={() => onOpen(task)}
       style={{
-        background: 'var(--bg-surface)',
+        background: 'white',
         borderRadius: 12,
         padding: '13px 14px 12px',
         marginBottom: 6,
-        border: `1px solid ${overdue && !task.done ? '#fecaca' : 'var(--border)'}`,
+        border: `1px solid ${overdue && !task.done ? '#fecaca' : '#e4e4e7'}`,
         display: 'flex',
         gap: 11,
         alignItems: 'flex-start',
@@ -44,8 +44,8 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         className={popping ? 'check-pop' : undefined}
         style={{
           width: 20, height: 20, borderRadius: 6, marginTop: 2, flexShrink: 0,
-          border: task.done ? 'none' : '1.5px solid var(--border)',
-          background: task.done ? '#22c55e' : 'var(--bg-surface)',
+          border: task.done ? 'none' : '1.5px solid #d4d4d8',
+          background: task.done ? '#22c55e' : 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', padding: 0, transition: 'background .15s',
         }}
@@ -62,7 +62,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         <p style={{
           fontSize: 14, fontWeight: 500, lineHeight: 1.4,
           textDecoration: task.done ? 'line-through' : 'none',
-          color: task.done ? 'var(--text-muted)' : 'var(--text-primary)',
+          color: task.done ? '#a1a1aa' : '#18181b',
           margin: '0 0 5px',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{task.title}</p>
@@ -75,7 +75,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           }}>{cat.icon} {cat.label}</span>
           {task.notes && (
             <span style={{
-              fontSize: 12, color: 'var(--text-muted)',
+              fontSize: 12, color: '#a1a1aa',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110,
             }}>{task.notes}</span>
           )}
@@ -90,7 +90,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
               </span>
             )}
             {(task.comments?.length ?? 0) > 0 && (
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: 11, color: '#a1a1aa' }}>
                 {task.comments!.length} comment{task.comments!.length !== 1 ? 's' : ''}
               </span>
             )}

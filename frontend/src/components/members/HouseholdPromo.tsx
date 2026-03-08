@@ -29,14 +29,14 @@ export function HouseholdPromo() {
   return (
     <div style={{ padding: '0 12px 32px' }}>
       {/* Refer friends card */}
-      <div style={{ background: 'var(--bg-surface)', borderRadius: 12, border: '1px solid var(--border)', padding: '16px 16px', marginBottom: 12 }}>
+      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e4e4e7', padding: '16px 16px', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fef9c3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
             🪙
           </div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Love HomeJira?</p>
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '2px 0 0' }}>Refer friends &amp; family — earn 10 coins each</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#18181b', margin: 0 }}>Love HomeJira?</p>
+            <p style={{ fontSize: 11, color: '#71717a', margin: '2px 0 0' }}>Refer friends &amp; family — earn 10 coins each</p>
           </div>
         </div>
         <button
@@ -45,9 +45,9 @@ export function HouseholdPromo() {
           disabled={sharingReferral}
           style={{
             width: '100%', padding: '9px 0', borderRadius: 8,
-            border: '1px solid var(--border)',
-            background: sharingReferral ? 'var(--bg-muted)' : 'var(--bg-surface)',
-            color: sharingReferral ? 'var(--text-muted)' : 'var(--text-primary)',
+            border: '1px solid #e4e4e7',
+            background: sharingReferral ? '#f4f4f5' : 'white',
+            color: sharingReferral ? '#a1a1aa' : '#18181b',
             fontSize: 13, fontWeight: 600, cursor: sharingReferral ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}
@@ -68,9 +68,9 @@ export function HouseholdPromo() {
           rel="noopener noreferrer"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none',
-            padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border)',
-            background: 'var(--bg-surface)', transition: 'all 0.15s',
+            fontSize: 12, color: '#a1a1aa', textDecoration: 'none',
+            padding: '6px 12px', borderRadius: 99, border: '1px solid #e4e4e7',
+            background: 'white', transition: 'all 0.15s',
           }}
         >
           ☕ Buy me a coffee

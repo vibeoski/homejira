@@ -33,7 +33,7 @@ export function AuthPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: 'var(--bg-muted)',
+      minHeight: '100vh', background: '#f4f4f5',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '20px 16px', gap: 14,
     }}>
@@ -41,8 +41,8 @@ export function AuthPage() {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <AppLogo size={52} />
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: 'var(--text-primary)', margin: 0 }}>HomeJira</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '3px 0 0' }}>Your household, organized.</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: 0 }}>HomeJira</h1>
+          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '3px 0 0' }}>Your household, organized.</p>
         </div>
       </div>
 
@@ -62,21 +62,21 @@ export function AuthPage() {
       {step === 'phone' && (
         <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
+            <span style={{ color: '#a1a1aa', fontSize: 12 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: '#e4e4e7' }} />
           </div>
 
           <button
             onClick={setGuest}
             style={{
               width: '100%', padding: '12px 0', borderRadius: 10,
-              border: '1px solid var(--border)', background: 'var(--bg-surface)',
-              color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              border: '1px solid #e4e4e7', background: 'white',
+              color: '#71717a', fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}
           >Continue as guest</button>
 
-          <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <p style={{ marginTop: 8, fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>
             Data saved locally on this device only.
           </p>
         </div>

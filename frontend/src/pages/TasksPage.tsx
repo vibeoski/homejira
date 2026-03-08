@@ -55,12 +55,12 @@ export function TasksPage() {
     <>
       {/* Sub-header: page title + task stats + member avatars */}
       <div style={{
-        background: 'var(--bg-surface)', padding: '12px 16px 0',
-        borderBottom: '1px solid var(--border)',
+        background: 'white', padding: '12px 16px 0',
+        borderBottom: '1px solid #e4e4e7',
         position: 'sticky', top: 57, zIndex: 49,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', margin: 0, letterSpacing: 0.2, flex: 1 }}>Tasks</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2, flex: 1 }}>Tasks</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {members.slice(0, 4).map((m, i) => (
               <span
@@ -78,12 +78,12 @@ export function TasksPage() {
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 28, height: 28, borderRadius: '50%', fontSize: 10, fontWeight: 700,
-                background: 'var(--bg-muted)', color: 'var(--text-secondary)', marginLeft: -8, border: '2px solid var(--bg-surface)',
+                background: '#f4f4f5', color: '#71717a', marginLeft: -8, border: '2px solid white',
               }}>+{members.length - 4}</span>
             )}
           </div>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+        <p style={{ fontSize: 12, color: '#71717a', margin: '0 0 8px' }}>
           {openCount} open
           {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
         </p>
@@ -104,8 +104,8 @@ export function TasksPage() {
             placeholder="Search tasks…"
             style={{
               width: '100%', padding: '9px 32px 9px 32px', borderRadius: 8,
-              border: '1px solid var(--border)', fontSize: 13, outline: 'none',
-              background: 'var(--bg-subtle)', color: 'var(--text-primary)', boxSizing: 'border-box',
+              border: '1px solid #e4e4e7', fontSize: 13, outline: 'none',
+              background: '#f9f9f9', color: '#18181b', boxSizing: 'border-box',
             }}
           />
           {search !== '' && (
@@ -115,7 +115,7 @@ export function TasksPage() {
                 position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', padding: 2, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-muted)',
+                color: '#a1a1aa',
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -136,9 +136,9 @@ export function TasksPage() {
                 onClick={() => setCatTab(t.id)}
                 style={{
                   flexShrink: 0, padding: '6px 12px', borderRadius: 99, border: '1px solid',
-                  borderColor: active ? ACCENT : 'var(--border)',
-                  background: active ? '#eef2ff' : 'var(--bg-surface)',
-                  color: active ? ACCENT : 'var(--text-secondary)',
+                  borderColor: active ? ACCENT : '#e4e4e7',
+                  background: active ? '#eef2ff' : 'white',
+                  color: active ? ACCENT : '#71717a',
                   fontWeight: 600, fontSize: 12,
                   display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
                 }}
@@ -146,8 +146,8 @@ export function TasksPage() {
                 {t.id !== 'all' && CATEGORIES[t.id as Category].icon} {t.label}
                 {cnt > 0 && (
                   <span style={{
-                    background: active ? ACCENT : 'var(--border)',
-                    color: active ? 'white' : 'var(--text-secondary)',
+                    background: active ? ACCENT : '#e4e4e7',
+                    color: active ? 'white' : '#71717a',
                     borderRadius: 99, padding: '1px 5px', fontSize: 10, fontWeight: 700,
                   }}>{cnt}</span>
                 )}
@@ -159,15 +159,15 @@ export function TasksPage() {
 
       {/* Filter toolbar */}
       <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', background: 'var(--border)', borderRadius: 99, padding: 2, gap: 1 }}>
+        <div style={{ display: 'flex', background: '#e4e4e7', borderRadius: 99, padding: 2, gap: 1 }}>
           {(['open', 'done', 'all'] as FilterStatus[]).map((k) => (
             <button
               key={k}
               onClick={() => setFilterStatus(k)}
               style={{
                 padding: '4px 10px', borderRadius: 99, border: 'none', fontSize: 11, fontWeight: 600,
-                background: filterStatus === k ? 'var(--bg-surface)' : 'transparent',
-                color: filterStatus === k ? 'var(--text-primary)' : 'var(--text-secondary)',
+                background: filterStatus === k ? 'white' : 'transparent',
+                color: filterStatus === k ? '#18181b' : '#71717a',
                 boxShadow: filterStatus === k ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
                 cursor: 'pointer', transition: 'all .12s',
               }}
@@ -178,17 +178,17 @@ export function TasksPage() {
           onClick={() => setMyTasks((v) => !v)}
           style={{
             padding: '4px 10px', borderRadius: 99, border: '1px solid',
-            borderColor: myTasks ? ACCENT : 'var(--border)',
-            background: myTasks ? '#eef2ff' : 'var(--bg-surface)',
-            color: myTasks ? ACCENT : 'var(--text-secondary)',
+            borderColor: myTasks ? ACCENT : '#e4e4e7',
+            background: myTasks ? '#eef2ff' : 'white',
+            color: myTasks ? ACCENT : '#71717a',
             fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
           }}
         >My tasks</button>
         <button
           onClick={() => setSortBy((s) => s === 'priority' ? 'recent' : 'priority')}
           style={{
-            marginLeft: 'auto', background: 'var(--bg-surface)', border: '1px solid var(--border)',
-            borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
+            marginLeft: 'auto', background: 'white', border: '1px solid #e4e4e7',
+            borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#71717a', cursor: 'pointer',
           }}
         >{sortBy === 'priority' ? 'Sort: Priority' : 'Sort: Recent'}</button>
       </div>
@@ -208,8 +208,8 @@ export function TasksPage() {
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>No tasks yet</h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#18181b', margin: '0 0 6px' }}>No tasks yet</h2>
+            <p style={{ fontSize: 13, color: '#a1a1aa', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
               Add your household's first task to get started.
             </p>
             <button
@@ -222,13 +222,13 @@ export function TasksPage() {
           </div>
         ) : visible.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 20px' }}>
-            <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>All clear!</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#18181b' }}>All clear!</p>
+            <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
             <button
               onClick={() => { setCatTab('all'); setFilterStatus('open'); setMyTasks(false); setSearch('') }}
               style={{
-                padding: '8px 20px', borderRadius: 8, border: '1px solid var(--border)',
-                background: 'var(--bg-surface)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                padding: '8px 20px', borderRadius: 8, border: '1px solid #e4e4e7',
+                background: 'white', color: '#71717a', fontSize: 12, fontWeight: 600, cursor: 'pointer',
               }}
             >Reset filters</button>
           </div>
