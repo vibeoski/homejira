@@ -22,6 +22,10 @@ main (production)
 5. Verify the deployed preview in the staging environment (Railway staging + Vercel preview)
 6. Only then merge staging → main via PR to promote to production
 
+**Merge strategy (critical — prevents conflicts):**
+- `feature/* → staging`: **squash merge** (`gh pr merge --squash`) — condenses noisy commits
+- `staging → main`: **regular merge** (`gh pr merge --merge`) — preserves exact SHAs so git never sees staging commits as new relative to main. Using squash here causes divergence and conflicts on every subsequent promotion.
+
 **Rules:**
 - Never commit directly to `main` or `staging`
 - **All PRs from feature/fix branches MUST target `staging`**, never `main`
