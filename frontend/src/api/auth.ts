@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { AuthCheckResponse, AuthResponse, LoginPayload, RegisterPayload } from '../types'
+import type { AuthCheckResponse, AuthResponse, LoginPayload, RegisterPayload, Member } from '../types'
 
 export const authApi = {
   checkPhone: async (phone: string): Promise<AuthCheckResponse> => {
@@ -26,5 +26,9 @@ export const authApi = {
       email,
       app_base_url: window.location.origin,
     })
+  },
+  verifyPhone: async (firebaseToken: string): Promise<Member> => {
+    const { data } = await client.post('/auth/phone/verify', { firebase_token: firebaseToken })
+    return data.member
   },
 }

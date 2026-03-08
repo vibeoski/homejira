@@ -9,9 +9,6 @@ interface Props {
   firebaseToken?: string
 }
 
-const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
-  '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐯', '🦄', '🌟']
-
 const ACCENT = '#6366f1'
 
 function PinBox({
@@ -58,7 +55,6 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props) {
   const [name, setName] = useState('')
-  const [avatar, setAvatar] = useState('🧑')
   const [mpin, setMpin] = useState(['', '', '', ''])
   const [confirmMpin, setConfirmMpin] = useState(['', '', '', ''])
   const [email, setEmail] = useState('')
@@ -103,7 +99,7 @@ export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props)
     setError(null)
     try {
       const referralToken = localStorage.getItem('hj_pending_referral') ?? undefined
-      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar, mpin: pin, referral_token: referralToken, ...(email.trim() ? { email: email.trim() } : {}), ...(firebaseToken ? { firebase_token: firebaseToken } : {}) })
+      const { token, member } = await authApi.register({ phone, name: name.trim(), avatar: '', mpin: pin, referral_token: referralToken, ...(email.trim() ? { email: email.trim() } : {}), ...(firebaseToken ? { firebase_token: firebaseToken } : {}) })
       localStorage.removeItem('hj_pending_referral')
       onSuccess(token, member)
     } catch (e: unknown) {
@@ -128,23 +124,6 @@ export function RegisterStep({ phone, onSuccess, onBack, firebaseToken }: Props)
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: '0 0 4px' }}>Create profile</h2>
         <p style={{ color: '#71717a', fontSize: 13 }}>{phone}</p>
-      </div>
-
-      <FieldLabel>Choose an avatar</FieldLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 18 }}>
-        {AVATARS.map((e) => (
-          <button
-            key={e}
-            onClick={() => setAvatar(e)}
-            style={{
-              fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-              border: `1.5px solid ${avatar === e ? ACCENT : '#e4e4e7'}`,
-              background: avatar === e ? '#eef2ff' : 'white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'border-color 0.12s, background 0.12s',
-            }}
-          >{e}</button>
-        ))}
       </div>
 
       <FieldLabel>Your name</FieldLabel>

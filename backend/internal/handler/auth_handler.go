@@ -187,6 +187,37 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, envelope{"verified": true})
 }
 
+// POST /auth/phone/verify
+func (h *AuthHandler) VerifyPhone(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respondError(w, domain.ErrUnauthorized)
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id"})
+		return
+	}
+	var body struct {
+		FirebaseToken string `json:"firebase_token"`
+	}
+	if err := decode(r, &body); err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
+		return
+	}
+	if body.FirebaseToken == "" {
+		respond(w, http.StatusUnprocessableEntity, envelope{"error": "firebase_token is required"})
+		return
+	}
+	member, err := h.svc.VerifyPhone(memberID, claims.Phone, body.FirebaseToken)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusOK, envelope{"member": member})
+}
+
 // POST /auth/register
 // Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "firebase_token": "...", "referral_token": "optional" }
 // Response: { "token": "...", "member": {...} }
