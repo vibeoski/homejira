@@ -423,12 +423,12 @@ function GroceryRow({ task, done = false, onToggle, onEdit, onDelete }: RowProps
       {task.assignee && !confirmDelete && (
         <span style={{
           width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-          background: (task.assignee.color ?? '#6366f1') + '20',
-          border: `1.5px solid ${task.assignee.color ?? '#6366f1'}`,
+          background: task.assignee.color ?? '#6366f1',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12,
+          fontSize: 10, fontWeight: 700, color: 'white',
+          fontFamily: 'system-ui, sans-serif',
         }}>
-          {task.assignee.avatar ?? '?'}
+          {task.assignee.name?.charAt(0).toUpperCase() ?? '?'}
         </span>
       )}
 

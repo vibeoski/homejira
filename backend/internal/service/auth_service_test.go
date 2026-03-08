@@ -286,6 +286,60 @@ func TestAuthService_Register_FirebaseToken_VerifyFails(t *testing.T) {
 	}
 }
 
+// ── VerifyPhone ───────────────────────────────────────────────────────────────
+
+func TestAuthService_VerifyPhone_Success(t *testing.T) {
+	const phone = "+1600000001"
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: phone, MpinHash: mustHashMpin("1234"), Name: "Vera"}
+	repo.seed(m)
+	fbVerifier := &mockFirebaseVerifier{phone: phone}
+	svc := newAuthSvcWithFirebase(repo, fbVerifier)
+
+	got, err := svc.VerifyPhone(m.ID, phone, "valid-firebase-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.ID != m.ID {
+		t.Errorf("got member %v, want %v", got.ID, m.ID)
+	}
+	// Confirm phone_verified is set on the stored member.
+	stored, _ := repo.FindByID(m.ID)
+	if !stored.PhoneVerified {
+		t.Error("expected PhoneVerified=true after VerifyPhone")
+	}
+}
+
+func TestAuthService_VerifyPhone_PhoneMismatch(t *testing.T) {
+	const phone = "+1600000002"
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: phone, MpinHash: mustHashMpin("1234"), Name: "Walt"}
+	repo.seed(m)
+	// Firebase returns a different phone than the member's.
+	fbVerifier := &mockFirebaseVerifier{phone: "+1999999999"}
+	svc := newAuthSvcWithFirebase(repo, fbVerifier)
+
+	_, err := svc.VerifyPhone(m.ID, phone, "mismatched-token")
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatalf("want ErrUnauthorized, got %v", err)
+	}
+}
+
+func TestAuthService_VerifyPhone_TokenInvalid(t *testing.T) {
+	const phone = "+1600000003"
+	repo := newMockMemberRepo()
+	m := &domain.Member{ID: uuid.New(), Phone: phone, MpinHash: mustHashMpin("1234"), Name: "Xena"}
+	repo.seed(m)
+	// Firebase returns an error (expired/invalid token).
+	fbVerifier := &mockFirebaseVerifier{err: errors.New("token expired")}
+	svc := newAuthSvcWithFirebase(repo, fbVerifier)
+
+	_, err := svc.VerifyPhone(m.ID, phone, "bad-token")
+	if !errors.Is(err, domain.ErrUnauthorized) {
+		t.Fatalf("want ErrUnauthorized, got %v", err)
+	}
+}
+
 // ── SendEmailVerification ─────────────────────────────────────────────────────
 
 func TestAuthService_SendEmailVerification_Success(t *testing.T) {
@@ -420,22 +474,26 @@ func TestAuthService_VerifyPhone_FlagDisabled(t *testing.T) {
 	repo.seed(m)
 	svc := newAuthSvcWithFlags(repo, map[string]bool{"phone_verification": false})
 
-	err := svc.VerifyPhone(m.ID, "firebase-token")
+	_, err := svc.VerifyPhone(m.ID, m.Phone, "firebase-token")
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput when phone_verification disabled, got %v", err)
 	}
 }
 
 func TestAuthService_VerifyPhone_FlagEnabled_NoFirebaseClient(t *testing.T) {
+	const phone = "+1200000002"
 	repo := newMockMemberRepo()
-	m := &domain.Member{ID: uuid.New(), Phone: "+1200000002", MpinHash: mustHashMpin("1234"), Name: "Rosa"}
+	m := &domain.Member{ID: uuid.New(), Phone: phone, MpinHash: mustHashMpin("1234"), Name: "Rosa"}
 	repo.seed(m)
 	svc := newAuthSvcWithFlags(repo, map[string]bool{"phone_verification": true})
 
-	// firebaseClient is nil — should return ErrInvalidInput (not available)
-	err := svc.VerifyPhone(m.ID, "firebase-token")
-	if !errors.Is(err, domain.ErrInvalidInput) {
-		t.Fatalf("want ErrInvalidInput when firebase client nil, got %v", err)
+	// firebaseClient is nil — verification skipped, phone marked verified
+	got, err := svc.VerifyPhone(m.ID, phone, "firebase-token")
+	if err != nil {
+		t.Fatalf("unexpected error when firebase client nil: %v", err)
+	}
+	if got == nil || !got.PhoneVerified {
+		t.Error("expected PhoneVerified=true when firebase client nil")
 	}
 }
 
@@ -450,11 +508,11 @@ func TestAuthService_VerifyPhone_FlagEnabled_Success(t *testing.T) {
 	fbVerifier := &mockFirebaseVerifier{phone: phone}
 	svc := NewAuthService(repo, nil, "test-secret-32-chars-padding!!!!!", &stubMailer{}, &stubVerificationRepo{}, fbVerifier, flagSvc)
 
-	if err := svc.VerifyPhone(m.ID, "valid-firebase-token"); err != nil {
+	got, err := svc.VerifyPhone(m.ID, phone, "valid-firebase-token")
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	got, _ := repo.FindByID(m.ID)
-	if !got.PhoneVerified {
+	if got == nil || !got.PhoneVerified {
 		t.Error("expected PhoneVerified=true")
 	}
 }

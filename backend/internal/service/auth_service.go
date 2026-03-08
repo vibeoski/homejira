@@ -68,32 +68,6 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 	return token, m, nil
 }
 
-// VerifyPhone verifies phone ownership using a Firebase ID token and marks the
-// member's phone as verified. Returns ErrInvalidInput if the phone_verification
-// feature flag is disabled.
-func (s *AuthService) VerifyPhone(memberID uuid.UUID, firebaseToken string) error {
-	if s.flags != nil && !s.flags.IsEnabled("phone_verification") {
-		return fmt.Errorf("%w: phone verification is not enabled", domain.ErrInvalidInput)
-	}
-	if firebaseToken == "" {
-		return fmt.Errorf("%w: firebase token is required", domain.ErrInvalidInput)
-	}
-	if s.firebaseClient == nil {
-		return fmt.Errorf("%w: phone verification is not available", domain.ErrInvalidInput)
-	}
-	m, err := s.members.FindByID(memberID)
-	if err != nil {
-		return err
-	}
-	verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), firebaseToken)
-	if err != nil {
-		return fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
-	}
-	if verifiedPhone != m.Phone {
-		return fmt.Errorf("%w: firebase token phone does not match", domain.ErrUnauthorized)
-	}
-	return s.members.SetPhoneVerified(memberID)
-}
 
 // Register creates a new member with phone+mPIN credentials and returns a JWT.
 func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Member, error) {
@@ -272,6 +246,28 @@ func (s *AuthService) UpdateEmail(memberID uuid.UUID, email, appBaseURL string) 
 		return nil, fmt.Errorf("%w: invalid email address", domain.ErrInvalidInput)
 	}
 	if err := s.SendEmailVerification(memberID, email, appBaseURL); err != nil {
+		return nil, err
+	}
+	return s.members.FindByID(memberID)
+}
+
+// VerifyPhone verifies phone ownership via Firebase ID token for an already-authenticated member.
+// The token's phone_number claim must match the member's own phone.
+// Returns ErrInvalidInput if the phone_verification feature flag is disabled.
+func (s *AuthService) VerifyPhone(memberID uuid.UUID, phone, firebaseToken string) (*domain.Member, error) {
+	if s.flags != nil && !s.flags.IsEnabled("phone_verification") {
+		return nil, fmt.Errorf("%w: phone verification is not enabled", domain.ErrInvalidInput)
+	}
+	if s.firebaseClient != nil {
+		verifiedPhone, err := s.firebaseClient.VerifyIDToken(context.Background(), firebaseToken)
+		if err != nil {
+			return nil, fmt.Errorf("%w: firebase token verification failed: %s", domain.ErrUnauthorized, err.Error())
+		}
+		if verifiedPhone != phone {
+			return nil, fmt.Errorf("%w: token phone does not match account phone", domain.ErrUnauthorized)
+		}
+	}
+	if err := s.members.SetPhoneVerified(memberID); err != nil {
 		return nil, err
 	}
 	return s.members.FindByID(memberID)

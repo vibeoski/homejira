@@ -541,11 +541,11 @@ export function HouseholdPanel() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{
                         width: 26, height: 26, borderRadius: '50%',
-                        background: r.requester ? r.requester.color + '20' : '#e4e4e7',
-                        border: r.requester ? `2px solid ${r.requester.color}` : 'none',
+                        background: r.requester ? r.requester.color : '#e4e4e7',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, flexShrink: 0,
-                      }}>{r.requester?.avatar ?? '?'}</span>
+                        fontSize: 11, fontWeight: 700, color: 'white', flexShrink: 0,
+                        fontFamily: 'system-ui, sans-serif',
+                      }}>{r.requester?.name?.charAt(0).toUpperCase() ?? '?'}</span>
                       <span style={{ fontSize: 13, color: '#18181b', fontWeight: 600 }}>
                         {r.requester?.name ?? `#${r.requester_id.slice(0, 6)}`}
                       </span>
@@ -744,7 +744,7 @@ export function HouseholdPanel() {
                       onClick={() => setSelectedAdminId(m.id)}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${selectedAdminId === m.id ? '#6366f1' : '#e4e4e7'}`, background: selectedAdminId === m.id ? '#eef2ff' : '#f9f9f9', cursor: 'pointer', textAlign: 'left' }}
                     >
-                      <span style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: m.color + '20', border: `2px solid ${m.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>{m.avatar}</span>
+                      <span style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white', fontFamily: 'system-ui, sans-serif' }}>{m.name?.charAt(0).toUpperCase() || '?'}</span>
                       <span style={{ fontSize: 14, fontWeight: 600, color: '#18181b' }}>{m.name}</span>
                       {selectedAdminId === m.id && <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#6366f1' }}>Selected</span>}
                     </button>

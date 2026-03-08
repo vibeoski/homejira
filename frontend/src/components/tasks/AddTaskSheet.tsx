@@ -192,7 +192,7 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
               borderColor: form.assignee_id === m.id ? m.color : '#e4e4e7',
               background: form.assignee_id === m.id ? m.color + '14' : 'white',
               color: form.assignee_id === m.id ? m.color : '#71717a',
-            }}>{m.avatar} {m.name}</button>
+            }}>{m.name}</button>
           ))}
         </div>
 
