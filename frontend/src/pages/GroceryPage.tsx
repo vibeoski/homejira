@@ -25,6 +25,7 @@ export function GroceryPage() {
   const [newTitle, setNewTitle] = useState('')
   const [newQty, setNewQty] = useState('')
   const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const load = async () => {
@@ -46,6 +47,7 @@ export function GroceryPage() {
     const title = newTitle.trim()
     if (!title) return
     setAdding(true)
+    setAddError(null)
     try {
       const payload: Parameters<typeof tasksApi.create>[0] = {
         title, notes: '', category: 'grocery', priority: 'normal',
@@ -58,6 +60,8 @@ export function GroceryPage() {
       setNewTitle('')
       setNewQty('')
       inputRef.current?.focus()
+    } catch {
+      setAddError('Could not add item. Please try again.')
     } finally {
       setAdding(false)
     }
@@ -255,6 +259,11 @@ export function GroceryPage() {
           }}
         />
       </div>
+      {addError && (
+        <div style={{ margin: '0 12px 8px', padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca' }}>
+          {addError}
+        </div>
+      )}
 
       {active.length > 1 && (
         <div style={{ padding: '0 12px 8px', display: 'flex', justifyContent: 'flex-end' }}>

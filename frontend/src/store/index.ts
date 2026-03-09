@@ -77,8 +77,14 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   deleteTask: async (id) => {
+    const previous = get().tasks.find((t) => t.id === id)
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
-    await tasksApi.remove(id)
+    try {
+      await tasksApi.remove(id)
+    } catch {
+      if (previous) set((s) => ({ tasks: [previous, ...s.tasks] }))
+      throw new Error('Failed to delete task')
+    }
   },
 
   addComment: async (taskId, authorId, body) => {

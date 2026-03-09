@@ -19,9 +19,12 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
   const [comment, setComment] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
-  const addComment = useStore((s) => s.addComment)
+  const { addComment, deleteTask } = useStore()
   const { member: authMember } = useAuthStore()
   const me = members.find((m) => m.id === authMember?.id) ?? members[0]
 
@@ -35,12 +38,17 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
   const patch = async (payload: UpdateTaskPayload) => {
+    const previous = current
     setSaving(true)
+    setSaveError(null)
     try {
       const updated = await tasksApi.update(current.id, payload)
       setCurrent(updated)
       onUpdated(updated)
       fetchActivities()
+    } catch {
+      setCurrent(previous)
+      setSaveError('Could not save change. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -59,6 +67,21 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
       setComment(body)
     } finally {
       setSendingComment(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteTask(current.id)
+      onDeleted(current.id)
+      onClose()
+    } catch {
+      setDeleteError('Could not delete task. Please try again.')
+      setConfirmDelete(false)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -276,6 +299,16 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
 
         {/* Danger zone */}
         <div style={{ margin: '0 10px 36px' }}>
+          {saveError && (
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
+              {saveError}
+            </div>
+          )}
+          {deleteError && (
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
+              {deleteError}
+            </div>
+          )}
           {confirmDelete ? (
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -283,9 +316,10 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
                 style={{ flex: 1, background: 'white', border: '1px solid #ede8e1', borderRadius: 10, padding: 12, color: '#78716c', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
               >Cancel</button>
               <button
-                onClick={() => { onDeleted(current.id); onClose() }}
-                style={{ flex: 1, background: '#ef4444', border: 'none', borderRadius: 10, padding: 12, color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-              >Delete</button>
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ flex: 1, background: deleting ? '#fca5a5' : '#ef4444', border: 'none', borderRadius: 10, padding: 12, color: 'white', fontWeight: 700, fontSize: 14, cursor: deleting ? 'not-allowed' : 'pointer' }}
+              >{deleting ? 'Deleting…' : 'Delete'}</button>
             </div>
           ) : (
             <button
