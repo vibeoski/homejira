@@ -21,9 +21,13 @@ func NewMemberRepository(db *pgxpool.Pool) domain.MemberRepository {
 	return &memberRepo{db: db}
 }
 
+// memberCols is the standard SELECT column list. phone is COALESCE'd to '' because
+// members created before the phone+mPIN auth flow have a NULL phone column.
+const memberCols = `id, name, avatar, color, COALESCE(phone, ''), household_id, role, created_at`
+
 func (r *memberRepo) FindAll() ([]domain.Member, error) {
 	rows, err := r.db.Query(context.Background(), `
-		SELECT id, name, avatar, color, phone, household_id, role, created_at
+		SELECT `+memberCols+`
 		FROM members
 		ORDER BY created_at ASC
 	`)
@@ -46,7 +50,7 @@ func (r *memberRepo) FindAll() ([]domain.Member, error) {
 
 func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, error) {
 	rows, err := r.db.Query(context.Background(), `
-		SELECT id, name, avatar, color, phone, household_id, role, created_at
+		SELECT `+memberCols+`
 		FROM members
 		WHERE household_id = $1
 		ORDER BY created_at ASC
@@ -71,7 +75,7 @@ func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, er
 func (r *memberRepo) FindByID(id uuid.UUID) (*domain.Member, error) {
 	var m domain.Member
 	err := r.db.QueryRow(context.Background(), `
-		SELECT id, name, avatar, color, phone, household_id, role, created_at
+		SELECT `+memberCols+`
 		FROM members WHERE id = $1
 	`, id).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
@@ -89,7 +93,7 @@ func (r *memberRepo) Create(name, avatar, color string) (*domain.Member, error) 
 	err := r.db.QueryRow(context.Background(), `
 		INSERT INTO members (name, avatar, color)
 		VALUES ($1, $2, $3)
-		RETURNING id, name, avatar, color, phone, household_id, role, created_at
+		RETURNING `+memberCols+`
 	`, name, avatar, color).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
 	if err != nil {
@@ -102,7 +106,7 @@ func (r *memberRepo) Create(name, avatar, color string) (*domain.Member, error) 
 func (r *memberRepo) FindByPhone(phone string) (*domain.Member, error) {
 	var m domain.Member
 	err := r.db.QueryRow(context.Background(), `
-		SELECT id, name, avatar, color, phone, mpin_hash, household_id, role, created_at
+		SELECT id, name, avatar, color, COALESCE(phone, ''), mpin_hash, household_id, role, created_at
 		FROM members WHERE phone = $1
 	`, phone).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.MpinHash, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
@@ -121,7 +125,7 @@ func (r *memberRepo) CreateWithAuth(name, avatar, color, phone, mpinHash string)
 	err := r.db.QueryRow(context.Background(), `
 		INSERT INTO members (name, avatar, color, phone, mpin_hash)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, name, avatar, color, phone, household_id, role, created_at
+		RETURNING `+memberCols+`
 	`, name, avatar, color, phone, mpinHash).Scan(
 		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
@@ -143,7 +147,7 @@ func (r *memberRepo) ClearHousehold(id uuid.UUID) (*domain.Member, error) {
 		UPDATE members
 		SET household_id = NULL, role = 'member'
 		WHERE id = $1
-		RETURNING id, name, avatar, color, phone, household_id, role, created_at
+		RETURNING `+memberCols+`
 	`, id).Scan(
 		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
@@ -175,7 +179,7 @@ func (r *memberRepo) UpdateProfile(id uuid.UUID, name, avatar, color string) (*d
 		UPDATE members
 		SET name = $2, avatar = $3, color = $4
 		WHERE id = $1
-		RETURNING id, name, avatar, color, phone, household_id, role, created_at
+		RETURNING `+memberCols+`
 	`, id, name, avatar, color).Scan(
 		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
@@ -193,7 +197,7 @@ func (r *memberRepo) UpdateHouseholdAndRole(id uuid.UUID, householdID *uuid.UUID
 		UPDATE members
 		SET household_id = $2, role = $3
 		WHERE id = $1
-		RETURNING id, name, avatar, color, phone, household_id, role, created_at
+		RETURNING `+memberCols+`
 	`, id, householdID, role).Scan(
 		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
@@ -203,4 +207,3 @@ func (r *memberRepo) UpdateHouseholdAndRole(id uuid.UUID, householdID *uuid.UUID
 	}
 	return &m, nil
 }
-
