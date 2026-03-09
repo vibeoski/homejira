@@ -79,11 +79,11 @@ export function TasksPage() {
       {/* Sub-header: page title + task stats + member avatars */}
       <div style={{
         background: 'white', padding: '12px 16px 0',
-        borderBottom: '1px solid #e4e4e7',
+        borderBottom: '1px solid #ede8e1',
         position: 'sticky', top: 57, zIndex: 49,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#71717a', margin: 0, letterSpacing: 0.2, flex: 1 }}>Tasks</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2, flex: 1 }}>Tasks</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {members.slice(0, 4).map((m, i) => (
               <span
@@ -102,12 +102,12 @@ export function TasksPage() {
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 28, height: 28, borderRadius: '50%', fontSize: 10, fontWeight: 700,
-                background: '#f4f4f5', color: '#71717a', marginLeft: -8, border: '2px solid white',
+                background: '#faf7f2', color: '#78716c', marginLeft: -8, border: '2px solid white',
               }}>+{members.length - 4}</span>
             )}
           </div>
         </div>
-        <p style={{ fontSize: 12, color: '#71717a', margin: '0 0 8px' }}>
+        <p style={{ fontSize: 12, color: '#78716c', margin: '0 0 8px' }}>
           {openCount} open
           {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
         </p>
@@ -115,7 +115,7 @@ export function TasksPage() {
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: 10 }}>
           <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa"
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a8a29e"
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
           >
@@ -128,8 +128,8 @@ export function TasksPage() {
             placeholder="Search tasks…"
             style={{
               width: '100%', padding: '9px 32px 9px 32px', borderRadius: 8,
-              border: '1px solid #e4e4e7', fontSize: 13, outline: 'none',
-              background: '#f9f9f9', color: '#18181b', boxSizing: 'border-box',
+              border: '1px solid #ede8e1', fontSize: 13, outline: 'none',
+              background: '#f9f9f9', color: '#1c1917', boxSizing: 'border-box',
             }}
           />
           {search !== '' && (
@@ -139,7 +139,7 @@ export function TasksPage() {
                 position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', padding: 2, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#a1a1aa',
+                color: '#a8a29e',
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -160,9 +160,9 @@ export function TasksPage() {
                 onClick={() => setCatTab(t.id)}
                 style={{
                   flexShrink: 0, padding: '6px 12px', borderRadius: 99, border: '1px solid',
-                  borderColor: active ? ACCENT : '#e4e4e7',
+                  borderColor: active ? ACCENT : '#ede8e1',
                   background: active ? '#eef2ff' : 'white',
-                  color: active ? ACCENT : '#71717a',
+                  color: active ? ACCENT : '#78716c',
                   fontWeight: 600, fontSize: 12,
                   display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
                 }}
@@ -170,8 +170,8 @@ export function TasksPage() {
                 {t.id !== 'all' && CATEGORIES[t.id as Category].icon} {t.label}
                 {cnt > 0 && (
                   <span style={{
-                    background: active ? ACCENT : '#e4e4e7',
-                    color: active ? 'white' : '#71717a',
+                    background: active ? ACCENT : '#ede8e1',
+                    color: active ? 'white' : '#78716c',
                     borderRadius: 99, padding: '1px 5px', fontSize: 10, fontWeight: 700,
                   }}>{cnt}</span>
                 )}
@@ -183,7 +183,7 @@ export function TasksPage() {
 
       {/* Filter toolbar */}
       <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', background: '#e4e4e7', borderRadius: 99, padding: 2, gap: 1 }}>
+        <div style={{ display: 'flex', background: '#ede8e1', borderRadius: 99, padding: 2, gap: 1 }}>
           {(['open', 'done', 'all'] as FilterStatus[]).map((k) => (
             <button
               key={k}
@@ -191,7 +191,7 @@ export function TasksPage() {
               style={{
                 padding: '4px 10px', borderRadius: 99, border: 'none', fontSize: 11, fontWeight: 600,
                 background: filterStatus === k ? 'white' : 'transparent',
-                color: filterStatus === k ? '#18181b' : '#71717a',
+                color: filterStatus === k ? '#1c1917' : '#78716c',
                 boxShadow: filterStatus === k ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
                 cursor: 'pointer', transition: 'all .12s',
               }}
@@ -202,17 +202,17 @@ export function TasksPage() {
           onClick={() => setMyTasks((v) => !v)}
           style={{
             padding: '4px 10px', borderRadius: 99, border: '1px solid',
-            borderColor: myTasks ? ACCENT : '#e4e4e7',
+            borderColor: myTasks ? ACCENT : '#ede8e1',
             background: myTasks ? '#eef2ff' : 'white',
-            color: myTasks ? ACCENT : '#71717a',
+            color: myTasks ? ACCENT : '#78716c',
             fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all .12s',
           }}
         >My tasks</button>
         <button
           onClick={() => setSortBy((s) => s === 'priority' ? 'recent' : 'priority')}
           style={{
-            marginLeft: 'auto', background: 'white', border: '1px solid #e4e4e7',
-            borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#71717a', cursor: 'pointer',
+            marginLeft: 'auto', background: 'white', border: '1px solid #ede8e1',
+            borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#78716c', cursor: 'pointer',
           }}
         >{sortBy === 'priority' ? 'Sort: Priority' : 'Sort: Recent'}</button>
       </div>
@@ -232,8 +232,8 @@ export function TasksPage() {
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#18181b', margin: '0 0 6px' }}>No tasks yet</h2>
-            <p style={{ fontSize: 13, color: '#a1a1aa', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>No tasks yet</h2>
+            <p style={{ fontSize: 13, color: '#a8a29e', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
               Add your household's first task to get started.
             </p>
             <button
@@ -246,13 +246,13 @@ export function TasksPage() {
           </div>
         ) : visible.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 20px' }}>
-            <p style={{ fontSize: 18, fontWeight: 700, color: '#18181b' }}>All clear!</p>
-            <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>All clear!</p>
+            <p style={{ fontSize: 13, color: '#a8a29e', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
             <button
               onClick={() => { setCatTab('all'); setFilterStatus('open'); setMyTasks(false); setSearch('') }}
               style={{
-                padding: '8px 20px', borderRadius: 8, border: '1px solid #e4e4e7',
-                background: 'white', color: '#71717a', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                padding: '8px 20px', borderRadius: 8, border: '1px solid #ede8e1',
+                background: 'white', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer',
               }}
             >Reset filters</button>
           </div>
@@ -290,7 +290,7 @@ export function TasksPage() {
       {undoTask && (
         <div style={{
           position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-          background: '#18181b', color: 'white', borderRadius: 10,
+          background: '#1c1917', color: 'white', borderRadius: 10,
           padding: '10px 16px', fontSize: 13, fontWeight: 500,
           display: 'flex', alignItems: 'center', gap: 12,
           boxShadow: '0 4px 16px rgba(0,0,0,0.20)', zIndex: 200,

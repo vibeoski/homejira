@@ -16,17 +16,17 @@ export interface Comment {
 }
 export interface Task {
   id: string; title: string; notes: string; category: Category; priority: Priority
-  assignee_id: string; done: boolean; done_at?: string; due_at?: string; created_at: string; updated_at: string
+  assignee_id: string; done: boolean; done_at?: string; due_at?: string; quantity?: string; created_at: string; updated_at: string
   assignee?: Member; comments?: Comment[]
 }
 export interface TaskFilter { category?: Category; done?: boolean; search?: string }
 export interface CreateTaskPayload {
   title: string; notes: string; category: Category; priority: Priority; assignee_id: string; household_id: string
-  due_at?: string
+  due_at?: string; quantity?: string
 }
 export interface UpdateTaskPayload {
   title?: string; notes?: string; category?: Category; priority?: Priority
-  assignee_id?: string; done?: boolean; due_at?: string; clear_due_at?: boolean
+  assignee_id?: string; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
 }
 
 export const CATEGORIES: Record<Category, { label: string; icon: string; color: string }> = {

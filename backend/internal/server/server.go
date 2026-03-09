@@ -116,7 +116,6 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 			// Members
 			r.Route("/members", func(r chi.Router) {
 				r.Get("/", memberH.List)
-				r.Post("/", memberH.Create)
 				r.Patch("/me", memberH.UpdateMe)
 				r.Get("/me/coins", coinH.GetMyCoins)
 				r.Get("/me/referral-link", coinH.GetOrCreateReferralLink)

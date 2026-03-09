@@ -48,7 +48,7 @@ func NewTaskRepository(db *pgxpool.Pool) domain.TaskRepository {
 
 const taskSelectCols = `
 	t.id, t.title, t.notes, t.category, t.priority,
-	t.assignee_id, t.household_id, t.done, t.done_at, t.due_at, t.created_at, t.updated_at,
+	t.assignee_id, t.household_id, t.done, t.done_at, t.due_at, t.quantity, t.created_at, t.updated_at,
 	m.id, COALESCE(m.name, ''), COALESCE(m.avatar, ''), COALESCE(m.color, ''), m.created_at
 `
 
@@ -59,7 +59,7 @@ func scanTaskWithMember(row pgx.Row) (*domain.Task, error) {
 	var mCreatedAt *time.Time
 	err := row.Scan(
 		&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
-		&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.CreatedAt, &t.UpdatedAt,
+		&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
 		&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -126,7 +126,7 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 	}
 	defer rows.Close()
 
-	var tasks []domain.Task
+	tasks := make([]domain.Task, 0)
 	for rows.Next() {
 		var t domain.Task
 		var mID nullUUID
@@ -134,7 +134,7 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 		var mCreatedAt *time.Time
 		if err := rows.Scan(
 			&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
-			&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.CreatedAt, &t.UpdatedAt,
+			&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
 			&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 		); err != nil {
 			return nil, err
@@ -188,14 +188,14 @@ func (r *taskRepo) FindByID(id uuid.UUID) (*domain.Task, error) {
 func (r *taskRepo) Create(input domain.CreateTaskInput) (*domain.Task, error) {
 	row := r.db.QueryRow(context.Background(), fmt.Sprintf(`
 		WITH ins AS (
-			INSERT INTO tasks (title, notes, category, priority, assignee_id, household_id, due_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO tasks (title, notes, category, priority, assignee_id, household_id, due_at, quantity)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING *
 		)
 		SELECT %s FROM ins t
 		LEFT JOIN members m ON m.id = t.assignee_id
 	`, taskSelectCols),
-		input.Title, input.Notes, input.Category, input.Priority, input.AssigneeID, input.HouseholdID, input.DueAt,
+		input.Title, input.Notes, input.Category, input.Priority, input.AssigneeID, input.HouseholdID, input.DueAt, input.Quantity,
 	)
 	return scanTaskWithMember(row)
 }
@@ -252,6 +252,11 @@ func (r *taskRepo) Update(id uuid.UUID, input domain.UpdateTaskInput) (*domain.T
 	} else if input.ClearDueAt {
 		setClauses = append(setClauses, fmt.Sprintf("due_at = $%d", i))
 		args = append(args, nil)
+		i++
+	}
+	if input.Quantity != nil {
+		setClauses = append(setClauses, fmt.Sprintf("quantity = $%d", i))
+		args = append(args, *input.Quantity)
 		i++
 	}
 

@@ -23,6 +23,7 @@ export function AccountMenu() {
   const [editAvatar, setEditAvatar] = useState('')
   const [editColor, setEditColor] = useState('')
   const [saveBusy, setSaveBusy] = useState(false)
+  const [saveProfileError, setSaveProfileError] = useState<string | null>(null)
 
   const [pinCurrent, setPinCurrent] = useState('')
   const [pinNew, setPinNew] = useState('')
@@ -48,6 +49,7 @@ export function AccountMenu() {
     setEditName(member.name)
     setEditAvatar(member.avatar)
     setEditColor(member.color)
+    setSaveProfileError(null)
     setSheet('profile')
   }
 
@@ -62,10 +64,13 @@ export function AccountMenu() {
   const handleSaveProfile = async () => {
     if (!editName.trim()) return
     setSaveBusy(true)
+    setSaveProfileError(null)
     try {
       const updated = await membersApi.updateMe({ name: editName.trim(), avatar: editAvatar, color: editColor })
       updateMember(updated)
       closeSheet()
+    } catch {
+      setSaveProfileError('Could not save profile. Please try again.')
     } finally {
       setSaveBusy(false)
     }
@@ -99,7 +104,7 @@ export function AccountMenu() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 15, cursor: 'pointer',
           border: `2px solid ${member ? member.color : '#d4d4d8'}`,
-          background: member ? member.color + '20' : '#f4f4f5',
+          background: member ? member.color + '20' : '#faf7f2',
           outline: 'none',
         }}
       >
@@ -123,7 +128,7 @@ export function AccountMenu() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 16px' }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
-                background: member ? member.color + '20' : '#f4f4f5',
+                background: member ? member.color + '20' : '#faf7f2',
                 border: `2px solid ${member ? member.color : '#d4d4d8'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 22, flexShrink: 0,
@@ -131,11 +136,11 @@ export function AccountMenu() {
                 {member?.avatar ?? '👤'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#18181b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#1c1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {member?.name ?? ''}
                 </p>
                 {member?.phone && (
-                  <p style={{ fontSize: 12, color: '#a1a1aa', margin: '2px 0 0' }}>{member.phone}</p>
+                  <p style={{ fontSize: 12, color: '#a8a29e', margin: '2px 0 0' }}>{member.phone}</p>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                   {member?.role === 'admin' && (
@@ -152,14 +157,14 @@ export function AccountMenu() {
               </div>
             </div>
 
-            <div style={{ height: 1, background: '#f4f4f5' }} />
+            <div style={{ height: 1, background: '#faf7f2' }} />
 
             <div style={{ padding: '6px 0' }}>
               <>
                 <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
                 <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
                 <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
-                <div style={{ height: 1, background: '#f4f4f5', margin: '4px 0' }} />
+                <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
                 <MenuItem label="Sign out" onClick={handleSignOut} danger />
               </>
             </div>
@@ -188,7 +193,7 @@ export function AccountMenu() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 34, marginBottom: 8, transition: 'border-color 0.15s',
               }}>{editAvatar}</div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#18181b' }}>{editName || 'Your name'}</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917' }}>{editName || 'Your name'}</p>
             </div>
 
             <div style={{ padding: '0 20px' }}>
@@ -197,7 +202,7 @@ export function AccountMenu() {
                 {AVATARS.map((e) => (
                   <button key={e} type="button" onClick={() => setEditAvatar(e)} style={{
                     fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${editAvatar === e ? editColor : '#e4e4e7'}`,
+                    border: `2px solid ${editAvatar === e ? editColor : '#ede8e1'}`,
                     background: editAvatar === e ? editColor + '14' : 'white',
                     transition: 'border-color 0.12s',
                   }}>{e}</button>
@@ -209,7 +214,7 @@ export function AccountMenu() {
                 {COLORS.map((c) => (
                   <button key={c} type="button" onClick={() => setEditColor(c)} style={{
                     width: 28, height: 28, borderRadius: '50%', background: c, cursor: 'pointer',
-                    border: `3px solid ${editColor === c ? '#18181b' : 'transparent'}`,
+                    border: `3px solid ${editColor === c ? '#1c1917' : 'transparent'}`,
                     outline: 'none', padding: 0, transition: 'border-color 0.12s',
                     boxShadow: editColor === c ? '0 0 0 2px white inset' : 'none',
                   }} />
@@ -222,23 +227,29 @@ export function AccountMenu() {
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Your name"
                 style={{
-                  width: '100%', padding: '11px 12px', borderRadius: 8, border: '1px solid #e4e4e7',
-                  fontSize: 14, outline: 'none', background: '#f9f9f9', boxSizing: 'border-box', marginBottom: 20, color: '#18181b',
+                  width: '100%', padding: '11px 12px', borderRadius: 8, border: '1px solid #ede8e1',
+                  fontSize: 14, outline: 'none', background: '#f9f9f9', boxSizing: 'border-box', marginBottom: 20, color: '#1c1917',
                 }}
               />
 
+              {saveProfileError && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 12 }}>
+                  {saveProfileError}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={closeSheet} style={{
-                  flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #e4e4e7',
-                  background: 'white', fontSize: 13, fontWeight: 600, color: '#71717a', cursor: 'pointer',
+                  flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #ede8e1',
+                  background: 'white', fontSize: 13, fontWeight: 600, color: '#78716c', cursor: 'pointer',
                 }}>Cancel</button>
                 <button
                   type="button" onClick={handleSaveProfile}
                   disabled={saveBusy || !editName.trim()}
                   style={{
                     flex: 2, padding: '12px 0', borderRadius: 8, border: 'none',
-                    background: saveBusy || !editName.trim() ? '#e4e4e7' : ACCENT,
-                    color: saveBusy || !editName.trim() ? '#a1a1aa' : 'white',
+                    background: saveBusy || !editName.trim() ? '#ede8e1' : ACCENT,
+                    color: saveBusy || !editName.trim() ? '#a8a29e' : 'white',
                     fontSize: 13, fontWeight: 700, cursor: saveBusy || !editName.trim() ? 'not-allowed' : 'pointer',
                   }}
                 >{saveBusy ? 'Saving…' : 'Save changes'}</button>
@@ -262,13 +273,13 @@ export function AccountMenu() {
           >
             <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
             <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', margin: 0 }}>My Coins</p>
+              <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', margin: 0 }}>My Coins</p>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '4px 14px' }}>
                 🪙 {coinInfo?.balance ?? 0}
               </div>
             </div>
 
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '20px 20px 10px' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '20px 20px 10px' }}>
               How to earn
             </p>
             <div style={{ display: 'flex', gap: 8, padding: '0 20px', marginBottom: 20 }}>
@@ -276,32 +287,32 @@ export function AccountMenu() {
                 { icon: '🏠', label: 'Invite to household', coins: '+20' },
                 { icon: '👥', label: 'Refer a friend', coins: '+10' },
               ].map((item) => (
-                <div key={item.label} style={{ flex: 1, background: '#f9f9f9', borderRadius: 10, padding: '12px 10px', border: '1px solid #f4f4f5', textAlign: 'center' }}>
+                <div key={item.label} style={{ flex: 1, background: '#f9f9f9', borderRadius: 10, padding: '12px 10px', border: '1px solid #faf7f2', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
-                  <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: '#78716c', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#854d0e' }}>{item.coins}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ height: 1, background: '#f4f4f5', margin: '0 20px 16px' }} />
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
+            <div style={{ height: 1, background: '#faf7f2', margin: '0 20px 16px' }} />
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 20px 10px' }}>
               History
             </p>
 
             {!coinInfo?.transactions.length ? (
-              <p style={{ fontSize: 13, color: '#a1a1aa', padding: '0 20px' }}>No transactions yet. Invite someone to earn coins!</p>
+              <p style={{ fontSize: 13, color: '#a8a29e', padding: '0 20px' }}>No transactions yet. Invite someone to earn coins!</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {coinInfo.transactions.map((t) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px' }}>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#18181b', margin: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#1c1917', margin: 0 }}>
                         {t.reason === 'household_invite'
                           ? `${t.meta?.member_name ?? 'Someone'} joined your household`
                           : `${t.meta?.referred_name ?? 'Someone'} signed up via your link`}
                       </p>
-                      <p style={{ fontSize: 11, color: '#a1a1aa', margin: '2px 0 0' }}>{timeAgo(t.created_at)}</p>
+                      <p style={{ fontSize: 11, color: '#a8a29e', margin: '2px 0 0' }}>{timeAgo(t.created_at)}</p>
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>+{t.amount}</span>
                   </div>
@@ -325,7 +336,7 @@ export function AccountMenu() {
             style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
           >
             <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 20px' }} />
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#18181b', marginBottom: 20 }}>Change PIN</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', marginBottom: 20 }}>Change PIN</p>
 
             {pinSuccess ? (
               <div style={{ textAlign: 'center', padding: '28px 0' }}>
@@ -353,8 +364,8 @@ export function AccountMenu() {
 
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <button type="button" onClick={closeSheet} style={{
-                    flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #e4e4e7',
-                    background: 'white', fontSize: 13, fontWeight: 600, color: '#71717a', cursor: 'pointer',
+                    flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #ede8e1',
+                    background: 'white', fontSize: 13, fontWeight: 600, color: '#78716c', cursor: 'pointer',
                   }}>Cancel</button>
                   <button
                     type="button" onClick={handleSavePin}
@@ -375,7 +386,7 @@ export function AccountMenu() {
 }
 
 function MenuItem({ label, onClick, accent, danger }: { label: string; onClick: () => void; accent?: boolean; danger?: boolean }) {
-  const color = danger ? '#ef4444' : accent ? ACCENT : '#18181b'
+  const color = danger ? '#ef4444' : accent ? ACCENT : '#1c1917'
   return (
     <button
       type="button"
@@ -391,7 +402,7 @@ function MenuItem({ label, onClick, accent, danger }: { label: string; onClick: 
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.6, textTransform: 'uppercase', margin: '0 0 7px' }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.6, textTransform: 'uppercase', margin: '0 0 7px' }}>
       {children}
     </p>
   )
@@ -415,9 +426,9 @@ function PinRow({ value, onChange }: { value: string; onChange: (v: string) => v
           }}
           style={{
             flex: 1, height: 48, textAlign: 'center', fontSize: 20, fontWeight: 700,
-            borderRadius: 8, border: `1.5px solid ${value[i] ? ACCENT : '#e4e4e7'}`,
+            borderRadius: 8, border: `1.5px solid ${value[i] ? ACCENT : '#ede8e1'}`,
             outline: 'none', background: value[i] ? '#eef2ff' : '#f9f9f9',
-            color: '#18181b', transition: 'border-color 0.12s, background 0.12s',
+            color: '#1c1917', transition: 'border-color 0.12s, background 0.12s',
           }}
         />
       ))}

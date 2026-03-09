@@ -52,9 +52,9 @@ function Pill({ label, active, color, onClick }: { label: string; active: boolea
       onClick={onClick}
       style={{
         padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
-        borderColor: active ? color : '#e4e4e7',
+        borderColor: active ? color : '#ede8e1',
         background: active ? color + '14' : 'white',
-        color: active ? color : '#71717a',
+        color: active ? color : '#78716c',
         transition: 'all 0.12s',
       }}
     >{label}</button>
@@ -63,7 +63,7 @@ function Pill({ label, active, color, onClick }: { label: string; active: boolea
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 10, fontWeight: 700, color: '#a1a1aa', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 8px' }}>
+    <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 8px' }}>
       {children}
     </p>
   )
@@ -83,6 +83,7 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
     household_id: member?.household_id ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const set = <K extends keyof CreateTaskPayload>(k: K, v: CreateTaskPayload[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -98,10 +99,13 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
   const submit = async () => {
     if (!form.title.trim()) return
     setSaving(true)
+    setSubmitError(null)
     try {
       await createTask(form)
       onAdded()
       onClose()
+    } catch {
+      setSubmitError('Could not add task. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -124,12 +128,12 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
         <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '0 auto 20px' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: '#18181b' }}>
+          <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>
             {CATEGORIES[form.category].icon} {cfg.heading}
           </p>
           <button
             onClick={onClose}
-            style={{ background: '#f4f4f5', border: 'none', borderRadius: 7, padding: '5px 12px', fontSize: 13, color: '#71717a', cursor: 'pointer' }}
+            style={{ background: '#faf7f2', border: 'none', borderRadius: 7, padding: '5px 12px', fontSize: 13, color: '#78716c', cursor: 'pointer' }}
           >Cancel</button>
         </div>
 
@@ -147,9 +151,9 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           placeholder={cfg.titlePlaceholder}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           style={{
-            width: '100%', fontSize: 15, border: `1px solid ${form.title ? catColor + '60' : '#e4e4e7'}`,
+            width: '100%', fontSize: 15, border: `1px solid ${form.title ? catColor + '60' : '#ede8e1'}`,
             borderRadius: 8, padding: '11px 12px', outline: 'none', marginBottom: 10,
-            color: '#18181b', background: '#fafafa', boxSizing: 'border-box',
+            color: '#1c1917', background: '#fafafa', boxSizing: 'border-box',
             transition: 'border-color 0.15s',
           }}
         />
@@ -159,9 +163,9 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           onChange={(e) => set('notes', e.target.value)}
           placeholder={cfg.notesPlaceholder}
           style={{
-            width: '100%', fontSize: 13, border: '1px solid #e4e4e7',
+            width: '100%', fontSize: 13, border: '1px solid #ede8e1',
             borderRadius: 8, padding: '10px 12px', outline: 'none', marginBottom: 18,
-            color: '#71717a', background: '#fafafa', boxSizing: 'border-box',
+            color: '#78716c', background: '#fafafa', boxSizing: 'border-box',
           }}
         />
 
@@ -178,9 +182,9 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           value={form.due_at ? form.due_at.slice(0, 10) : ''}
           onChange={(e) => set('due_at', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
           style={{
-            width: '100%', fontSize: 13, border: '1px solid #e4e4e7',
+            width: '100%', fontSize: 13, border: '1px solid #ede8e1',
             borderRadius: 8, padding: '10px 12px', outline: 'none', marginBottom: 18,
-            background: '#fafafa', boxSizing: 'border-box', color: '#18181b',
+            background: '#fafafa', boxSizing: 'border-box', color: '#1c1917',
           }}
         />
 
@@ -189,12 +193,18 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           {members.map((m) => (
             <button key={m.id} onClick={() => set('assignee_id', m.id)} style={{
               padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
-              borderColor: form.assignee_id === m.id ? m.color : '#e4e4e7',
+              borderColor: form.assignee_id === m.id ? m.color : '#ede8e1',
               background: form.assignee_id === m.id ? m.color + '14' : 'white',
-              color: form.assignee_id === m.id ? m.color : '#71717a',
+              color: form.assignee_id === m.id ? m.color : '#78716c',
             }}>{m.name}</button>
           ))}
         </div>
+
+        {submitError && (
+          <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
+            {submitError}
+          </div>
+        )}
 
         <button
           onClick={submit}
@@ -202,8 +212,8 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
           style={{
             width: '100%', border: 'none', borderRadius: 10, padding: 14,
             fontSize: 15, fontWeight: 700, cursor: saving || !form.title.trim() ? 'not-allowed' : 'pointer',
-            background: saving || !form.title.trim() ? '#e4e4e7' : '#6366f1',
-            color: saving || !form.title.trim() ? '#a1a1aa' : 'white',
+            background: saving || !form.title.trim() ? '#ede8e1' : '#6366f1',
+            color: saving || !form.title.trim() ? '#a8a29e' : 'white',
             transition: 'background 0.15s',
           }}
         >{saving ? 'Adding…' : cfg.submitLabel}</button>

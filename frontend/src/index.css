@@ -1,8 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: #f4f4f5;
+  background: #faf7f2;
   font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  color: #18181b;
+  color: #1c1917;
   -webkit-font-smoothing: antialiased;
 }
 ::-webkit-scrollbar { width: 4px; }

@@ -29,7 +29,7 @@ export function ReferralPage() {
   if (loading) {
     return (
       <div style={pageStyle}>
-        <p style={{ color: '#71717a', fontSize: 14 }}>Loading…</p>
+        <p style={{ color: '#78716c', fontSize: 14 }}>Loading…</p>
       </div>
     )
   }
@@ -59,7 +59,7 @@ export function ReferralPage() {
           </svg>
         </div>
 
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#a1a1aa', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 20px' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 20px' }}>
           HomeJira
         </p>
 
@@ -74,10 +74,10 @@ export function ReferralPage() {
           {referrer?.name?.charAt(0).toUpperCase() ?? '?'}
         </div>
 
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#18181b', margin: '0 0 8px', textAlign: 'center', letterSpacing: -0.3 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 8px', textAlign: 'center', letterSpacing: -0.3 }}>
           {referrer?.name} invited you!
         </h1>
-        <p style={{ fontSize: 14, color: '#71717a', margin: '0 0 28px', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+        <p style={{ fontSize: 14, color: '#78716c', margin: '0 0 28px', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
           Join HomeJira — the easiest way to manage household tasks together with your family.
         </p>
 
@@ -85,7 +85,7 @@ export function ReferralPage() {
           Sign up &amp; get started
         </button>
 
-        <p style={{ fontSize: 11, color: '#a1a1aa', marginTop: 16, textAlign: 'center' }}>
+        <p style={{ fontSize: 11, color: '#a8a29e', marginTop: 16, textAlign: 'center' }}>
           Free forever · No credit card required
         </p>
       </div>
@@ -95,7 +95,7 @@ export function ReferralPage() {
 
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
-  background: '#f4f4f5',
+  background: '#faf7f2',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -105,7 +105,7 @@ const pageStyle: React.CSSProperties = {
 const cardStyle: React.CSSProperties = {
   background: 'white',
   borderRadius: 20,
-  border: '1px solid #e4e4e7',
+  border: '1px solid #ede8e1',
   padding: '36px 28px',
   width: '100%',
   maxWidth: 360,

@@ -78,7 +78,7 @@ func (r *coinRepo) ListTransactions(memberID uuid.UUID) ([]domain.CoinTransactio
 	}
 	defer rows.Close()
 
-	var txns []domain.CoinTransaction
+	txns := make([]domain.CoinTransaction, 0)
 	for rows.Next() {
 		var t domain.CoinTransaction
 		var metaRaw []byte

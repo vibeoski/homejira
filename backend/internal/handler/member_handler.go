@@ -96,23 +96,4 @@ func (h *MemberHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, envelope{"member": member})
 }
 
-// POST /members
-func (h *MemberHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Name   string `json:"name"`
-		Avatar string `json:"avatar"`
-		Color  string `json:"color"`
-	}
-	if err := decode(r, &body); err != nil {
-		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
-		return
-	}
-	member, err := h.svc.CreateMember(body.Name, body.Avatar, body.Color)
-	if err != nil {
-		respondError(w, err)
-		return
-	}
-	respond(w, http.StatusCreated, envelope{"member": member})
-}
-
 

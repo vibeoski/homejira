@@ -54,15 +54,15 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
+    <div style={{ background: 'white', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 380, border: '1px solid #ede8e1' }}>
       <button
         onClick={onBack}
-        style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 24, fontWeight: 500 }}
+        style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 24, fontWeight: 500 }}
       >← Back</button>
 
       <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: '0 0 4px' }}>Enter your PIN</h2>
-        <p style={{ color: '#71717a', fontSize: 13 }}>{phone}</p>
+        <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#1c1917', margin: '0 0 4px' }}>Enter your PIN</h2>
+        <p style={{ color: '#78716c', fontSize: 13 }}>{phone}</p>
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
@@ -80,10 +80,10 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
             onKeyDown={(e) => handleKeyDown(i, e)}
             style={{
               width: 54, height: 60, textAlign: 'center', fontSize: 24,
-              borderRadius: 10, border: `1.5px solid ${d ? ACCENT : '#e4e4e7'}`,
+              borderRadius: 10, border: `1.5px solid ${d ? ACCENT : '#ede8e1'}`,
               fontWeight: 700, outline: 'none',
-              background: loading ? '#f4f4f5' : d ? '#eef2ff' : '#f9f9f9',
-              color: '#18181b',
+              background: loading ? '#faf7f2' : d ? '#eef2ff' : '#f9f9f9',
+              color: '#1c1917',
               opacity: loading ? 0.6 : 1,
               cursor: loading ? 'not-allowed' : 'text',
               transition: 'border-color 0.12s, background 0.12s',
@@ -98,10 +98,10 @@ export function MPINStep({ phone, onSuccess, onBack }: Props) {
           <style>{spinKeyframes}</style>
           <div style={{
             width: 16, height: 16, borderRadius: '50%',
-            border: '2px solid #e4e4e7', borderTopColor: ACCENT,
+            border: '2px solid #ede8e1', borderTopColor: ACCENT,
             animation: 'mpin-spin 0.7s linear infinite', flexShrink: 0,
           }} />
-          <span style={{ color: '#a1a1aa', fontSize: 12 }}>Verifying…</span>
+          <span style={{ color: '#a8a29e', fontSize: 12 }}>Verifying…</span>
         </div>
       )}
     </div>
