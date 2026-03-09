@@ -18,10 +18,10 @@
 
 ## Features
 
-- **Auth** — phone number + 4-digit MPIN, JWT (30-day TTL), rate-limited login, change PIN in-app
+- **Auth** — phone number + 4-digit MPIN, JWT (7-day TTL), rate-limited login, change PIN in-app
 - **Households** — create or join by code; invite by share link; admin controls (promote, remove, approve/reject join requests); leave household; delete group
 - **Tasks** — full CRUD, category (chore/errand/repair), priority (urgent/high/normal), assignee, due date, notes, search and filter
-- **Grocery list** — dedicated checklist view with quick-add, check-all, clear done, and history grouped by day
+- **Grocery list** — dedicated checklist view with quick-add, quantity field, check-all, clear done, and history grouped by day
 - **Live sync** — SSE streams push updates to all household members instantly, no polling
 - **Activity history** — every task change (created, completed, assigned, priority/category/title/notes/due changed) recorded in a unified timeline alongside comments
 - **Stats** — completion ring, per-category progress bars, per-member breakdown
@@ -74,11 +74,27 @@ make ps          List running containers
 
 ## Service URLs
 
+### Local (dev)
+
 | Service   | URL                          |
 |-----------|------------------------------|
 | Frontend  | http://localhost:3000        |
 | API       | http://localhost:8080/api/v1 |
 | Database  | localhost:5432               |
+
+### Staging
+
+| Service   | URL                                                             |
+|-----------|-----------------------------------------------------------------|
+| Frontend  | https://homejira-git-staging-vibeoskis-projects.vercel.app     |
+| API       | https://homejira-staging.up.railway.app/api/v1                 |
+
+### Production
+
+| Service   | URL                                        |
+|-----------|--------------------------------------------|
+| Frontend  | https://homejira.app                       |
+| API       | https://homejira.up.railway.app/api/v1     |
 
 ---
 
@@ -216,12 +232,17 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 | POST   | `/tasks/:id/comments`        | Add comment                              |
 | GET    | `/tasks/:id/activity`        | Get activity history                     |
 
+### Health
+
+| Method | Endpoint   | Auth | Description                                      |
+|--------|------------|------|--------------------------------------------------|
+| GET    | `/health`  | No   | Liveness check — commit SHA, env, DB ping, uptime |
+
 ### Members
 
 | Method | Endpoint                    | Description                     |
 |--------|-----------------------------|---------------------------------|
 | GET    | `/members`                  | List household members          |
-| POST   | `/members`                  | Create standalone member        |
 | GET    | `/members/:id`              | Get member                      |
 | PATCH  | `/members/me`               | Update profile                  |
 | GET    | `/members/me/coins`         | Get coin balance + history      |
@@ -287,10 +308,21 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 See [BACKLOG.md](./BACKLOG.md) for the full prioritised backlog.
 
-**Up next:**
-- Due date reminders (push notifications)
-- Recurring tasks
-- Shopping list aggregation
+**Open bugs (Sprint 5):**
+- #70 JoinPage: authenticated auto-join does not refresh JWT (stale household_id)
+- #71 JoinPage: "Sign in" button calls sign-up handler
+- #72 AccountMenu: avatar shows emoji instead of letter
+- #73 TasksPage: heading not using Fraunces font
+- #74 TasksPage: undo toast uses orange (palette violation)
+- #75 AddTaskSheet: empty household_id fallback on task create
+- #76 Loading state not shown on SSE-triggered refresh
+- #77 UX polish audit follow-up
+
+**Up next (roadmap):**
+- #42 In-app notification feed (NE-08)
+- #44 Recurring tasks (NE-10)
+- #48 Push notifications (Web Push API)
+- #45 PWA — installable, offline
 
 ---
 
