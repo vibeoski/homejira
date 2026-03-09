@@ -32,7 +32,7 @@ func (r *memberRepo) FindAll() ([]domain.Member, error) {
 	}
 	defer rows.Close()
 
-	var members []domain.Member
+	members := make([]domain.Member, 0)
 	for rows.Next() {
 		var m domain.Member
 		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
@@ -56,7 +56,7 @@ func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, er
 	}
 	defer rows.Close()
 
-	var members []domain.Member
+	members := make([]domain.Member, 0)
 	for rows.Next() {
 		var m domain.Member
 		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
