@@ -682,19 +682,16 @@ func TestHouseholdService_DeleteHousehold_NoHousehold(t *testing.T) {
 	}
 }
 
-func TestHouseholdService_JoinByInviteToken_Idempotent(t *testing.T) {
-	memberRepo, householdRepo, admin, h := seedAdmin(t)
+func TestHouseholdService_JoinByInviteToken_AlreadyInSameHousehold(t *testing.T) {
+	memberRepo, householdRepo, admin, _ := seedAdmin(t)
 	inviteLinkRepo := newMockInviteLinkRepo()
 	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), newMockInviteRepo(), inviteLinkRepo, newMockTaskRepo())
 
 	token, _, _ := svc.CreateInviteLink(admin.ID)
 
-	// Admin joining their own household is idempotent.
-	got, err := svc.JoinByInviteToken(admin.ID, token)
-	if err != nil {
-		t.Fatalf("unexpected error for idempotent join: %v", err)
-	}
-	if got.HouseholdID == nil || *got.HouseholdID != h.ID {
-		t.Error("member should still belong to the household")
+	// Joining the same household you already belong to also returns 422 (issue #83).
+	_, err := svc.JoinByInviteToken(admin.ID, token)
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("expected ErrInvalidInput for same-household join, got: %v", err)
 	}
 }
