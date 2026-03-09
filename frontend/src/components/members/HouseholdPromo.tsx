@@ -29,14 +29,14 @@ export function HouseholdPromo() {
   return (
     <div style={{ padding: '0 12px 32px' }}>
       {/* Refer friends card */}
-      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #e4e4e7', padding: '16px 16px', marginBottom: 12 }}>
+      <div style={{ background: 'white', borderRadius: 12, border: '1px solid #ede8e1', padding: '16px 16px', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fef9c3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
             🪙
           </div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#18181b', margin: 0 }}>Love HomeJira?</p>
-            <p style={{ fontSize: 11, color: '#71717a', margin: '2px 0 0' }}>Refer friends &amp; family — earn 10 coins each</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#1c1917', margin: 0 }}>Love HomeJira?</p>
+            <p style={{ fontSize: 11, color: '#78716c', margin: '2px 0 0' }}>Refer friends &amp; family — earn 10 coins each</p>
           </div>
         </div>
         <button
@@ -45,9 +45,9 @@ export function HouseholdPromo() {
           disabled={sharingReferral}
           style={{
             width: '100%', padding: '9px 0', borderRadius: 8,
-            border: '1px solid #e4e4e7',
-            background: sharingReferral ? '#f4f4f5' : 'white',
-            color: sharingReferral ? '#a1a1aa' : '#18181b',
+            border: '1px solid #ede8e1',
+            background: sharingReferral ? '#faf7f2' : 'white',
+            color: sharingReferral ? '#a8a29e' : '#1c1917',
             fontSize: 13, fontWeight: 600, cursor: sharingReferral ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { householdsApi, type Household } from '../api/households'
 import { useAuthStore } from '../store/authStore'
+import { Spinner } from '../components/ui/Spinner'
 
 const ACCENT = '#6366f1'
 
@@ -46,8 +47,9 @@ export function JoinPage() {
 
   if (loading || joining) {
     return (
-      <div style={pageStyle}>
-        <p style={{ color: '#71717a', fontSize: 14 }}>
+      <div style={{ ...pageStyle, flexDirection: 'column', gap: 12 }}>
+        <Spinner />
+        <p style={{ color: '#78716c', fontSize: 13 }}>
           {joining ? 'Joining household…' : 'Loading…'}
         </p>
       </div>
@@ -78,10 +80,10 @@ export function JoinPage() {
           </svg>
         </div>
 
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 8px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1c1917', margin: '0 0 8px', textAlign: 'center' }}>
           You're invited!
         </h1>
-        <p style={{ fontSize: 14, color: '#71717a', margin: '0 0 4px', textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: '#78716c', margin: '0 0 4px', textAlign: 'center' }}>
           Join
         </p>
         <p style={{ fontSize: 16, fontWeight: 700, color: ACCENT, margin: '0 0 24px', textAlign: 'center' }}>
@@ -96,8 +98,8 @@ export function JoinPage() {
           onClick={handleSignUpAndJoin}
           style={{
             marginTop: 10, width: '100%', padding: '12px 0', borderRadius: 10,
-            border: '1px solid #e4e4e7', background: 'white',
-            color: '#18181b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid #ede8e1', background: 'white',
+            color: '#1c1917', fontSize: 14, fontWeight: 600, cursor: 'pointer',
           }}
         >
           Sign in
@@ -109,7 +111,7 @@ export function JoinPage() {
 
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
-  background: '#f4f4f5',
+  background: '#faf7f2',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -119,7 +121,7 @@ const pageStyle: React.CSSProperties = {
 const cardStyle: React.CSSProperties = {
   background: 'white',
   borderRadius: 16,
-  border: '1px solid #e4e4e7',
+  border: '1px solid #ede8e1',
   padding: '32px 28px',
   width: '100%',
   maxWidth: 360,

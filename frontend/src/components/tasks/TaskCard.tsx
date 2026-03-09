@@ -30,7 +30,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         borderRadius: 12,
         padding: '13px 14px 12px',
         marginBottom: 6,
-        border: `1px solid ${overdue && !task.done ? '#fecaca' : dueSoon && !task.done ? '#fde68a' : '#e4e4e7'}`,
+        border: `1px solid ${overdue && !task.done ? '#fecaca' : dueSoon && !task.done ? '#fde68a' : '#ede8e1'}`,
         display: 'flex',
         gap: 11,
         alignItems: 'flex-start',
@@ -63,7 +63,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         <p style={{
           fontSize: 14, fontWeight: 500, lineHeight: 1.4,
           textDecoration: task.done ? 'line-through' : 'none',
-          color: task.done ? '#a1a1aa' : '#18181b',
+          color: task.done ? '#a8a29e' : '#1c1917',
           margin: '0 0 5px',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{task.title}</p>
@@ -76,7 +76,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           }}>{cat.icon} {cat.label}</span>
           {task.notes && (
             <span style={{
-              fontSize: 12, color: '#a1a1aa',
+              fontSize: 12, color: '#a8a29e',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110,
             }}>{task.notes}</span>
           )}
@@ -88,7 +88,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
             {task.due_at && !task.done && (
               <span style={{
                 fontSize: 11, fontWeight: 500,
-                color: overdue ? '#ef4444' : dueSoon ? '#d97706' : '#71717a',
+                color: overdue ? '#ef4444' : dueSoon ? '#d97706' : '#78716c',
                 background: dueSoon && !overdue ? '#fffbeb' : 'transparent',
                 borderRadius: dueSoon && !overdue ? 4 : 0,
                 padding: dueSoon && !overdue ? '1px 5px' : '0',
@@ -97,7 +97,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
               </span>
             )}
             {(task.comments?.length ?? 0) > 0 && (
-              <span style={{ fontSize: 11, color: '#a1a1aa' }}>
+              <span style={{ fontSize: 11, color: '#a8a29e' }}>
                 {task.comments!.length} comment{task.comments!.length !== 1 ? 's' : ''}
               </span>
             )}

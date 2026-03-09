@@ -33,7 +33,7 @@ export function AuthPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#f4f4f5',
+      minHeight: '100vh', background: '#faf7f2',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '20px 16px', gap: 14,
     }}>
@@ -41,8 +41,8 @@ export function AuthPage() {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <AppLogo size={52} />
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#18181b', margin: 0 }}>HomeJira</h1>
-          <p style={{ fontSize: 13, color: '#a1a1aa', margin: '3px 0 0' }}>Your household, organized.</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, color: '#1c1917', margin: 0 }}>HomeJira</h1>
+          <p style={{ fontSize: 13, color: '#a8a29e', margin: '3px 0 0' }}>Your household, organized.</p>
         </div>
       </div>
 

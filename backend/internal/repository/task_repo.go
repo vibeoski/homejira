@@ -126,7 +126,7 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 	}
 	defer rows.Close()
 
-	var tasks []domain.Task
+	tasks := make([]domain.Task, 0)
 	for rows.Next() {
 		var t domain.Task
 		var mID nullUUID

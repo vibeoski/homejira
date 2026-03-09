@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/homejira/api/internal/domain"
@@ -40,6 +42,9 @@ func (r *householdRepo) FindByID(id uuid.UUID) (*domain.Household, error) {
 		FROM households
 		WHERE id = $1
 	`, id).Scan(&h.ID, &h.Name, &h.Kind, &h.JoinCode, &h.CreatedBy, &h.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +58,9 @@ func (r *householdRepo) FindByJoinCode(joinCode string) (*domain.Household, erro
 		FROM households
 		WHERE join_code = $1
 	`, joinCode).Scan(&h.ID, &h.Name, &h.Kind, &h.JoinCode, &h.CreatedBy, &h.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}

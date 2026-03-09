@@ -46,7 +46,7 @@ const NAV = [
 ]
 
 const ACCENT = '#6366f1'
-const MUTED = '#a1a1aa'
+const MUTED = '#a8a29e'
 
 export function BottomNav() {
   const location = useLocation()
@@ -56,7 +56,7 @@ export function BottomNav() {
     <div style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 520, background: 'white',
-      borderTop: '1px solid #e4e4e7', display: 'flex',
+      borderTop: '1px solid #ede8e1', display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
       zIndex: 40,
     }}>

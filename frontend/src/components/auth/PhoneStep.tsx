@@ -102,8 +102,8 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px', width: '100%', maxWidth: 380, border: '1px solid #e4e4e7' }}>
-      <p style={{ color: '#71717a', fontSize: 13, marginBottom: 16 }}>Enter your phone number to continue</p>
+    <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px', width: '100%', maxWidth: 380, border: '1px solid #ede8e1' }}>
+      <p style={{ color: '#78716c', fontSize: 13, marginBottom: 16 }}>Enter your phone number to continue</p>
 
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -115,9 +115,9 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
             }}
             style={{
               height: '100%', padding: '10px 24px 10px 10px', borderRadius: 8, fontSize: 14,
-              border: '1px solid #e4e4e7', outline: 'none', background: '#f9f9f9',
+              border: '1px solid #ede8e1', outline: 'none', background: '#f9f9f9',
               appearance: 'none', WebkitAppearance: 'none',
-              cursor: 'pointer', fontWeight: 600, color: '#18181b',
+              cursor: 'pointer', fontWeight: 600, color: '#1c1917',
             }}
           >
             {COUNTRIES.map((c, i) => (
@@ -126,7 +126,7 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
               </option>
             ))}
           </select>
-          <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 9, color: '#a1a1aa' }}>▼</span>
+          <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 9, color: '#a8a29e' }}>▼</span>
         </div>
 
         <input
@@ -138,14 +138,14 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
           autoFocus
           style={{
             flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 14,
-            border: '1px solid #e4e4e7', outline: 'none', background: '#f9f9f9',
-            color: '#18181b', minWidth: 0,
+            border: '1px solid #ede8e1', outline: 'none', background: '#f9f9f9',
+            color: '#1c1917', minWidth: 0,
           }}
         />
       </div>
 
       {phone.trim() && (
-        <p style={{ fontSize: 11, color: '#a1a1aa', marginTop: 5, textAlign: 'center' }}>{fullPhone}</p>
+        <p style={{ fontSize: 11, color: '#a8a29e', marginTop: 5, textAlign: 'center' }}>{fullPhone}</p>
       )}
 
       {error && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>{error}</p>}
@@ -155,8 +155,8 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
         disabled={loading || !canSubmit}
         style={{
           width: '100%', marginTop: 14, padding: '12px 0', borderRadius: 8, border: 'none',
-          background: loading || !canSubmit ? '#e4e4e7' : ACCENT,
-          color: loading || !canSubmit ? '#a1a1aa' : 'white',
+          background: loading || !canSubmit ? '#ede8e1' : ACCENT,
+          color: loading || !canSubmit ? '#a8a29e' : 'white',
           fontSize: 14, fontWeight: 700, cursor: loading || !canSubmit ? 'not-allowed' : 'pointer',
           transition: 'background 0.15s',
         }}

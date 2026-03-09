@@ -12,7 +12,7 @@ import { JoinPage } from './pages/JoinPage'
 import { ReferralPage } from './pages/ReferralPage'
 import { GroceryPage } from './pages/GroceryPage'
 
-export default function App() {
+export function App() {
   const { fetchTasks, fetchMembers } = useStore()
   const { isAuthenticated } = useAuthStore()
   const { fetchConfig } = useConfigStore()
