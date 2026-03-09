@@ -37,6 +37,7 @@ type Task struct {
 	Done        bool       `json:"done"`
 	DoneAt      *time.Time `json:"done_at,omitempty"`
 	DueAt       *time.Time `json:"due_at,omitempty"`
+	Quantity    *string    `json:"quantity,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 
@@ -65,6 +66,7 @@ type CreateTaskInput struct {
 	AssigneeID  *uuid.UUID `json:"assignee_id"`
 	HouseholdID uuid.UUID  `json:"household_id"`
 	DueAt       *time.Time `json:"due_at,omitempty"`
+	Quantity    *string    `json:"quantity,omitempty"`
 	ActorID     uuid.UUID  `json:"-"` // who triggered the action (not from client body)
 }
 
@@ -78,6 +80,7 @@ type UpdateTaskInput struct {
 	Done       *bool      `json:"done,omitempty"`
 	DueAt      *time.Time `json:"due_at,omitempty"`
 	ClearDueAt bool       `json:"clear_due_at,omitempty"`
+	Quantity   *string    `json:"quantity,omitempty"`
 }
 
 // TaskFilter contains optional query filters.
