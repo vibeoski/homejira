@@ -1,9 +1,12 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -25,7 +28,7 @@ type Server struct {
 	cfg    *config.Config
 }
 
-func New(cfg *config.Config, db *pgxpool.Pool) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	// ── Dependency Injection ──────────────────────────────────────
 	memberRepo := repository.NewMemberRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
@@ -78,9 +81,26 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		MaxAge:           300,
 	}))
 
-	// Health check
+	// Health check — includes build metadata and DB ping for deployment verification
+	startTime := time.Now()
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		dbStatus := "ok"
+		if err := db.Ping(context.Background()); err != nil {
+			dbStatus = "error: " + err.Error()
+		}
+		commit := os.Getenv("RAILWAY_GIT_COMMIT_SHA")
+		if commit == "" {
+			commit = "dev"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"status":     "ok",
+			"env":        cfg.Env,
+			"commit":     commit,
+			"built_at":   buildTime,
+			"uptime_sec": int(time.Since(startTime).Seconds()),
+			"db":         dbStatus,
+		})
 	})
 
 	// API v1

@@ -8,6 +8,9 @@ import (
 	"github.com/homejira/api/internal/server"
 )
 
+// Injected at build time via -ldflags "-X main.BuildTime=<timestamp>"
+var BuildTime = "unknown"
+
 func main() {
 	cfg := config.Load()
 
@@ -25,7 +28,7 @@ func main() {
 	}
 
 	// ── Server ────────────────────────────────────────────────────
-	srv := server.New(&cfg, pool)
+	srv := server.New(&cfg, pool, BuildTime)
 
 	if err := srv.Start(); err != nil {
 		log.Fatalf("server error: %v", err)
