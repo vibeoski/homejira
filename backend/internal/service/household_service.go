@@ -446,11 +446,7 @@ func (s *HouseholdService) JoinByInviteToken(memberID uuid.UUID, token string) (
 		return nil, err
 	}
 
-	// Already in this household — idempotent success.
-	if member.HouseholdID != nil && *member.HouseholdID == link.HouseholdID {
-		return member, nil
-	}
-
+	// Already in any household (same or different) — reject with 422.
 	if member.HouseholdID != nil {
 		return nil, fmt.Errorf("%w: already in a household", domain.ErrInvalidInput)
 	}

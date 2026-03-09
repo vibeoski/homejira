@@ -46,7 +46,7 @@ func (r *householdInviteRepo) FindPendingForPhone(phone string) ([]domain.Househ
 	}
 	defer rows.Close()
 
-	var out []domain.HouseholdInvite
+	out := make([]domain.HouseholdInvite, 0)
 	for rows.Next() {
 		var inv domain.HouseholdInvite
 		if err := rows.Scan(
