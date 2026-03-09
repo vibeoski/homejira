@@ -50,7 +50,7 @@ The app is mobile-first, lightweight, and designed to be picked up with no onboa
 ## 3. Core Concepts
 
 ### Members
-A **member** is a user account. Every member has a name, a profile color, an emoji avatar, and a phone number. Members authenticate with a 4-digit mPIN (similar to a phone PIN). There are no passwords or email addresses required to use the app.
+A **member** is a user account. Every member has a name, a profile color, a letter avatar (first letter of name on a colored background), and a phone number. Members authenticate with a 4-digit mPIN (similar to a phone PIN). There are no passwords or email addresses required to use the app.
 
 ### Households
 A **household** is the central container. Tasks, members, and activities all belong to a household. A member can only belong to one household at a time. The person who creates the household becomes the **admin**.
@@ -82,7 +82,7 @@ HomeJira uses **phone + 4-digit mPIN** authentication — no email, no password,
 
 ### Security
 - mPINs are **bcrypt-hashed** before storage. The raw PIN is never saved or logged.
-- Authentication returns a **JWT** (JSON Web Token) with a 7-day TTL. The token includes your member ID, name, avatar, color, and household ID.
+- Authentication returns a **JWT** (JSON Web Token) with a **7-day TTL**. The token includes your member ID, name, avatar, color, and household ID.
 - All protected API calls require a valid `Authorization: Bearer <token>` header.
 - The server validates the token on every request and confirms the member exists in the database.
 
@@ -144,6 +144,7 @@ Tasks are the core of HomeJira. Every task belongs to a household and optionally
 | **Priority** | `urgent`, `high`, or `normal` |
 | **Assignee** | Which member is responsible (optional) |
 | **Due date** | When it should be done by (optional) |
+| **Quantity** | Free-text amount (grocery items only, optional) |
 | **Done** | Completed or not |
 
 ### Creating a Task
@@ -197,6 +198,7 @@ The Grocery List is a dedicated view for all tasks with the `grocery` category. 
 
 ### Features
 - **Quick add** — type an item at the top and tap Add (or press Enter)
+- **Quantity field** — optionally set a free-text quantity (e.g. "2 litres", "6 pack") on each grocery item
 - **Check off items** — tap any item to mark it as bought
 - **Check all** — bulk-complete all active items in one tap
 - **Inline edit** — tap an item's text to edit it in place
@@ -252,12 +254,14 @@ Activities are combined with comments into a single chronological feed in the ta
 ### Profile Information
 Each member has:
 - **Name** — displayed throughout the app
-- **Emoji avatar** — chosen from 18 options (people and animals)
+- **Letter avatar** — first letter of name on a colored circle background (Google-style). Emoji selection during registration is stored but displayed as a letter avatar throughout the app.
 - **Color** — chosen from 8 colors; used for avatar background, task indicators, and UI accents
 - **Phone number** — used for authentication; shown in your own profile view
 
 ### Letter Avatars
 Avatars are displayed as a colored circle with the **first letter of the member's name** — Google-style. The background color is the member's chosen profile color. This makes members immediately recognisable at a glance across task cards, comments, and member lists.
+
+> Note: The registration screen asks for an emoji selection, which is stored in the database. The letter avatar is the canonical display format used throughout the app interface.
 
 ### Editing Your Profile
 From the account menu (top-right), tap **Edit profile**:
@@ -406,12 +410,17 @@ All endpoints are prefixed with `/api/v1`.
 |--------|------|------|-------------|
 | `GET` | `/config` | — | Get app feature flags |
 
+### Health
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/health` | — | Liveness check — commit SHA, env, DB ping, uptime, build time |
+
 ### Members
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/members` | ✅ | List all members in household |
-| `POST` | `/members` | ✅ | Create a member |
 | `PATCH` | `/members/me` | ✅ | Update own profile (name, avatar, color) |
 | `GET` | `/members/{id}` | ✅ | Get member by ID |
 | `GET` | `/members/me/coins` | ✅ | Get coin balance + transaction history |

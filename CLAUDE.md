@@ -92,12 +92,13 @@ homejira/
         │   ├── authStore.ts        # Zustand auth store (token, member, guest)
         │   └── guest.ts            # guest-mode localStorage helpers
         ├── components/
-        │   ├── ui/                 # Badge, Avatar, Chip, Spinner
+        │   ├── ui/                 # Badge, Avatar, Chip, Spinner, AppLogo
         │   ├── layout/             # AppLayout, BottomNav, GuestBanner, AccountMenu
         │   ├── tasks/              # TaskCard, TaskDrawer, AddTaskSheet
-        │   ├── members/            # MembersScreen, HouseholdPanel
+        │   ├── members/            # MembersScreen, HouseholdPanel, HouseholdPromo
+        │   ├── stats/              # StatsScreen
         │   └── auth/               # PhoneStep, MPINStep, RegisterStep
-        ├── pages/                  # TasksPage, StatsPage, MembersPage, AuthPage
+        ├── pages/                  # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
         ├── types/index.ts          # all TS interfaces and enum-like const maps
         └── utils/index.ts          # pure utility functions (timeAgo, etc.)
 ```
@@ -255,7 +256,7 @@ func (h *ThingHandler) Get(w http.ResponseWriter, r *http.Request) {
 - `middleware.ClaimsFromContext(ctx)` retrieves it.
 - Claims fields: `MemberID`, `Phone`, `Name`, `Avatar`, `Color`, `HouseholdID` (empty string if not in a household).
 - All `/api/v1` routes except `/auth/*` are inside the `r.Group(func(r chi.Router) { r.Use(middleware.RequireAuth(authSvc)) ... })` block.
-- JWT TTL is 30 days. Token includes `household_id` so household context is available without a DB lookup.
+- JWT TTL is 7 days. Token includes `household_id` so household context is available without a DB lookup.
 
 ### Router (server.go)
 
@@ -494,22 +495,30 @@ Pages are route-level components in `src/pages/`. They:
     **Production API:** `https://homejira.up.railway.app/api/v1`
 
     ```bash
-    # 1. Public config endpoint responds 200 with flags object
+    # 1. Health endpoint — DB ok, commit SHA present
+    curl -s "$API/../health"                                   # → 200 {"status":"ok","db":"ok",...}
+
+    # 2. Public config endpoint responds 200 with flags object
     curl -s "$API/config"                                      # → 200 {"flags":{...}}
 
-    # 2. Auth guard active — unauthenticated requests return 401
+    # 3. Auth guard active — unauthenticated requests return 401
     curl -s -o /dev/null -w "%{http_code}" "$API/tasks"        # → 401
     curl -s -o /dev/null -w "%{http_code}" "$API/members"      # → 401
 
-    # 3. Known-bad join code returns 401 (auth gate) — NOT 500
+    # 4. Known-bad join code returns 401 (auth gate) — NOT 500
     curl -s -o /dev/null -w "%{http_code}" -X POST \
       -H "Content-Type: application/json" \
       -d '{"code":"XXXXXX"}' "$API/households/join-by-code"   # → 401 (not 500)
 
-    # 4. /auth/check public route exists
+    # 5. /auth/check-phone public route exists (path is check-phone, not check)
     curl -s -o /dev/null -w "%{http_code}" -X POST \
       -H "Content-Type: application/json" \
-      -d '{"phone":"+10000000000"}' "$API/auth/check"         # → 200/404/422 (not 500)
+      -d '{"phone":"+10000000000"}' "$API/auth/check-phone"   # → 200 (not 500)
     ```
 
     Any 5xx response is a release blocker — roll back and investigate before proceeding.
+    Use the full 16-check smoke suite in the session history for thorough post-deploy verification.
+
+20. **All PRs touching backend or frontend code require QA sign-off before merge.** Backend-only PRs: invoke QA-1 (`/qa1`). Frontend-only: invoke QA-2 (`/qa2`). Full-stack: both. QA agent posts a sign-off comment ("QA-1 ✅" or "QA-2 ✅") on the PR. No merge without sign-off.
+
+21. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** When a TEXT column is nullable in the DB schema, never scan it directly into a non-pointer Go `string` — it will panic on NULL rows. Use `COALESCE(col, '')` in every SELECT/RETURNING query that includes that column. Apply this to all queries for that column, not just new ones.

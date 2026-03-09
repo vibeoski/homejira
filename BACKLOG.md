@@ -58,6 +58,16 @@ UX-18 Stats "By member" hidden when 0 members · UX-19 Stats urgency summary row
 Due-soon amber pill on TaskCard · All-done undo toast (3 s) with household celebration state ·
 Onboarding indicator for new households · Palette documentation
 
+#### Sprint 4 (Stability) — `done`
+NE-09 Grocery quantity field (free-text, migration + full stack) ·
+Palette sweep: warm neutrals across all screens, JoinPage brand chrome ·
+App.tsx default export violation fixed ·
+Error feedback sweep: TaskDrawer, deleteTask optimistic revert, GroceryPage, MembersScreen, AccountMenu, HouseholdPanel ·
+Backend bug fixes: null vs [] for empty collections, join-by-code 500, link/join idempotency, POST /members phone NOT NULL ·
+Postman collection sync + pre-commit hook ·
+Enriched /health endpoint (commit SHA, env, DB ping, uptime, build time) ·
+Phone NULL scan fix in member_repo (COALESCE on all SELECT/RETURNING)
+
 ---
 
 ### 🎨 Design
@@ -125,3 +135,11 @@ Platform-specific share sheet using `navigator.share` with WhatsApp/iMessage fal
 | — | Postman collection — 39-request v2.1 collection at `postman/HomeJira.postman_collection.json`; pre-commit hook enforces collection sync on API changes; CLAUDE.md rule 18 | 2026-03-09 |
 | — | FigJam diagrams — System Architecture, Auth Flow, Task Lifecycle, Household Membership, TasksPage+TaskDrawer wireframe, Auth Screens wireframe | 2026-03-09 |
 | — | Backlog migrated to GitHub Issues (issues #42–#54) | 2026-03-09 |
+| NE-09 | Grocery quantity field — free-text, migration 000015, full stack | 2026-03-09 |
+| — | Sprint 4 palette sweep — warm neutrals, JoinPage chrome, App.tsx named export | 2026-03-09 |
+| — | Sprint 4 error feedback — TaskDrawer, deleteTask revert, GroceryPage, MembersScreen, AccountMenu, HouseholdPanel | 2026-03-09 |
+| — | Backend bug fixes — null→[], join-by-code 500, link/join idempotency, phone NOT NULL | 2026-03-09 |
+| — | /health endpoint enriched — commit SHA, env, DB ping, uptime, build time via ldflags | 2026-03-09 |
+| — | Phone NULL scan fix — COALESCE(phone,'') in all member_repo SELECT/RETURNING | 2026-03-09 |
+| — | Sprint 4 retro filed as GitHub issue #96 | 2026-03-09 |
+| — | Test account created in production: +15550000001 / mPIN 1234 | 2026-03-09 |
