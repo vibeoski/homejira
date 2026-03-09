@@ -20,16 +20,18 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
   const [flashSuccess, setFlashSuccess] = useState<string | null>(null)
+  const [memberError, setMemberError] = useState<{ id: string; msg: string } | null>(null)
 
   const handlePromote = async (id: string) => {
     setPromoting(id)
+    setMemberError(null)
     try {
       await householdsApi.promoteMember(id)
       setFlashSuccess(id)
       setTimeout(() => setFlashSuccess(null), 800)
       await fetchMembers()
     } catch {
-      // no-op
+      setMemberError({ id, msg: 'Could not promote member. Please try again.' })
     } finally {
       setPromoting(null)
     }
@@ -38,11 +40,12 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
   const handleRemove = async (id: string) => {
     setConfirmRemove(null)
     setRemoving(id)
+    setMemberError(null)
     try {
       await householdsApi.removeMember(id)
       await fetchMembers()
     } catch {
-      // no-op
+      setMemberError({ id, msg: 'Could not remove member. Please try again.' })
     } finally {
       setRemoving(null)
     }
@@ -61,7 +64,7 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
             className={flashSuccess === m.id ? 'flash-green' : undefined}
             style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #ede8e1', marginBottom: 8 }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: open.length > 0 ? 12 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: open.length > 0 || memberError?.id === m.id ? 12 : 0 }}>
               <Avatar member={m} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -118,6 +121,11 @@ export function MembersScreen({ tasks, members, currentMember, isAdmin }: Props)
                 </div>
               )}
             </div>
+            {memberError?.id === m.id && (
+              <div style={{ padding: '6px 10px', borderRadius: 7, background: '#fef2f2', color: '#ef4444', fontSize: 11, border: '1px solid #fecaca', marginBottom: open.length > 0 ? 8 : 0 }}>
+                {memberError.msg}
+              </div>
+            )}
             {open.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {open.slice(0, 3).map((t) => (

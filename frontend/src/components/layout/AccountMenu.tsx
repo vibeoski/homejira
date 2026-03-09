@@ -23,6 +23,7 @@ export function AccountMenu() {
   const [editAvatar, setEditAvatar] = useState('')
   const [editColor, setEditColor] = useState('')
   const [saveBusy, setSaveBusy] = useState(false)
+  const [saveProfileError, setSaveProfileError] = useState<string | null>(null)
 
   const [pinCurrent, setPinCurrent] = useState('')
   const [pinNew, setPinNew] = useState('')
@@ -48,6 +49,7 @@ export function AccountMenu() {
     setEditName(member.name)
     setEditAvatar(member.avatar)
     setEditColor(member.color)
+    setSaveProfileError(null)
     setSheet('profile')
   }
 
@@ -62,10 +64,13 @@ export function AccountMenu() {
   const handleSaveProfile = async () => {
     if (!editName.trim()) return
     setSaveBusy(true)
+    setSaveProfileError(null)
     try {
       const updated = await membersApi.updateMe({ name: editName.trim(), avatar: editAvatar, color: editColor })
       updateMember(updated)
       closeSheet()
+    } catch {
+      setSaveProfileError('Could not save profile. Please try again.')
     } finally {
       setSaveBusy(false)
     }
@@ -226,6 +231,12 @@ export function AccountMenu() {
                   fontSize: 14, outline: 'none', background: '#f9f9f9', boxSizing: 'border-box', marginBottom: 20, color: '#1c1917',
                 }}
               />
+
+              {saveProfileError && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 12 }}>
+                  {saveProfileError}
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={closeSheet} style={{

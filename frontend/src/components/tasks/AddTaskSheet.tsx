@@ -83,6 +83,7 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
     household_id: member?.household_id ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const set = <K extends keyof CreateTaskPayload>(k: K, v: CreateTaskPayload[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -98,10 +99,13 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
   const submit = async () => {
     if (!form.title.trim()) return
     setSaving(true)
+    setSubmitError(null)
     try {
       await createTask(form)
       onAdded()
       onClose()
+    } catch {
+      setSubmitError('Could not add task. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -195,6 +199,12 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
             }}>{m.name}</button>
           ))}
         </div>
+
+        {submitError && (
+          <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
+            {submitError}
+          </div>
+        )}
 
         <button
           onClick={submit}

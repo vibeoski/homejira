@@ -295,14 +295,18 @@ export function HouseholdPanel() {
       await householdsApi.approveRequest(id)
       setRequests((prev) => prev.filter((r) => r.id !== id))
       await fetchMembers()
-    } catch {}
+    } catch {
+      setError('Could not approve request. Please try again.')
+    }
   }
 
   const handleReject = async (id: string) => {
     try {
       await householdsApi.rejectRequest(id)
       setRequests((prev) => prev.filter((r) => r.id !== id))
-    } catch {}
+    } catch {
+      setError('Could not reject request. Please try again.')
+    }
   }
 
   // No household: setup screen
@@ -576,6 +580,12 @@ export function HouseholdPanel() {
       {message && (
         <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f0fdf4', color: '#15803d', fontSize: 12, border: '1px solid #bbf7d0', marginBottom: 12 }}>
           {message}
+        </div>
+      )}
+
+      {error && (
+        <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 12 }}>
+          {error}
         </div>
       )}
 
