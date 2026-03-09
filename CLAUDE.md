@@ -44,6 +44,14 @@ Auth is phone + 4-digit mPIN → JWT. Guest mode is supported (localStorage only
 - Frontend: http://localhost:3000
 - API: http://localhost:8080/api/v1
 
+**Service URLs (staging)**
+- Frontend: https://homejira-git-staging-vibeoskis-projects.vercel.app
+- API: https://homejira-staging.up.railway.app/api/v1
+
+**Service URLs (production)**
+- Frontend: https://homejira.app
+- API: https://homejira.up.railway.app/api/v1
+
 **Dev commands**
 ```
 make up          # build + start all Docker services
@@ -479,3 +487,29 @@ Pages are route-level components in `src/pages/`. They:
     2. Use the Postman MCP tool (`putCollection` with `collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`) to push the updated JSON to Postman.
     3. Stage the collection file alongside the API change — the pre-commit hook blocks commits where handler/server files change but the collection does not.
     The collection JSON is the source of truth; the live Postman collection is always derived from it.
+
+19. **Run live API smoke tests after every release to staging and production.** After any PR merges to `staging` or `main`, run the following checks against the live API before declaring the release complete:
+
+    **Staging API:** `https://homejira-staging.up.railway.app/api/v1`
+    **Production API:** `https://homejira.up.railway.app/api/v1`
+
+    ```bash
+    # 1. Public config endpoint responds 200 with flags object
+    curl -s "$API/config"                                      # → 200 {"flags":{...}}
+
+    # 2. Auth guard active — unauthenticated requests return 401
+    curl -s -o /dev/null -w "%{http_code}" "$API/tasks"        # → 401
+    curl -s -o /dev/null -w "%{http_code}" "$API/members"      # → 401
+
+    # 3. Known-bad join code returns 401 (auth gate) — NOT 500
+    curl -s -o /dev/null -w "%{http_code}" -X POST \
+      -H "Content-Type: application/json" \
+      -d '{"code":"XXXXXX"}' "$API/households/join-by-code"   # → 401 (not 500)
+
+    # 4. /auth/check public route exists
+    curl -s -o /dev/null -w "%{http_code}" -X POST \
+      -H "Content-Type: application/json" \
+      -d '{"phone":"+10000000000"}' "$API/auth/check"         # → 200/404/422 (not 500)
+    ```
+
+    Any 5xx response is a release blocker — roll back and investigate before proceeding.
