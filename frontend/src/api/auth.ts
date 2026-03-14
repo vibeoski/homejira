@@ -2,8 +2,8 @@ import { client } from './client'
 import type { AuthCheckResponse, AuthResponse, LoginPayload, RegisterPayload } from '../types'
 
 export const authApi = {
-  checkPhone: async (phone: string): Promise<AuthCheckResponse> => {
-    const { data } = await client.post('/auth/check-phone', { phone })
+  checkUsername: async (username: string): Promise<AuthCheckResponse> => {
+    const { data } = await client.post('/auth/check-username', { username })
     return data
   },
   login: async (payload: LoginPayload): Promise<AuthResponse> => {

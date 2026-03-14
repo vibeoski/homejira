@@ -21,9 +21,9 @@ func NewMemberRepository(db *pgxpool.Pool) domain.MemberRepository {
 	return &memberRepo{db: db}
 }
 
-// memberCols is the standard SELECT column list. phone is COALESCE'd to '' because
-// members created before the phone+mPIN auth flow have a NULL phone column.
-const memberCols = `id, name, avatar, color, COALESCE(phone, ''), household_id, role, created_at`
+// memberCols is the standard SELECT column list. username is COALESCE'd to '' because
+// members created before the username auth flow have a NULL username column.
+const memberCols = `id, name, avatar, color, COALESCE(username, ''), household_id, role, created_at`
 
 func (r *memberRepo) FindAll() ([]domain.Member, error) {
 	rows, err := r.db.Query(context.Background(), `
@@ -39,7 +39,7 @@ func (r *memberRepo) FindAll() ([]domain.Member, error) {
 	members := make([]domain.Member, 0)
 	for rows.Next() {
 		var m domain.Member
-		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 			&m.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, er
 	members := make([]domain.Member, 0)
 	for rows.Next() {
 		var m domain.Member
-		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+		if err := rows.Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 			&m.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (r *memberRepo) FindByID(id uuid.UUID) (*domain.Member, error) {
 	err := r.db.QueryRow(context.Background(), `
 		SELECT `+memberCols+`
 		FROM members WHERE id = $1
-	`, id).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+	`, id).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrNotFound
@@ -94,7 +94,7 @@ func (r *memberRepo) Create(name, avatar, color string) (*domain.Member, error) 
 		INSERT INTO members (name, avatar, color)
 		VALUES ($1, $2, $3)
 		RETURNING `+memberCols+`
-	`, name, avatar, color).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+	`, name, avatar, color).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -102,13 +102,13 @@ func (r *memberRepo) Create(name, avatar, color string) (*domain.Member, error) 
 	return &m, nil
 }
 
-// FindByPhone looks up a member by phone number (includes mpin_hash for auth).
-func (r *memberRepo) FindByPhone(phone string) (*domain.Member, error) {
+// FindByUsername looks up a member by username (includes mpin_hash for auth).
+func (r *memberRepo) FindByUsername(username string) (*domain.Member, error) {
 	var m domain.Member
 	err := r.db.QueryRow(context.Background(), `
-		SELECT id, name, avatar, color, COALESCE(phone, ''), mpin_hash, household_id, role, created_at
-		FROM members WHERE phone = $1
-	`, phone).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.MpinHash, &m.HouseholdID, &m.Role,
+		SELECT id, name, avatar, color, COALESCE(username, ''), mpin_hash, household_id, role, created_at
+		FROM members WHERE username = $1
+	`, username).Scan(&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.MpinHash, &m.HouseholdID, &m.Role,
 		&m.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrNotFound
@@ -119,15 +119,15 @@ func (r *memberRepo) FindByPhone(phone string) (*domain.Member, error) {
 	return &m, nil
 }
 
-// CreateWithAuth inserts a new member with phone and mPIN credentials.
-func (r *memberRepo) CreateWithAuth(name, avatar, color, phone, mpinHash string) (*domain.Member, error) {
+// CreateWithAuth inserts a new member with username and mPIN credentials.
+func (r *memberRepo) CreateWithAuth(name, avatar, color, username, mpinHash string) (*domain.Member, error) {
 	var m domain.Member
 	err := r.db.QueryRow(context.Background(), `
-		INSERT INTO members (name, avatar, color, phone, mpin_hash)
+		INSERT INTO members (name, avatar, color, username, mpin_hash)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING `+memberCols+`
-	`, name, avatar, color, phone, mpinHash).Scan(
-		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+	`, name, avatar, color, username, mpinHash).Scan(
+		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
 	)
 	if err != nil {
@@ -149,7 +149,7 @@ func (r *memberRepo) ClearHousehold(id uuid.UUID) (*domain.Member, error) {
 		WHERE id = $1
 		RETURNING `+memberCols+`
 	`, id).Scan(
-		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
 	)
 	if err != nil {
@@ -181,7 +181,7 @@ func (r *memberRepo) UpdateProfile(id uuid.UUID, name, avatar, color string) (*d
 		WHERE id = $1
 		RETURNING `+memberCols+`
 	`, id, name, avatar, color).Scan(
-		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
 	)
 	if err != nil {
@@ -199,7 +199,7 @@ func (r *memberRepo) UpdateHouseholdAndRole(id uuid.UUID, householdID *uuid.UUID
 		WHERE id = $1
 		RETURNING `+memberCols+`
 	`, id, householdID, role).Scan(
-		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Phone, &m.HouseholdID, &m.Role,
+		&m.ID, &m.Name, &m.Avatar, &m.Color, &m.Username, &m.HouseholdID, &m.Role,
 		&m.CreatedAt,
 	)
 	if err != nil {

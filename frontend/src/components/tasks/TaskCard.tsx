@@ -73,7 +73,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           <span style={{
             fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5,
             background: cat.color + '12', color: cat.color,
-          }}>{cat.icon} {cat.label}</span>
+          }}>{cat.label}</span>
           {task.notes && (
             <span style={{
               fontSize: 12, color: '#a8a29e',
@@ -93,7 +93,7 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
                 borderRadius: dueSoon && !overdue ? 4 : 0,
                 padding: dueSoon && !overdue ? '1px 5px' : '0',
               }}>
-                {overdue ? '⚠ ' : dueSoon ? '⏰ ' : ''}{formatDate(task.due_at)}
+                {formatDate(task.due_at)}
               </span>
             )}
             {task.comments && task.comments.length > 0 && (

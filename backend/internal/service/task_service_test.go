@@ -24,7 +24,7 @@ func seedMemberAndTask(t *testing.T) (*mockMemberRepo, *mockTaskRepo, *domain.Me
 
 	task, err := taskRepo.Create(domain.CreateTaskInput{
 		Title:       "Buy milk",
-		Category:    domain.CategoryGrocery,
+		Category:    domain.CategoryChore,
 		Priority:    domain.PriorityNormal,
 		AssigneeID:  &m.ID,
 		HouseholdID: uuid.New(),
@@ -137,7 +137,7 @@ func TestTaskService_GetTask_Found(t *testing.T) {
 	memberRepo, taskRepo, _, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	got, err := svc.GetTask(task.ID)
+	got, err := svc.GetTask(task.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestTaskService_GetTask_Found(t *testing.T) {
 func TestTaskService_GetTask_NotFound(t *testing.T) {
 	svc := newTaskSvc(newMockTaskRepo(), newMockMemberRepo())
 
-	_, err := svc.GetTask(uuid.New())
+	_, err := svc.GetTask(uuid.New(), nil)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
@@ -163,7 +163,7 @@ func TestTaskService_UpdateTask_Title(t *testing.T) {
 
 	updated, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{
 		Title: ptr("Buy oat milk"),
-	}, m.ID)
+	}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -176,7 +176,7 @@ func TestTaskService_UpdateTask_Done(t *testing.T) {
 	memberRepo, taskRepo, m, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	updated, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(true)}, m.ID)
+	updated, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(true)}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -190,7 +190,7 @@ func TestTaskService_UpdateTask_InvalidCategory(t *testing.T) {
 	svc := newTaskSvc(taskRepo, memberRepo)
 
 	cat := domain.Category("bogus")
-	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Category: &cat}, m.ID)
+	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Category: &cat}, m.ID, nil)
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
 	}
@@ -201,7 +201,7 @@ func TestTaskService_UpdateTask_AssigneeNotFound(t *testing.T) {
 	svc := newTaskSvc(taskRepo, memberRepo)
 
 	unknownID := uuid.New()
-	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{AssigneeID: &unknownID}, m.ID)
+	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{AssigneeID: &unknownID}, m.ID, nil)
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
 	}
@@ -210,7 +210,7 @@ func TestTaskService_UpdateTask_AssigneeNotFound(t *testing.T) {
 func TestTaskService_UpdateTask_NotFound(t *testing.T) {
 	svc := newTaskSvc(newMockTaskRepo(), newMockMemberRepo())
 
-	_, err := svc.UpdateTask(uuid.New(), domain.UpdateTaskInput{Title: ptr("X")}, uuid.New())
+	_, err := svc.UpdateTask(uuid.New(), domain.UpdateTaskInput{Title: ptr("X")}, uuid.New(), nil)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
@@ -222,10 +222,10 @@ func TestTaskService_DeleteTask(t *testing.T) {
 	memberRepo, taskRepo, _, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	if err := svc.DeleteTask(task.ID); err != nil {
+	if err := svc.DeleteTask(task.ID, nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	_, err := svc.GetTask(task.ID)
+	_, err := svc.GetTask(task.ID, nil)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("want ErrNotFound after delete, got %v", err)
 	}
@@ -237,7 +237,7 @@ func TestTaskService_AddComment_Success(t *testing.T) {
 	memberRepo, taskRepo, m, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	c, err := svc.AddComment(task.ID, m.ID, "Looks good!")
+	c, err := svc.AddComment(task.ID, m.ID, "Looks good!", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestTaskService_AddComment_EmptyBody(t *testing.T) {
 	memberRepo, taskRepo, m, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	_, err := svc.AddComment(task.ID, m.ID, "   ")
+	_, err := svc.AddComment(task.ID, m.ID, "   ", nil)
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
 	}
@@ -262,7 +262,7 @@ func TestTaskService_AddComment_TaskNotFound(t *testing.T) {
 	memberRepo.seed(m)
 	svc := newTaskSvc(newMockTaskRepo(), memberRepo)
 
-	_, err := svc.AddComment(uuid.New(), m.ID, "Hello")
+	_, err := svc.AddComment(uuid.New(), m.ID, "Hello", nil)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
@@ -272,7 +272,7 @@ func TestTaskService_AddComment_AuthorNotFound(t *testing.T) {
 	memberRepo, taskRepo, _, task := seedMemberAndTask(t)
 	svc := newTaskSvc(taskRepo, memberRepo)
 
-	_, err := svc.AddComment(task.ID, uuid.New(), "Hello")
+	_, err := svc.AddComment(task.ID, uuid.New(), "Hello", nil)
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("want ErrInvalidInput, got %v", err)
 	}
@@ -344,7 +344,7 @@ func TestTaskService_UpdateTask_AllActivityKinds(t *testing.T) {
 		Priority:   &newPri,
 		AssigneeID: &newAssignee,
 		Done:       ptr(true),
-	}, m.ID)
+	}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -360,7 +360,7 @@ func TestTaskService_UpdateTask_SetDueAt(t *testing.T) {
 	svc := NewTaskService(taskRepo, memberRepo, activityRepo)
 
 	due := time.Now().Add(24 * time.Hour)
-	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{DueAt: &due}, m.ID)
+	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{DueAt: &due}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -380,7 +380,7 @@ func TestTaskService_UpdateTask_ClearDueAt(t *testing.T) {
 	activityRepo := &mockActivityRepo{}
 	svc := NewTaskService(taskRepo, memberRepo, activityRepo)
 
-	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{ClearDueAt: true}, m.ID)
+	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{ClearDueAt: true}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -401,9 +401,9 @@ func TestTaskService_UpdateTask_Reopen(t *testing.T) {
 	svc := NewTaskService(taskRepo, memberRepo, activityRepo)
 
 	// First mark done, then reopen.
-	svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(true)}, m.ID) //nolint:errcheck
+	svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(true)}, m.ID, nil) //nolint:errcheck
 
-	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(false)}, m.ID)
+	_, err := svc.UpdateTask(task.ID, domain.UpdateTaskInput{Done: ptr(false)}, m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -426,7 +426,7 @@ func TestTaskService_GetActivity(t *testing.T) {
 	svc := NewTaskService(taskRepo, memberRepo, activityRepo)
 
 	// CreateTask already recorded one activity; confirm we can retrieve it.
-	activities, err := svc.GetActivity(task.ID)
+	activities, err := svc.GetActivity(task.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -435,7 +435,7 @@ func TestTaskService_GetActivity(t *testing.T) {
 	// Manually seed one activity so this test has a deterministic result.
 	activityRepo.Create(task.ID, &m.ID, domain.ActivityCreated, nil) //nolint:errcheck
 
-	activities, err = svc.GetActivity(task.ID)
+	activities, err = svc.GetActivity(task.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

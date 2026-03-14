@@ -6,8 +6,8 @@ import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
 import { timeAgo } from '../../utils'
 
-const AVATARS = ['🧑', '👩', '👨', '🧒', '👧', '👦', '🧓', '👴', '👵',
-  '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐯', '🦄', '🌟']
+// No more emoji avatars
+const AVATARS: string[] = []
 
 const COLORS = ['#6366f1', '#0ea5e9', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#ec4899', '#14b8a6']
 
@@ -108,7 +108,7 @@ export function AccountMenu() {
           outline: 'none',
         }}
       >
-        {member?.avatar ?? '👤'}
+        {member?.name?.charAt(0).toUpperCase() || '?'}
       </button>
 
       {/* Main sheet */}
@@ -133,15 +133,13 @@ export function AccountMenu() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 22, flexShrink: 0,
               }}>
-                {member?.avatar ?? '👤'}
+                {member?.name?.charAt(0).toUpperCase() || '?'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#1c1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {member?.name ?? ''}
                 </p>
-                {member?.phone && (
-                  <p style={{ fontSize: 12, color: '#a8a29e', margin: '2px 0 0' }}>{member.phone}</p>
-                )}
+                <p style={{ fontSize: 12, color: '#a8a29e', margin: '2px 0 0' }}>@{member?.username}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                   {member?.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>Admin</span>
@@ -163,7 +161,7 @@ export function AccountMenu() {
               <>
                 <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
                 <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
-                <MenuItem label={`🪙 ${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
+                <MenuItem label={`${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
                 <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
                 <MenuItem label="Sign out" onClick={handleSignOut} danger />
               </>
@@ -192,22 +190,12 @@ export function AccountMenu() {
                 background: editColor + '20', border: `2.5px solid ${editColor}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 34, marginBottom: 8, transition: 'border-color 0.15s',
-              }}>{editAvatar}</div>
+              }}>{editName?.charAt(0).toUpperCase() || '?'}</div>
               <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917' }}>{editName || 'Your name'}</p>
             </div>
 
             <div style={{ padding: '0 20px' }}>
-              <FieldLabel>Avatar</FieldLabel>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 18 }}>
-                {AVATARS.map((e) => (
-                  <button key={e} type="button" onClick={() => setEditAvatar(e)} style={{
-                    fontSize: 22, width: 42, height: 42, borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${editAvatar === e ? editColor : '#ede8e1'}`,
-                    background: editAvatar === e ? editColor + '14' : 'white',
-                    transition: 'border-color 0.12s',
-                  }}>{e}</button>
-                ))}
-              </div>
+              {/* Avatar selection removed as emojis are banned */}
 
               <FieldLabel>Color</FieldLabel>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
@@ -274,8 +262,8 @@ export function AccountMenu() {
             <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
             <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', margin: 0 }}>My Coins</p>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '4px 14px' }}>
-                🪙 {coinInfo?.balance ?? 0}
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '6px 16px' }}>
+                {coinInfo?.balance ?? 0} coins
               </div>
             </div>
 
@@ -284,11 +272,11 @@ export function AccountMenu() {
             </p>
             <div style={{ display: 'flex', gap: 8, padding: '0 20px', marginBottom: 20 }}>
               {[
-                { icon: '🏠', label: 'Invite to household', coins: '+20' },
-                { icon: '👥', label: 'Refer a friend', coins: '+10' },
+                { icon: 'I', label: 'Invite to household', coins: '+20' },
+                { icon: 'R', label: 'Refer a friend', coins: '+10' },
               ].map((item) => (
                 <div key={item.label} style={{ flex: 1, background: '#f9f9f9', borderRadius: 10, padding: '12px 10px', border: '1px solid #faf7f2', textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: ACCENT, marginBottom: 4 }}>{item.icon}</div>
                   <div style={{ fontSize: 11, color: '#78716c', marginBottom: 4 }}>{item.label}</div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: '#854d0e' }}>{item.coins}</div>
                 </div>

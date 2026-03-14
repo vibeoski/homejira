@@ -34,6 +34,14 @@ func (n *nullUUID) Scan(v any) error {
 		n.UUID = uuid.UUID(b)
 		return nil
 	}
+	if s, ok := v.(string); ok {
+		u, err := uuid.Parse(s)
+		if err != nil {
+			return err
+		}
+		n.UUID = u
+		return nil
+	}
 	return fmt.Errorf("nullUUID: cannot scan type %T", v)
 }
 

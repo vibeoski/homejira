@@ -1,4 +1,4 @@
-export type Category = 'grocery' | 'chore' | 'errand' | 'repair'
+export type Category = 'chore' | 'errand' | 'repair'
 export type Priority = 'urgent' | 'high' | 'normal'
 
 export interface Member {
@@ -7,7 +7,7 @@ export interface Member {
   avatar: string
   color: string
   created_at: string
-  phone?: string
+  username?: string
   household_id?: string | null
   role?: 'admin' | 'member'
 }
@@ -19,6 +19,16 @@ export interface Task {
   assignee_id: string; done: boolean; done_at?: string; due_at?: string; quantity?: string; created_at: string; updated_at: string
   assignee?: Member; comments?: Comment[]
 }
+
+export interface Grocery {
+  id: string; title: string; quantity?: string; notes: string; done: boolean; done_at?: string
+  created_at: string; updated_at: string; household_id: string; assignee_id?: string
+  assignee?: Member
+}
+
+export interface GroceryFilter { done?: boolean; search?: string }
+export interface CreateGroceryPayload { title: string; quantity?: string; notes: string; assignee_id?: string }
+export interface UpdateGroceryPayload { title?: string; quantity?: string; notes?: string; done?: boolean; assignee_id?: string }
 export interface TaskFilter { category?: Category; done?: boolean; search?: string }
 export interface CreateTaskPayload {
   title: string; notes: string; category: Category; priority: Priority; assignee_id: string; household_id: string
@@ -29,11 +39,10 @@ export interface UpdateTaskPayload {
   assignee_id?: string; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
 }
 
-export const CATEGORIES: Record<Category, { label: string; icon: string; color: string }> = {
-  grocery: { label: 'Grocery', icon: '🛒', color: '#22c55e' },
-  chore: { label: 'Chore', icon: '🧹', color: '#f97316' },
-  errand: { label: 'Errand', icon: '📦', color: '#0ea5e9' },
-  repair: { label: 'Repair', icon: '🔧', color: '#ef4444' },
+export const CATEGORIES: Record<Category, { label: string; color: string }> = {
+  chore: { label: 'Chore', color: '#f97316' },
+  errand: { label: 'Errand', color: '#0ea5e9' },
+  repair: { label: 'Repair', color: '#ef4444' },
 }
 export const PRIORITIES: Record<Priority, { label: string; color: string }> = {
   normal: { label: 'Normal', color: '#6b7280' },
@@ -69,5 +78,5 @@ export interface CoinTransaction {
 // Auth types
 export interface AuthCheckResponse { registered: boolean }
 export interface AuthResponse { token: string; member: Member }
-export interface LoginPayload { phone: string; mpin: string }
-export interface RegisterPayload { phone: string; name: string; avatar: string; mpin: string; referral_token?: string }
+export interface LoginPayload { username: string; mpin: string }
+export interface RegisterPayload { username: string; name: string; avatar: string; mpin: string; referral_token?: string }

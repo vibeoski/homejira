@@ -31,7 +31,7 @@ export function TasksPage() {
     await toggleTask(id, done)
     if (done) {
       const openAfter = useStore.getState().tasks
-        .filter((t) => t.category !== 'grocery' && !t.done)
+        .filter((t) => !t.done)
       if (openAfter.length === 0) {
         if (undoTimer) clearTimeout(undoTimer)
         setUndoTask({ id })
@@ -53,7 +53,6 @@ export function TasksPage() {
   }
 
   const visible = tasks
-    .filter((t) => t.category !== 'grocery')
     .filter((t) => catTab === 'all' || t.category === catTab)
     .filter((t) => filterStatus === 'all' ? true : filterStatus === 'open' ? !t.done : t.done)
     .filter((t) => !myTasks || t.assignee_id === member?.id)
@@ -64,13 +63,11 @@ export function TasksPage() {
       return ((a.done ? 10 : 0) + po[a.priority]) - ((b.done ? 10 : 0) + po[b.priority])
     })
 
-  const nonGroceryTasks = tasks.filter((t) => t.category !== 'grocery')
-  const openCount = nonGroceryTasks.filter((t) => !t.done).length
-  const urgentCount = nonGroceryTasks.filter((t) => !t.done && t.priority === 'urgent').length
+  const openCount = tasks.filter((t) => !t.done).length
+  const urgentCount = tasks.filter((t) => !t.done && t.priority === 'urgent').length
   const catTabs = [
     { id: 'all' as const, label: 'All' },
-    ...(Object.entries(CATEGORIES) as [Category, { label: string; icon: string; color: string }][])
-      .filter(([id]) => id !== 'grocery')
+    ...(Object.entries(CATEGORIES) as [Category, { label: string; color: string }][])
       .map(([id, v]) => ({ id, label: v.label })),
   ]
 
@@ -152,7 +149,7 @@ export function TasksPage() {
         {/* Category tabs */}
         <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 12 }}>
           {catTabs.map((t) => {
-            const cnt = nonGroceryTasks.filter((x) => (t.id === 'all' || x.category === t.id) && !x.done).length
+            const cnt = tasks.filter((x) => (t.id === 'all' || x.category === t.id) && !x.done).length
             const active = catTab === t.id
             return (
               <button
@@ -167,7 +164,7 @@ export function TasksPage() {
                   display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
                 }}
               >
-                {t.id !== 'all' && CATEGORIES[t.id as Category].icon} {t.label}
+                {t.label}
                 {cnt > 0 && (
                   <span style={{
                     background: active ? ACCENT : '#ede8e1',
@@ -221,7 +218,7 @@ export function TasksPage() {
       <div style={{ padding: '4px 12px 140px' }}>
         {loading ? (
           <Spinner />
-        ) : nonGroceryTasks.length === 0 ? (
+        ) : tasks.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '72px 24px 32px', textAlign: 'center' }}>
             <div style={{
               width: 64, height: 64, borderRadius: 20, background: '#eef2ff',
@@ -296,7 +293,7 @@ export function TasksPage() {
           boxShadow: '0 4px 16px rgba(0,0,0,0.20)', zIndex: 200,
           whiteSpace: 'nowrap',
         }}>
-          🎉 All tasks done!
+          All tasks done!
           <button
             onClick={async () => {
               if (undoTimer) clearTimeout(undoTimer)

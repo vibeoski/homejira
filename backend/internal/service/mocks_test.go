@@ -12,23 +12,23 @@ import (
 // ── Member mock ───────────────────────────────────────────────────────────────
 
 type mockMemberRepo struct {
-	members          map[uuid.UUID]*domain.Member
-	byPhone          map[string]*domain.Member
-	findAllErr       error
+	members            map[uuid.UUID]*domain.Member
+	byUsername         map[string]*domain.Member
+	findAllErr         error
 	findByHouseholdErr error
 }
 
 func newMockMemberRepo() *mockMemberRepo {
 	return &mockMemberRepo{
-		members: make(map[uuid.UUID]*domain.Member),
-		byPhone: make(map[string]*domain.Member),
+		members:    make(map[uuid.UUID]*domain.Member),
+		byUsername: make(map[string]*domain.Member),
 	}
 }
 
 func (m *mockMemberRepo) seed(member *domain.Member) {
 	m.members[member.ID] = member
-	if member.Phone != "" {
-		m.byPhone[member.Phone] = member
+	if member.Username != "" {
+		m.byUsername[member.Username] = member
 	}
 }
 
@@ -70,21 +70,21 @@ func (m *mockMemberRepo) Create(name, avatar, color string) (*domain.Member, err
 	return mem, nil
 }
 
-func (m *mockMemberRepo) FindByPhone(phone string) (*domain.Member, error) {
-	if v, ok := m.byPhone[phone]; ok {
+func (m *mockMemberRepo) FindByUsername(username string) (*domain.Member, error) {
+	if v, ok := m.byUsername[username]; ok {
 		cp := *v
 		return &cp, nil
 	}
 	return nil, domain.ErrNotFound
 }
 
-func (m *mockMemberRepo) CreateWithAuth(name, avatar, color, phone, mpinHash string) (*domain.Member, error) {
+func (m *mockMemberRepo) CreateWithAuth(name, avatar, color, username, mpinHash string) (*domain.Member, error) {
 	mem := &domain.Member{
 		ID: uuid.New(), Name: name, Avatar: avatar, Color: color,
-		Phone: phone, MpinHash: mpinHash, CreatedAt: time.Now(),
+		Username: username, MpinHash: mpinHash, CreatedAt: time.Now(),
 	}
 	m.members[mem.ID] = mem
-	m.byPhone[phone] = mem
+	m.byUsername[username] = mem
 	return mem, nil
 }
 
@@ -96,8 +96,8 @@ func (m *mockMemberRepo) UpdateHouseholdAndRole(id uuid.UUID, householdID *uuid.
 	mem.HouseholdID = householdID
 	mem.Role = role
 	m.members[id] = mem
-	if mem.Phone != "" {
-		m.byPhone[mem.Phone] = mem
+	if mem.Username != "" {
+		m.byUsername[mem.Username] = mem
 	}
 	return mem, nil
 }
@@ -125,8 +125,8 @@ func (m *mockMemberRepo) UpdateMpin(id uuid.UUID, mpinHash string) error {
 	}
 	mem.MpinHash = mpinHash
 	m.members[id] = mem
-	if mem.Phone != "" {
-		m.byPhone[mem.Phone] = mem
+	if mem.Username != "" {
+		m.byUsername[mem.Username] = mem
 	}
 	return nil
 }
@@ -440,6 +440,71 @@ func (r *mockFeatureFlagRepo) List() ([]domain.FeatureFlag, error) {
 		out = append(out, domain.FeatureFlag{Key: k, Enabled: v})
 	}
 	return out, nil
+}
+
+// ── Grocery mock ─────────────────────────────────────────────────────────────
+
+type mockGroceryRepo struct {
+	items map[uuid.UUID]*domain.Grocery
+}
+
+func newMockGroceryRepo() *mockGroceryRepo {
+	return &mockGroceryRepo{items: make(map[uuid.UUID]*domain.Grocery)}
+}
+
+func (r *mockGroceryRepo) FindAll(filter domain.GroceryFilter) ([]domain.Grocery, error) {
+	var out []domain.Grocery
+	for _, g := range r.items {
+		if g.HouseholdID != filter.HouseholdID {
+			continue
+		}
+		out = append(out, *g)
+	}
+	return out, nil
+}
+
+func (r *mockGroceryRepo) FindByID(id uuid.UUID) (*domain.Grocery, error) {
+	if g, ok := r.items[id]; ok {
+		cp := *g
+		return &cp, nil
+	}
+	return nil, domain.ErrNotFound
+}
+
+func (r *mockGroceryRepo) Create(input domain.CreateGroceryInput) (*domain.Grocery, error) {
+	g := &domain.Grocery{
+		ID:          uuid.New(),
+		Title:       input.Title,
+		Notes:       input.Notes,
+		HouseholdID: input.HouseholdID,
+		AssigneeID:  input.AssigneeID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	r.items[g.ID] = g
+	return g, nil
+}
+
+func (r *mockGroceryRepo) Update(id uuid.UUID, input domain.UpdateGroceryInput) (*domain.Grocery, error) {
+	g, ok := r.items[id]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	if input.Title != nil {
+		g.Title = *input.Title
+	}
+	if input.Done != nil {
+		g.Done = *input.Done
+	}
+	return g, nil
+}
+
+func (r *mockGroceryRepo) Delete(id uuid.UUID) error {
+	if _, ok := r.items[id]; !ok {
+		return domain.ErrNotFound
+	}
+	delete(r.items, id)
+	return nil
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

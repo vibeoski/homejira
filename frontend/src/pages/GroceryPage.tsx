@@ -1,40 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
-import { tasksApi } from '../api/tasks'
+import { useEffect, useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
 import { Spinner } from '../components/ui/Spinner'
-import type { Task } from '../types'
+import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
+import type { Grocery } from '../types'
 
 const ACCENT = '#6366f1'
 
-// Persists across tab navigations so re-entering the page is instant
-let _cache: { active: Task[]; done: Task[] } | null = null
-
 export function GroceryPage() {
   const { member } = useAuthStore()
-  const { sseVersion } = useStore()
+  const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
 
-  const [active, setActive] = useState<Task[]>(_cache?.active ?? [])
-  const [done, setDone] = useState<Task[]>(_cache?.done ?? [])
+  const [loading, setLoading] = useState(groceries.length === 0)
   const [showDone, setShowDone] = useState(true)
   const [historyMode, setHistoryMode] = useState(false)
   const todayKey = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() })()
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
-  const [loading, setLoading] = useState(_cache === null)
-
-  const [newTitle, setNewTitle] = useState('')
-  const [newQty, setNewQty] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [showAdd, setShowAdd] = useState(false)
 
   const load = async () => {
     try {
-      const all = await tasksApi.list({ category: 'grocery' })
-      const a = all.filter((t) => !t.done)
-      const d = all.filter((t) => t.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-      _cache = { active: a, done: d }
-      setActive(a); setDone(d)
+      await fetchGroceries()
     } finally {
       setLoading(false)
     }
@@ -43,89 +29,16 @@ export function GroceryPage() {
   useEffect(() => { load() }, [])
   useEffect(() => { if (sseVersion > 0) load() }, [sseVersion])
 
-  const handleAdd = async () => {
-    const title = newTitle.trim()
-    if (!title) return
-    setAdding(true)
-    setAddError(null)
-    try {
-      const payload: Parameters<typeof tasksApi.create>[0] = {
-        title, notes: '', category: 'grocery', priority: 'normal',
-        assignee_id: member?.id ?? '', household_id: member?.household_id ?? '',
-      }
-      const qty = newQty.trim()
-      if (qty) payload.quantity = qty
-      const task = await tasksApi.create(payload)
-      setActive((prev) => [task, ...prev])
-      setNewTitle('')
-      setNewQty('')
-      inputRef.current?.focus()
-    } catch {
-      setAddError('Could not add item. Please try again.')
-    } finally {
-      setAdding(false)
-    }
-  }
-
-  const handleToggle = async (task: Task, checked: boolean) => {
-    if (checked) {
-      setActive((prev) => prev.filter((t) => t.id !== task.id))
-      setDone((prev) => [{ ...task, done: true }, ...prev])
-      setShowDone(true)
-    } else {
-      setDone((prev) => prev.filter((t) => t.id !== task.id))
-      setActive((prev) => [{ ...task, done: false }, ...prev])
-    }
-    try {
-      await tasksApi.update(task.id, { done: checked })
-    } catch {
-      if (checked) {
-        setDone((prev) => prev.filter((t) => t.id !== task.id))
-        setActive((prev) => [task, ...prev])
-      } else {
-        setActive((prev) => prev.filter((t) => t.id !== task.id))
-        setDone((prev) => [task, ...prev])
-      }
-    }
-  }
+  const active = groceries.filter(g => !g.done)
+  const done = groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
   const handleCheckAll = async () => {
     const toCheck = [...active]
-    setDone((prev) => [...toCheck.map((t) => ({ ...t, done: true })), ...prev])
-    setActive([])
+    await Promise.allSettled(toCheck.map((g) => toggleGrocery(g.id, true)))
     setShowDone(true)
-    await Promise.allSettled(toCheck.map((t) => tasksApi.update(t.id, { done: true })))
   }
 
   const handleClearDone = () => setShowDone(false)
-
-  const handleEdit = async (task: Task, newTitle: string, newQuantity?: string) => {
-    const title = newTitle.trim()
-    if (!title && newQuantity === undefined) return
-    const updates: { title?: string; quantity?: string } = {}
-    if (title && title !== task.title) updates.title = title
-    if (newQuantity !== undefined && newQuantity !== (task.quantity ?? '')) updates.quantity = newQuantity
-    if (Object.keys(updates).length === 0) return
-    const apply = (list: Task[]) =>
-      list.map((t) => t.id === task.id ? { ...t, ...updates } : t)
-    setActive((prev) => apply(prev))
-    setDone((prev) => apply(prev))
-    try {
-      await tasksApi.update(task.id, updates)
-    } catch {
-      load()
-    }
-  }
-
-  const handleDelete = async (id: string, fromActive = false) => {
-    if (fromActive) setActive((prev) => prev.filter((t) => t.id !== id))
-    else setDone((prev) => prev.filter((t) => t.id !== id))
-    try {
-      await tasksApi.remove(id)
-    } catch {
-      load()
-    }
-  }
 
   if (loading) return <Spinner />
 
@@ -157,7 +70,7 @@ export function GroceryPage() {
           </div>
         ) : (
           <div style={{ padding: '0 12px' }}>
-            {groupByDay(done).map(({ key, label, tasks: dayTasks }) => {
+            {groupByDay(done).map(({ key, label, items }) => {
               const open = expandedDays.has(key)
               const toggle = () => setExpandedDays((prev) => {
                 const next = new Set(prev)
@@ -179,7 +92,7 @@ export function GroceryPage() {
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       {!open && (
-                        <span style={{ fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>{dayTasks.length} item{dayTasks.length !== 1 ? 's' : ''}</span>
+                        <span style={{ fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
                       )}
                       <svg
                         width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a29e"
@@ -190,8 +103,8 @@ export function GroceryPage() {
                       </svg>
                     </div>
                   </button>
-                  {open && dayTasks.map((task) => (
-                    <HistoryRow key={task.id} task={task} onDelete={(id) => handleDelete(id)} />
+                  {open && items.map((item) => (
+                    <HistoryRow key={item.id} item={item} onDelete={deleteGrocery} />
                   ))}
                 </div>
               )
@@ -223,288 +136,266 @@ export function GroceryPage() {
         </button>
       </div>
 
-      <div style={{ padding: '10px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            ref={inputRef}
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-            placeholder="Add item…"
-            style={{
-              flex: 1, padding: '11px 14px', borderRadius: 10, border: '1px solid #ede8e1',
-              fontSize: 14, background: 'white', outline: 'none', color: '#1c1917',
-            }}
-          />
-          <button
-            onClick={handleAdd}
-            disabled={adding || !newTitle.trim()}
-            style={{
-              padding: '0 18px', borderRadius: 10, border: 'none',
-              background: adding || !newTitle.trim() ? '#ede8e1' : ACCENT,
-              color: adding || !newTitle.trim() ? '#a8a29e' : 'white',
-              fontSize: 13, fontWeight: 700, cursor: adding || !newTitle.trim() ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >Add</button>
-        </div>
-        <input
-          value={newQty}
-          onChange={(e) => setNewQty(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="Qty (e.g. 2 gallons)"
-          style={{
-            padding: '7px 12px', borderRadius: 8, border: '1px solid #ede8e1',
-            fontSize: 12, background: 'white', outline: 'none', color: '#52525b',
-          }}
-        />
-      </div>
-      {addError && (
-        <div style={{ margin: '0 12px 8px', padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca' }}>
-          {addError}
-        </div>
-      )}
-
-      {active.length > 1 && (
-        <div style={{ padding: '0 12px 8px', display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={handleCheckAll}
-            style={{
-              background: 'none', border: 'none', color: '#78716c', fontSize: 12,
-              fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20,6 9,17 4,12" />
-            </svg>
-            Check all
-          </button>
-        </div>
-      )}
-
-      {active.length === 0 && done.length === 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '56px 24px 32px', textAlign: 'center' }}>
-          <div style={{
-            width: 60, height: 60, borderRadius: 18, background: '#eef2ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-          }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 01-8 0" />
-            </svg>
-          </div>
-          <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
-          <p style={{ fontSize: 13, color: '#a8a29e', margin: 0, lineHeight: 1.6 }}>Type an item above and press Enter to add it.</p>
-        </div>
-      )}
-
-      {active.length > 0 && (
-        <div style={{ padding: '0 12px' }}>
-          {active.map((task) => (
-            <GroceryRow key={task.id} task={task} onToggle={handleToggle} onEdit={handleEdit} onDelete={(id) => handleDelete(id, true)} />
-          ))}
-        </div>
-      )}
-
-      {done.length > 0 && (
-        <div style={{ padding: '8px 12px 0' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '6px 4px',
-          }}>
+      <div style={{ padding: '0 12px 0' }}>
+        {active.length > 1 && (
+          <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'flex-end' }}>
             <button
-              onClick={() => setShowDone((v) => !v)}
-              style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={handleCheckAll}
+              style={{
+                background: 'none', border: 'none', color: '#78716c', fontSize: 11,
+                fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
             >
-              <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: showDone ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
-              >
-                <polyline points="9,18 15,12 9,6" />
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20,6 9,17 4,12" />
               </svg>
-              Done ({done.length})
+              Check all
             </button>
-            {showDone && (
+          </div>
+        )}
+
+        {active.length === 0 && done.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', textAlign: 'center' }}>
+            <div style={{
+              width: 60, height: 60, borderRadius: 18, background: '#eef2ff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
+              </svg>
+            </div>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
+            <p style={{ fontSize: 13, color: '#a8a29e', margin: 0, lineHeight: 1.6 }}>Tap the + button to add items to your list.</p>
+          </div>
+        )}
+
+        {active.length > 0 && (
+          <div style={{ padding: '12px 0' }}>
+            {active.map((item) => (
+              <GroceryRow 
+                key={item.id} 
+                item={item} 
+                onToggle={(checked) => toggleGrocery(item.id, checked)} 
+                onEdit={(updates) => updateGrocery(item.id, updates)} 
+                onDelete={() => deleteGrocery(item.id)} 
+              />
+            ))}
+          </div>
+        )}
+
+        {done.length > 0 && (
+          <div style={{ padding: '8px 0 0' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '6px 4px',
+            }}>
               <button
-                onClick={handleClearDone}
-                style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                onClick={() => setShowDone((v) => !v)}
+                style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
               >
-                Hide done
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: showDone ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
+                >
+                  <polyline points="9,18 15,12 9,6" />
+                </svg>
+                Done ({done.length})
               </button>
+              {showDone && (
+                <button
+                  onClick={handleClearDone}
+                  style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  Hide
+                </button>
+              )}
+            </div>
+
+            {showDone && (
+              <div style={{ padding: '8px 0' }}>
+                {done.map((item) => (
+                  <GroceryRow 
+                    key={item.id} 
+                    item={item} 
+                    done 
+                    onToggle={(checked) => toggleGrocery(item.id, checked)} 
+                  />
+                ))}
+              </div>
             )}
           </div>
+        )}
+      </div>
 
-          {showDone && (
-            <div>
-              {done.map((task) => (
-                <GroceryRow key={task.id} task={task} done onToggle={handleToggle} />
-              ))}
-            </div>
-          )}
-        </div>
+      <button
+        onClick={() => setShowAdd(true)}
+        style={{
+          position: 'fixed', bottom: 72, right: 20, width: 56, height: 56,
+          borderRadius: 16, background: ACCENT, color: 'white', border: 'none',
+          fontSize: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 8px 24px ${ACCENT}40`, zIndex: 40, cursor: 'pointer',
+          transition: 'transform .1s',
+        }}
+        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(.94)')}
+        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+      >+</button>
+
+      {showAdd && (
+        <AddGrocerySheet 
+          members={members} 
+          onClose={() => setShowAdd(false)} 
+          onAdded={() => { setShowAdd(false); }} 
+        />
       )}
     </div>
   )
 }
 
-function groupByDay(tasks: Task[]): { key: string; label: string; tasks: Task[] }[] {
+function groupByDay(items: Grocery[]): { key: string; label: string; items: Grocery[] }[] {
   const now = new Date()
   const today = new Date(now); today.setHours(0, 0, 0, 0)
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
 
-  const map = new Map<string, Task[]>()
-  for (const task of tasks) {
-    const d = new Date(task.updated_at); d.setHours(0, 0, 0, 0)
+  const map = new Map<string, Grocery[]>()
+  for (const item of items) {
+    const d = new Date(item.updated_at); d.setHours(0, 0, 0, 0)
     const key = d.toISOString()
     if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(task)
+    map.get(key)!.push(item)
   }
 
   return Array.from(map.entries())
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([key, tasks]) => {
+    .map(([key, items]) => {
       const d = new Date(key)
       let label: string
       if (d.getTime() === today.getTime()) label = 'Today'
       else if (d.getTime() === yesterday.getTime()) label = 'Yesterday'
       else label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
-      return { key, label, tasks }
+      return { key, label, items }
     })
 }
 
 interface RowProps {
-  task: Task
+  item: Grocery
   done?: boolean
-  onToggle: (task: Task, checked: boolean) => void
-  onEdit?: (task: Task, newTitle: string, newQuantity?: string) => void
-  onDelete?: (id: string) => void
+  onToggle: (checked: boolean) => void
+  onEdit?: (updates: { title?: string; quantity?: string; notes?: string }) => void
+  onDelete?: () => void
 }
 
-function GroceryRow({ task, done = false, onToggle, onEdit, onDelete }: RowProps) {
+function GroceryRow({ item, done = false, onToggle, onEdit, onDelete }: RowProps) {
   const [editing, setEditing] = useState(false)
-  const [editVal, setEditVal] = useState(task.title)
-  const [editQty, setEditQty] = useState(task.quantity ?? '')
+  const [editVal, setEditVal] = useState(item.title)
+  const [editQty, setEditQty] = useState(item.quantity ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [showNotes, setShowNotes] = useState(false)
 
   const startEdit = () => {
     if (done) return
-    setEditVal(task.title)
-    setEditQty(task.quantity ?? '')
+    setEditVal(item.title)
+    setEditQty(item.quantity ?? '')
     setEditing(true)
-    setTimeout(() => inputRef.current?.select(), 0)
   }
 
   const commitEdit = () => {
     setEditing(false)
-    onEdit?.(task, editVal, editQty)
+    if (editVal.trim() === item.title && editQty.trim() === (item.quantity ?? '')) return
+    onEdit?.({ title: editVal.trim(), quantity: editQty.trim() || undefined })
   }
 
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
-      padding: '11px 14px', marginBottom: 4,
-      background: 'white', borderRadius: 10, border: '1px solid #ede8e1',
+      padding: '12px 14px', marginBottom: 6,
+      background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
       opacity: done ? 0.6 : 1, transition: 'opacity 0.15s',
     }}>
       <button
-        onClick={() => onToggle(task, !done)}
+        onClick={() => onToggle(!done)}
         style={{
-          width: 20, height: 20, borderRadius: 6, border: `2px solid ${done ? ACCENT : '#d4d4d8'}`,
+          width: 22, height: 22, borderRadius: 7, border: `2px solid ${done ? ACCENT : '#d4d4d8'}`,
           background: done ? ACCENT : 'white', flexShrink: 0, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.15s', marginTop: 1,
         }}
       >
         {done && (
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20,6 9,17 4,12" />
           </svg>
         )}
       </button>
 
       {editing ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <input
-            ref={inputRef}
+            autoFocus
             value={editVal}
             onChange={(e) => setEditVal(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-            style={{
-              fontSize: 14, border: 'none', outline: 'none',
-              borderBottom: `1.5px solid ${ACCENT}`, background: 'transparent',
-              color: '#1c1917', padding: '1px 0',
-            }}
+            style={{ fontSize: 14, border: 'none', outline: 'none', borderBottom: `2px solid ${ACCENT}`, color: '#1c1917', background: 'transparent' }}
           />
           <input
             value={editQty}
             onChange={(e) => setEditQty(e.target.value)}
             onBlur={commitEdit}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-            placeholder="Qty (e.g. 2 gallons)"
-            style={{
-              fontSize: 11, border: 'none', outline: 'none',
-              borderBottom: `1px solid #d4d4d8`, background: 'transparent',
-              color: '#78716c', padding: '1px 0',
-            }}
+            placeholder="Quantity…"
+            style={{ fontSize: 12, border: 'none', outline: 'none', borderBottom: `1px solid #d4d4d8`, color: '#78716c', background: 'transparent' }}
           />
         </div>
       ) : (
-        <div
-          onClick={startEdit}
-          style={{ flex: 1, cursor: done ? 'default' : 'text' }}
-        >
-          <div style={{
-            fontSize: 14,
-            textDecoration: done ? 'line-through' : 'none',
-            color: done ? '#a8a29e' : '#1c1917',
-          }}>
-            {task.title}
+        <div style={{ flex: 1 }} onClick={startEdit}>
+          <div style={{ fontSize: 14, textDecoration: done ? 'line-through' : 'none', color: done ? '#a8a29e' : '#1c1917', fontWeight: 500 }}>
+            {item.title}
           </div>
-          {task.quantity && (
-            <div style={{ fontSize: 11, color: '#78716c', marginTop: 1 }}>
-              {task.quantity}
+          {(item.quantity || item.notes) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+              {item.quantity && <span style={{ fontSize: 12, color: '#78716c' }}>{item.quantity}</span>}
+              {item.notes && !done && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowNotes(!showNotes) }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ACCENT, fontSize: 11, fontWeight: 600 }}
+                >
+                  {showNotes ? 'Hide notes' : 'View notes'}
+                </button>
+              )}
+            </div>
+          )}
+          {showNotes && item.notes && !done && (
+            <div style={{ fontSize: 12, color: '#78716c', marginTop: 6, background: '#faf7f2', padding: '6px 10px', borderRadius: 8 }}>
+              {item.notes}
             </div>
           )}
         </div>
       )}
 
-      {task.assignee && !confirmDelete && (
+      {item.assignee && !confirmDelete && (
         <span style={{
-          width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-          background: task.assignee.color ?? '#6366f1',
+          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+          background: item.assignee.color ?? ACCENT,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, fontWeight: 700, color: 'white',
-          fontFamily: 'system-ui, sans-serif',
+          fontSize: 11, fontWeight: 700, color: 'white',
         }}>
-          {task.assignee.name?.charAt(0).toUpperCase() ?? '?'}
+          {item.assignee.name?.charAt(0).toUpperCase()}
         </span>
       )}
 
       {onDelete && !editing && (
         confirmDelete ? (
           <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={() => onDelete(task.id)}
-              style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-            >Delete</button>
-            <button
-              onClick={() => setConfirmDelete(false)}
-              style={{ border: 'none', background: '#faf7f2', color: '#78716c', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-            >Cancel</button>
+            <button onClick={() => onDelete()} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+            <button onClick={() => setConfirmDelete(false)} style={{ border: 'none', background: '#fafafa', color: '#78716c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           </div>
         ) : (
-          <button
-            onClick={() => setConfirmDelete(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8', display: 'flex', flexShrink: 0 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" />
-              <path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
+          <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" /><path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
             </svg>
           </button>
         )
@@ -513,55 +404,41 @@ function GroceryRow({ task, done = false, onToggle, onEdit, onDelete }: RowProps
   )
 }
 
-function HistoryRow({ task, onDelete }: { task: Task; onDelete: (id: string) => void }) {
+function HistoryRow({ item, onDelete }: { item: Grocery; onDelete: (id: string) => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
-      padding: '11px 14px', marginBottom: 4,
-      background: 'white', borderRadius: 10, border: '1px solid #ede8e1',
+      padding: '12px 14px', marginBottom: 6,
+      background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
     }}>
       <span style={{
-        width: 20, height: 20, borderRadius: 6, background: ACCENT,
+        width: 22, height: 22, borderRadius: 7, background: ACCENT,
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1,
       }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20,6 9,17 4,12" />
         </svg>
       </span>
 
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, color: '#a8a29e', textDecoration: 'line-through' }}>
-          {task.title}
+          {item.title}
         </div>
-        {task.quantity && (
-          <div style={{ fontSize: 11, color: '#a8a29e', marginTop: 1 }}>
-            {task.quantity}
-          </div>
-        )}
+        {item.quantity && <div style={{ fontSize: 12, color: '#a8a29e', marginTop: 2 }}>{item.quantity}</div>}
       </div>
 
       {!confirmDelete ? (
-        <button
-          onClick={() => setConfirmDelete(true)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8', display: 'flex' }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" />
-            <path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
+        <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" /><path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
           </svg>
         </button>
       ) : (
         <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            onClick={() => onDelete(task.id)}
-            style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-          >Delete</button>
-          <button
-            onClick={() => setConfirmDelete(false)}
-            style={{ border: 'none', background: '#faf7f2', color: '#78716c', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-          >Cancel</button>
+          <button onClick={() => onDelete(item.id)} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+          <button onClick={() => setConfirmDelete(false)} style={{ border: 'none', background: '#fafafa', color: '#78716c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
         </div>
       )}
     </div>
