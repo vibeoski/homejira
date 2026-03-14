@@ -95,16 +95,39 @@ func (h *MemberHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		Name   string `json:"name"`
-		Avatar string `json:"avatar"`
-		Color  string `json:"color"`
+		Name   string  `json:"name"`
+		Avatar *string `json:"avatar"`
+		Color  *string `json:"color"`
 	}
 	if err := decode(r, &body); err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
 		return
 	}
 
-	member, err := h.svc.UpdateProfile(memberID, body.Name, body.Avatar, body.Color)
+	// Resolve omitted avatar/color from existing member — PATCH semantics.
+	avatar := ""
+	color := ""
+	if body.Avatar != nil {
+		avatar = *body.Avatar
+	}
+	if body.Color != nil {
+		color = *body.Color
+	}
+	if body.Avatar == nil || body.Color == nil {
+		current, err := h.svc.GetMember(memberID, nil)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		if body.Avatar == nil {
+			avatar = current.Avatar
+		}
+		if body.Color == nil {
+			color = current.Color
+		}
+	}
+
+	member, err := h.svc.UpdateProfile(memberID, body.Name, avatar, color)
 	if err != nil {
 		respondError(w, err)
 		return

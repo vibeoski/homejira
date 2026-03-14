@@ -21,7 +21,7 @@ interface AppStore {
   createTask: (payload: CreateTaskPayload) => Promise<void>
   toggleTask: (id: string, done: boolean) => Promise<void>
   deleteTask: (id: string) => Promise<void>
-  addComment: (taskId: string, authorId: string, body: string) => Promise<void>
+  addComment: (taskId: string, body: string) => Promise<void>
 
   createGrocery: (payload: CreateGroceryPayload) => Promise<void>
   toggleGrocery: (id: string, done: boolean) => Promise<void>
@@ -107,8 +107,8 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  addComment: async (taskId, authorId, body) => {
-    const comment = await tasksApi.addComment(taskId, authorId, body)
+  addComment: async (taskId, body) => {
+    const comment = await tasksApi.addComment(taskId, body)
     set((s) => ({
       tasks: s.tasks.map((t) =>
         t.id === taskId ? { ...t, comments: [...(t.comments ?? []), comment] } : t

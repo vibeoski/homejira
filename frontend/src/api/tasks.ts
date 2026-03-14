@@ -25,8 +25,8 @@ export const tasksApi = {
   remove: async (id: string): Promise<void> => {
     await client.delete(`/tasks/${id}`)
   },
-  addComment: async (taskId: string, authorId: string, body: string): Promise<Comment> => {
-    const { data } = await client.post(`/tasks/${taskId}/comments`, { author_id: authorId, body })
+  addComment: async (taskId: string, body: string): Promise<Comment> => {
+    const { data } = await client.post(`/tasks/${taskId}/comments`, { body })
     return data.comment
   },
   getActivity: async (taskId: string): Promise<Activity[]> => {
