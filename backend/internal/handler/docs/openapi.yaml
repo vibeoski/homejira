@@ -9,6 +9,7 @@ info:
     Most endpoints require a **Bearer JWT** obtained from `/api/v1/auth/login` or `/api/v1/auth/register`.
     Pass it as `Authorization: Bearer <token>` on every protected request.
 
+    Authentication uses a **username** and 4-digit **mPIN**.
     Tokens are valid for **7 days**. Call `POST /api/v1/auth/refresh` to reissue a fresh token
     (e.g. after your join request is approved and your `household_id` changes).
 
@@ -30,11 +31,13 @@ tags:
   - name: System
     description: Health and configuration
   - name: Auth
-    description: Phone + mPIN authentication
+    description: Username + mPIN authentication
   - name: Members
     description: Member profiles and coins
   - name: Tasks
     description: Task CRUD, comments, and activity
+  - name: Groceries
+    description: Grocery list CRUD
   - name: Households
     description: Household management, join flow, and invite links
 
@@ -56,31 +59,31 @@ components:
     Member:
       type: object
       properties:
-        id:          { type: string, format: uuid, example: "3fa85f64-5717-4562-b3fc-2c963f66afa6" }
-        name:        { type: string, example: "Alice" }
-        avatar:      { type: string, example: "A", description: "First letter of the member's name (letter avatar)" }
-        color:       { type: string, example: "#6366f1" }
-        phone:       { type: string, example: "+15551234567", description: "Only included in auth responses" }
-        household_id:{ type: string, format: uuid, nullable: true }
-        role:        { type: string, enum: [admin, member], example: "member" }
-        created_at:  { type: string, format: date-time }
+        id: { type: string, format: uuid, example: "3fa85f64-5717-4562-b3fc-2c963f66afa6" }
+        name: { type: string, example: "Alice" }
+        avatar: { type: string, example: "A" }
+        color: { type: string, example: "#6366f1" }
+        username: { type: string, example: "alice_home" }
+        household_id: { type: string, format: uuid, nullable: true }
+        role: { type: string, enum: [admin, member], example: "member" }
+        created_at: { type: string, format: date-time }
 
     Task:
       type: object
       properties:
-        id:           { type: string, format: uuid }
-        title:        { type: string, example: "Buy milk" }
-        notes:        { type: string, example: "2% fat, 1 litre" }
-        category:     { type: string, enum: [grocery, chore, errand, repair] }
-        priority:     { type: string, enum: [urgent, high, normal] }
-        assignee_id:  { type: string, format: uuid, nullable: true }
+        id: { type: string, format: uuid }
+        title: { type: string, example: "Fix hallway light" }
+        notes: { type: string, example: "Check the spare bulbs first" }
+        category: { type: string, enum: [chore, errand, repair] }
+        priority: { type: string, enum: [urgent, high, normal] }
+        assignee_id: { type: string, format: uuid, nullable: true }
         household_id: { type: string, format: uuid }
-        done:         { type: boolean }
-        done_at:      { type: string, format: date-time, nullable: true }
-        due_at:       { type: string, format: date-time, nullable: true }
-        quantity:     { type: string, nullable: true, example: "2 litres", description: "Only for grocery tasks" }
-        created_at:   { type: string, format: date-time }
-        updated_at:   { type: string, format: date-time }
+        done: { type: boolean }
+        done_at: { type: string, format: date-time, nullable: true }
+        due_at: { type: string, format: date-time, nullable: true }
+        quantity: { type: string, nullable: true, example: "2 bulbs", description: "Optional quantity/details string." }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
         assignee:
           allOf: [{ $ref: '#/components/schemas/Member' }]
           nullable: true
@@ -110,18 +113,38 @@ components:
           type: string
           enum:
             - created
+            - completed
+            - reopened
+            - assigned
+            - priority_changed
+            - category_changed
             - title_changed
             - notes_changed
-            - category_changed
-            - priority_changed
-            - assignee_changed
-            - done
-            - reopened
-            - due_at_set
-            - due_at_cleared
-          example: "done"
-        meta:       { type: object, additionalProperties: { type: string } }
+            - due_set
+            - due_cleared
+          example: "completed"
+        meta: { type: object, additionalProperties: { type: string } }
         created_at: { type: string, format: date-time }
+        actor:
+          allOf: [{ $ref: '#/components/schemas/Member' }]
+          nullable: true
+
+    Grocery:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, example: "Milk" }
+        quantity: { type: string, nullable: true, example: "2 litres" }
+        notes: { type: string, example: "2% fat" }
+        done: { type: boolean }
+        done_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        household_id: { type: string, format: uuid }
+        assignee_id: { type: string, format: uuid, nullable: true }
+        assignee:
+          allOf: [{ $ref: '#/components/schemas/Member' }]
+          nullable: true
 
     Household:
       type: object
@@ -147,13 +170,16 @@ components:
         requester:
           allOf: [{ $ref: '#/components/schemas/Member' }]
           nullable: true
+        household:
+          allOf: [{ $ref: '#/components/schemas/Household' }]
+          nullable: true
 
     Invite:
       type: object
       properties:
         id:            { type: string, format: uuid }
         household_id:  { type: string, format: uuid }
-        invited_phone: { type: string }
+        invited_phone: { type: string, description: "Direct invite target. The field name is kept for backward compatibility." }
         invited_name:  { type: string }
         status:        { type: string, enum: [pending, accepted, rejected, expired] }
         created_by:    { type: string, format: uuid }
@@ -164,6 +190,7 @@ components:
       properties:
         id:           { type: string, format: uuid }
         household_id: { type: string, format: uuid }
+        created_by:   { type: string, format: uuid }
         token:        { type: string }
         expires_at:   { type: string, format: date-time }
         created_at:   { type: string, format: date-time }
@@ -175,8 +202,15 @@ components:
         member_id:  { type: string, format: uuid }
         amount:     { type: integer }
         reason:     { type: string }
-        meta:       { type: object }
+        meta:       { type: object, additionalProperties: true }
         created_at: { type: string, format: date-time }
+
+    PublicReferrer:
+      type: object
+      properties:
+        name: { type: string, example: "Alice" }
+        avatar: { type: string, example: "A" }
+        color: { type: string, example: "#6366f1" }
 
     Error:
       type: object
@@ -185,8 +219,18 @@ components:
         error: { type: string, example: "resource not found" }
 
   responses:
+    BadRequest:
+      description: Invalid request body, query, or path parameter
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Unauthorized:
-      description: Missing or invalid JWT
+      description: Missing, invalid, or unauthorized JWT
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Authenticated caller lacks required household access
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -258,8 +302,8 @@ paths:
       tags: [System]
       summary: SSE live-sync stream
       description: |
-        Server-Sent Events stream. Sends a `ping` event every 15 s and a `update` event
-        whenever the member's household data changes (new task, new member, etc.).
+        Server-Sent Events stream. Sends a keepalive comment roughly every 20 seconds and a
+        `data: update` event whenever the member's household data changes.
 
         Because `EventSource` cannot set `Authorization` headers, authenticate via the
         `?token=<jwt>` query parameter instead.
@@ -277,17 +321,17 @@ paths:
             text/event-stream:
               schema:
                 type: string
-                example: "data: ping\n\ndata: update\n\n"
+                example: ": ping\n\ndata: update\n\n"
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   # ── Auth ───────────────────────────────────────────────────────────────────
 
-  /api/v1/auth/check-phone:
+  /api/v1/auth/check-username:
     post:
       tags: [Auth]
-      summary: Check if a phone number is registered
-      description: Rate-limited to 10 req/min per IP. Returns whether the phone is already registered so the frontend can route to Login vs Register.
+      summary: Check if a username is registered
+      description: Rate-limited per IP. Returns whether the username is already registered so the frontend can route to Login vs Register.
       security: []
       requestBody:
         required: true
@@ -295,12 +339,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [phone]
+              required: [username]
               properties:
-                phone: { type: string, example: "+15551234567" }
+                username: { type: string, example: "alice_home" }
       responses:
         '200':
-          description: Phone status
+          description: Username status
           content:
             application/json:
               schema:
@@ -308,15 +352,12 @@ paths:
                 properties:
                   registered: { type: boolean }
         '400':
-          description: Invalid phone number format
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
+          $ref: '#/components/responses/BadRequest'
 
   /api/v1/auth/login:
     post:
       tags: [Auth]
-      summary: Login with phone + mPIN
+      summary: Login with username + mPIN
       security: []
       requestBody:
         required: true
@@ -324,10 +365,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [phone, mpin]
+              required: [username, mpin]
               properties:
-                phone: { type: string, example: "+15551234567" }
-                mpin:  { type: string, minLength: 4, maxLength: 4, example: "1234" }
+                username: { type: string, example: "alice_home" }
+                mpin: { type: string, minLength: 4, maxLength: 4, example: "1234" }
       responses:
         '200':
           description: JWT token and member profile
@@ -338,8 +379,10 @@ paths:
                 properties:
                   token:  { type: string }
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Invalid phone or mPIN
+          description: Invalid username or mPIN
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -355,11 +398,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [phone, name, avatar, mpin]
+              required: [username, name, mpin]
               properties:
-                phone:          { type: string, example: "+15551234567" }
+                username:       { type: string, example: "alice_home" }
                 name:           { type: string, example: "Alice" }
-                avatar:         { type: string, example: "A", description: "Single letter used as avatar" }
+                avatar:         { type: string, example: "A", description: "Optional avatar string used by the UI." }
                 mpin:           { type: string, minLength: 4, maxLength: 4, example: "1234" }
                 referral_token: { type: string, description: "Optional referral token" }
       responses:
@@ -372,6 +415,8 @@ paths:
                 properties:
                   token:  { type: string }
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '409':
           $ref: '#/components/responses/Conflict'
 
@@ -412,11 +457,15 @@ paths:
       responses:
         '204':
           description: mPIN updated
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           description: Invalid current mPIN or bad JWT
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   # ── Members ────────────────────────────────────────────────────────────────
 
@@ -449,6 +498,7 @@ paths:
           application/json:
             schema:
               type: object
+              required: [name]
               properties:
                 name:   { type: string, example: "Alice" }
                 avatar: { type: string, example: "A" }
@@ -462,6 +512,8 @@ paths:
                 type: object
                 properties:
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -471,7 +523,6 @@ paths:
     get:
       tags: [Members]
       summary: Get my coin balance and transaction history
-      description: Feature-flagged. Returns 0 balance and empty list when coins feature is disabled.
       responses:
         '200':
           description: Coin balance and transactions
@@ -493,16 +544,16 @@ paths:
     get:
       tags: [Members]
       summary: Get or create my referral link
-      description: Feature-flagged. Creates a referral link if one doesn't exist yet.
+      description: Creates a referral token if one does not already exist for the member.
       responses:
         '200':
-          description: Referral link
+          description: Referral token
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  url: { type: string, example: "https://homejira.app/referral/abc123" }
+                  token: { type: string, example: "ABCD1234EFGH" }
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -524,6 +575,8 @@ paths:
                 type: object
                 properties:
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -539,7 +592,7 @@ paths:
       parameters:
         - name: category
           in: query
-          schema: { type: string, enum: [grocery, chore, errand, repair] }
+          schema: { type: string, enum: [chore, errand, repair] }
         - name: done
           in: query
           schema: { type: boolean }
@@ -564,7 +617,7 @@ paths:
     post:
       tags: [Tasks]
       summary: Create a task
-      description: Caller must be in a household. `household_id` is set from the JWT.
+      description: Caller must be in a household. `household_id` is resolved on the server.
       requestBody:
         required: true
         content:
@@ -573,13 +626,13 @@ paths:
               type: object
               required: [title, category, priority]
               properties:
-                title:       { type: string, example: "Buy milk" }
-                notes:       { type: string, example: "2% fat" }
-                category:    { type: string, enum: [grocery, chore, errand, repair] }
+                title:       { type: string, example: "Fix hallway light" }
+                notes:       { type: string, example: "Check the spare bulbs first" }
+                category:    { type: string, enum: [chore, errand, repair] }
                 priority:    { type: string, enum: [urgent, high, normal] }
                 assignee_id: { type: string, format: uuid, nullable: true }
                 due_at:      { type: string, format: date-time, nullable: true }
-                quantity:    { type: string, nullable: true, example: "2 litres" }
+                quantity:    { type: string, nullable: true, example: "2 bulbs" }
       responses:
         '201':
           description: Created task
@@ -589,6 +642,8 @@ paths:
                 type: object
                 properties:
                   task: { $ref: '#/components/schemas/Task' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -612,8 +667,12 @@ paths:
                 type: object
                 properties:
                   task: { $ref: '#/components/schemas/Task' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -635,7 +694,7 @@ paths:
               properties:
                 title:        { type: string }
                 notes:        { type: string }
-                category:     { type: string, enum: [grocery, chore, errand, repair] }
+                category:     { type: string, enum: [chore, errand, repair] }
                 priority:     { type: string, enum: [urgent, high, normal] }
                 assignee_id:  { type: string, format: uuid, nullable: true }
                 done:         { type: boolean }
@@ -651,8 +710,12 @@ paths:
                 type: object
                 properties:
                   task: { $ref: '#/components/schemas/Task' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
@@ -669,8 +732,12 @@ paths:
       responses:
         '204':
           description: Task deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -689,9 +756,8 @@ paths:
           application/json:
             schema:
               type: object
-              required: [author_id, body]
+              required: [body]
               properties:
-                author_id: { type: string, format: uuid }
                 body:      { type: string, example: "On it!" }
       responses:
         '201':
@@ -702,10 +768,16 @@ paths:
                 type: object
                 properties:
                   comment: { $ref: '#/components/schemas/Comment' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/tasks/{id}/activity:
     get:
@@ -727,6 +799,155 @@ paths:
                   activities:
                     type: array
                     items: { $ref: '#/components/schemas/Activity' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Groceries ──────────────────────────────────────────────────────────────
+
+  /api/v1/groceries:
+    get:
+      tags: [Groceries]
+      summary: List groceries
+      description: Returns grocery items for the caller's household. If the JWT does not yet contain `household_id`, refresh the token first.
+      parameters:
+        - name: done
+          in: query
+          schema: { type: boolean }
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Full-text search on title and notes
+      responses:
+        '200':
+          description: List of groceries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groceries:
+                    type: array
+                    items: { $ref: '#/components/schemas/Grocery' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Groceries]
+      summary: Create a grocery item
+      description: Caller must be in a household. `household_id` is taken from the JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, example: "Milk" }
+                quantity: { type: string, nullable: true, example: "2 litres" }
+                notes: { type: string, example: "2% fat" }
+                assignee_id: { type: string, format: uuid, nullable: true }
+      responses:
+        '201':
+          description: Created grocery item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grocery: { $ref: '#/components/schemas/Grocery' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/groceries/{id}:
+    get:
+      tags: [Groceries]
+      summary: Get a grocery item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Grocery item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grocery: { $ref: '#/components/schemas/Grocery' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Groceries]
+      summary: Update a grocery item
+      description: All fields are optional. Send only the fields you want to change.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                quantity: { type: string, nullable: true }
+                notes: { type: string }
+                done: { type: boolean }
+                assignee_id: { type: string, format: uuid, nullable: true }
+      responses:
+        '200':
+          description: Updated grocery item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grocery: { $ref: '#/components/schemas/Grocery' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      tags: [Groceries]
+      summary: Delete a grocery item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Grocery item deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -740,20 +961,17 @@ paths:
       summary: Get my household
       responses:
         '200':
-          description: Current household
+          description: Current household, or `null` if the caller has not joined one yet
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  household: { $ref: '#/components/schemas/Household' }
+                  household:
+                    allOf: [{ $ref: '#/components/schemas/Household' }]
+                    nullable: true
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Caller is not in a household
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
 
   /api/v1/households:
     post:
@@ -784,6 +1002,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
     delete:
       tags: [Households]
@@ -794,6 +1014,8 @@ paths:
           description: Household deleted
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/households/leave:
     post:
@@ -844,6 +1066,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
         '409':
           description: Already in a household or request already pending
           content:
@@ -916,8 +1140,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-        '409':
-          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/households/members/{id}/remove:
     post:
@@ -938,6 +1162,8 @@ paths:
                 type: object
                 properties:
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -962,6 +1188,8 @@ paths:
                 type: object
                 properties:
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -1024,10 +1252,14 @@ paths:
                 properties:
                   request: { $ref: '#/components/schemas/JoinRequest' }
                   member:  { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/households/requests/{id}/reject:
     post:
@@ -1048,10 +1280,14 @@ paths:
                 type: object
                 properties:
                   request: { $ref: '#/components/schemas/JoinRequest' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/households/requests/{id}/cancel:
     post:
@@ -1065,16 +1301,20 @@ paths:
       responses:
         '204':
           description: Request cancelled
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /api/v1/households/invites:
     post:
       tags: [Households]
-      summary: Invite a member by phone number
-      description: Admin only. Creates a direct phone invite for a specific number.
+      summary: Invite a member directly
+      description: Admin only. Creates a direct invite keyed by the `phone` field used by the current implementation.
       requestBody:
         required: true
         content:
@@ -1083,7 +1323,7 @@ paths:
               type: object
               required: [phone]
               properties:
-                phone: { type: string, example: "+15559876543" }
+                phone: { type: string, example: "alice_home", description: "Invite target identifier. Despite the field name, current clients send the invitee username here." }
                 name:  { type: string, example: "Bob", description: "Optional display name hint" }
       responses:
         '201':
@@ -1094,14 +1334,22 @@ paths:
                 type: object
                 properties:
                   invite: { $ref: '#/components/schemas/Invite' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   /api/v1/households/invites/me:
     get:
       tags: [Households]
-      summary: List invites for my phone number
-      description: Returns all pending invites addressed to the caller's phone.
+      summary: List invites addressed to me
+      description: Uses the authenticated username from the JWT. A `username` query parameter is also accepted as a fallback.
+      parameters:
+        - name: username
+          in: query
+          required: false
+          schema: { type: string }
+          description: Optional fallback when the JWT does not include a username claim.
       responses:
         '200':
           description: Pending invites
@@ -1113,6 +1361,8 @@ paths:
                   invites:
                     type: array
                     items: { $ref: '#/components/schemas/Invite' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1135,6 +1385,8 @@ paths:
                 properties:
                   invite: { $ref: '#/components/schemas/Invite' }
                   member: { $ref: '#/components/schemas/Member' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1158,6 +1410,8 @@ paths:
                 type: object
                 properties:
                   invite: { $ref: '#/components/schemas/Invite' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1182,6 +1436,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  member: { $ref: '#/components/schemas/Member' }
+                  referrer: { $ref: '#/components/schemas/PublicReferrer' }
         '404':
           $ref: '#/components/responses/NotFound'
