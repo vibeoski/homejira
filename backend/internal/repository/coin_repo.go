@@ -90,5 +90,5 @@ func (r *coinRepo) ListTransactions(memberID uuid.UUID) ([]domain.CoinTransactio
 		}
 		txns = append(txns, t)
 	}
-	return txns, nil
+	return txns, rows.Err()
 }

@@ -69,7 +69,7 @@ func (r *householdJoinRepo) FindPendingByHousehold(householdID uuid.UUID) ([]dom
 		jr.Requester = &req
 		out = append(out, jr)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 func (r *householdJoinRepo) FindByID(id uuid.UUID) (*domain.HouseholdJoinRequest, error) {

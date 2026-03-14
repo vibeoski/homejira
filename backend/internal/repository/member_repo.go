@@ -45,7 +45,7 @@ func (r *memberRepo) FindAll() ([]domain.Member, error) {
 		}
 		members = append(members, m)
 	}
-	return members, nil
+	return members, rows.Err()
 }
 
 func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, error) {
@@ -69,7 +69,7 @@ func (r *memberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, er
 		}
 		members = append(members, m)
 	}
-	return members, nil
+	return members, rows.Err()
 }
 
 func (r *memberRepo) FindByID(id uuid.UUID) (*domain.Member, error) {

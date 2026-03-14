@@ -58,6 +58,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	eventH := handler.NewEventHandler(hub, authSvc, taskSvc)
 	coinH := handler.NewCoinHandler(coinSvc)
 	configH := handler.NewConfigHandler(featureFlagSvc)
+	docsH := handler.NewDocsHandler()
 
 	// ── Router ────────────────────────────────────────────────────
 	r := chi.NewRouter()
@@ -102,6 +103,10 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 			"db":         dbStatus,
 		})
 	})
+
+	// API docs — Swagger UI and raw OpenAPI spec (public)
+	r.Get("/docs", docsH.UI)
+	r.Get("/openapi.yaml", docsH.Spec)
 
 	// API v1
 	r.Route("/api/v1", func(r chi.Router) {
