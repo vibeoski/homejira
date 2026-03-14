@@ -14,7 +14,7 @@ function PinBox({
   digits, refs, onChange, onKeyDown,
 }: {
   digits: string[]
-  refs: React.RefObject<HTMLInputElement>[]
+  refs: React.RefObject<HTMLInputElement | null>[]
   onChange: (i: number, v: string) => void
   onKeyDown: (i: number, e: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
@@ -67,8 +67,8 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
   const makeDigitHandler = (
     digits: string[],
     setDigits: (d: string[]) => void,
-    refs: React.RefObject<HTMLInputElement>[],
-    nextFirstRef?: React.RefObject<HTMLInputElement>
+    refs: React.RefObject<HTMLInputElement | null>[],
+    nextFirstRef?: React.RefObject<HTMLInputElement | null>
   ) => (idx: number, val: string) => {
     if (!/^\d?$/.test(val)) return
     const next = [...digits]
@@ -80,7 +80,7 @@ export function RegisterStep({ phone, onSuccess, onBack }: Props) {
 
   const makeKeyDownHandler = (
     digits: string[],
-    refs: React.RefObject<HTMLInputElement>[]
+    refs: React.RefObject<HTMLInputElement | null>[]
   ) => (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !digits[idx] && idx > 0) refs[idx - 1].current?.focus()
   }
