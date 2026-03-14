@@ -50,7 +50,7 @@ func TestMemberService_GetMember_Found(t *testing.T) {
 	repo.seed(m)
 	svc := newMemberSvc(repo)
 
-	got, err := svc.GetMember(m.ID)
+	got, err := svc.GetMember(m.ID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestMemberService_GetMember_Found(t *testing.T) {
 func TestMemberService_GetMember_NotFound(t *testing.T) {
 	svc := newMemberSvc(newMockMemberRepo())
 
-	_, err := svc.GetMember(uuid.New())
+	_, err := svc.GetMember(uuid.New(), nil)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}

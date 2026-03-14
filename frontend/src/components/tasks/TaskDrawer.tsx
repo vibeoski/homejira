@@ -147,7 +147,6 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
           <div style={{ width: 40, height: 4, background: '#d4cfc8', borderRadius: 99, margin: '8px auto 8px' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 15 }}>{CATEGORIES[current.category].icon}</span>
               <span style={{ fontSize: 12, fontWeight: 600, color: CATEGORIES[current.category].color }}>
                 {CATEGORIES[current.category].label}
               </span>
@@ -186,9 +185,9 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
         <div style={{ background: 'white', margin: '0 10px', borderRadius: 12, padding: '14px 14px', marginBottom: 8, border: '1px solid #ede8e1' }}>
           <FieldLabel>Category</FieldLabel>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-            {(Object.entries(CATEGORIES) as [string, { label: string; icon: string; color: string }][]).map(([k, v]) => (
+            {(Object.entries(CATEGORIES) as [string, { label: string; color: string }][]).map(([k, v]) => (
               <PillBtn key={k} active={current.category === k} color={v.color} onClick={() => patch({ category: k as Category })}>
-                {v.icon} {v.label}
+                {v.label}
               </PillBtn>
             ))}
           </div>

@@ -257,7 +257,7 @@ export function HouseholdPanel() {
     try {
       const { token } = await householdsApi.createInviteLink()
       const url = `https://homejira.app/join/${token}`
-      const text = `Join ${household?.name ?? 'our household'} on HomeJira 🏠 — manage household tasks together. Tap to join:`
+      const text = `Join ${household?.name ?? 'our household'} on HomeJira — manage household tasks together. Tap to join:`
       setShareSheet({ url, text })
     } catch {
       // no-op
@@ -342,7 +342,7 @@ export function HouseholdPanel() {
               Set up your household
             </h2>
             <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 28px', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
-              Create a shared space or join an existing one.
+              Create a shared household or join an existing one.
             </p>
 
             <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -350,28 +350,10 @@ export function HouseholdPanel() {
               <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #ede8e1' }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
 
-                <div style={{ display: 'flex', background: '#faf7f2', padding: 3, borderRadius: 8, marginBottom: 12 }}>
-                  {(['home', 'group'] as const).map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setCreateKind(k)}
-                      style={{
-                        flex: 1, padding: '8px 0', borderRadius: 6, border: 'none',
-                        background: createKind === k ? 'white' : 'transparent',
-                        color: createKind === k ? ACCENT : '#78716c',
-                        fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                        boxShadow: createKind === k ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                        transition: 'all 0.15s',
-                      }}
-                    >{k === 'home' ? 'Home' : 'Group'}</button>
-                  ))}
-                </div>
-
                 <input
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
-                  placeholder={createKind === 'home' ? 'e.g. The Apartment' : 'e.g. Chore Squad'}
+                  placeholder="e.g. The Apartment"
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #ede8e1',
                     fontSize: 14, marginBottom: 12, boxSizing: 'border-box', background: '#f9f9f9', outline: 'none', color: '#1c1917',
@@ -388,7 +370,7 @@ export function HouseholdPanel() {
                     color: createBusy || !createName.trim() ? '#a8a29e' : 'white',
                     fontSize: 13, fontWeight: 700, cursor: createBusy || !createName.trim() ? 'not-allowed' : 'pointer',
                   }}
-                >{createBusy ? 'Creating…' : `Create ${createKind === 'home' ? 'home' : 'group'}`}</button>
+                >{createBusy ? 'Creating…' : 'Create household'}</button>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -731,13 +713,13 @@ export function HouseholdPanel() {
               <>
                 <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', marginBottom: 8 }}>You are the only admin</p>
                 <p style={{ fontSize: 13, color: '#78716c', marginBottom: 24, lineHeight: 1.5 }}>
-                  Before leaving, assign a new admin or delete the group.
+                  Before leaving, assign a new admin or delete the household.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <button type="button" onClick={() => setLeaveStep('pick_admin')} style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: '1px solid #6366f1', background: '#eef2ff', color: '#6366f1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     Assign new admin &amp; leave
                   </button>
-                  <button type="button" onClick={() => setLeaveStep('confirm_delete')} style={dangerBtnStyle}>Delete group</button>
+                  <button type="button" onClick={() => setLeaveStep('confirm_delete')} style={dangerBtnStyle}>Delete household</button>
                   <button type="button" onClick={() => setLeaveStep(null)} style={cancelBtnStyle}>Cancel</button>
                 </div>
               </>
@@ -775,7 +757,7 @@ export function HouseholdPanel() {
 
             {leaveStep === 'confirm_delete' && (
               <>
-                <p style={{ fontSize: 17, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Delete group?</p>
+                <p style={{ fontSize: 17, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>Delete household?</p>
                 <p style={{ fontSize: 13, color: '#78716c', marginBottom: 24, lineHeight: 1.5 }}>
                   This will permanently delete the household, all tasks, and remove all members. This cannot be undone.
                 </p>
@@ -783,7 +765,7 @@ export function HouseholdPanel() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={() => setLeaveStep(isSoleMember ? null : 'last_admin_choice')} style={cancelBtnStyle}>Cancel</button>
                   <button type="button" onClick={handleDeleteHousehold} disabled={leaveBusy} style={dangerBtnStyle}>
-                    {leaveBusy ? 'Deleting…' : 'Delete group'}
+                    {leaveBusy ? 'Deleting…' : 'Delete household'}
                   </button>
                 </div>
               </>

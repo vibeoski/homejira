@@ -4,7 +4,8 @@ import { CATEGORIES, type Task, type Member } from '../../types'
 interface Props { tasks: Task[]; members: Member[] }
 
 export function StatsScreen({ tasks, members }: Props) {
-  const householdTasks = tasks.filter((x) => x.category !== 'grocery')
+  const householdTasks = tasks
+//   const householdTasks = tasks.filter((x) => x.category !== 'grocery')
   const done = householdTasks.filter((x) => x.done).length
   const total = householdTasks.length
   const pct = total ? Math.round((done / total) * 100) : 0
@@ -98,13 +99,15 @@ export function StatsScreen({ tasks, members }: Props) {
 
       {/* By category */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-        {(Object.entries(CATEGORIES) as [string, { label: string; icon: string; color: string }][]).map(([k, v]) => {
+        {(Object.entries(CATEGORIES) as [string, { label: string; color: string }][]).map(([k, v]) => {
           const catTasks = tasks.filter((x) => x.category === k)
           const catDone = catTasks.filter((x) => x.done).length
           const p = catTasks.length ? (catDone / catTasks.length) * 100 : 0
           return (
             <div key={k} style={{ background: 'white', borderRadius: 12, padding: 14, border: '1px solid #ede8e1' }}>
-              <div style={{ fontSize: 20, marginBottom: 5 }}>{v.icon}</div>
+              <div style={{
+                height: 4, width: 24, borderRadius: 99, background: v.color, marginBottom: 8
+              }} />
               <p style={{ fontSize: 12, fontWeight: 600, color: '#1c1917' }}>{v.label}</p>
               <p style={{ fontSize: 11, color: '#a8a29e', margin: '2px 0 8px' }}>{catDone}/{catTasks.length} done</p>
               <div style={{ height: 3, background: '#faf7f2', borderRadius: 99 }}>

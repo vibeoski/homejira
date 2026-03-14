@@ -33,7 +33,7 @@ func (h *MemberHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Always look up from DB — JWT household_id may be stale after household join/approval.
-	caller, err := h.svc.GetMember(callerID)
+	caller, err := h.svc.GetMember(callerID, nil)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -52,12 +52,28 @@ func (h *MemberHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // GET /members/{id}
 func (h *MemberHandler) Get(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	callerID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	caller, err := h.svc.GetMember(callerID, nil)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id"})
 		return
 	}
-	member, err := h.svc.GetMember(id)
+	member, err := h.svc.GetMember(id, caller.HouseholdID)
 	if err != nil {
 		respondError(w, err)
 		return

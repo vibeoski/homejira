@@ -16,15 +16,15 @@ const (
 
 // Member represents a household member.
 type Member struct {
-	ID            uuid.UUID  `json:"id"`
-	Name          string     `json:"name"`
-	Avatar        string     `json:"avatar"`
-	Color         string     `json:"color"`
-	Phone         string     `json:"phone,omitempty"`        // omitted from list responses
-	MpinHash      string     `json:"-"`                      // never serialized
-	HouseholdID   *uuid.UUID `json:"household_id,omitempty"` // null until they join/create
-	Role          MemberRole `json:"role,omitempty"`         // admin/member inside a household
-	CreatedAt  time.Time  `json:"created_at"`
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	Avatar      string     `json:"avatar"`
+	Color       string     `json:"color"`
+	Username    string     `json:"username,omitempty"`      // omitted from list responses
+	MpinHash    string     `json:"-"`                       // never serialized
+	HouseholdID *uuid.UUID `json:"household_id,omitempty"`  // null until they join/create
+	Role        MemberRole `json:"role,omitempty"`          // admin/member inside a household
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // MemberRepository defines the persistence contract.
@@ -35,8 +35,8 @@ type MemberRepository interface {
 	Create(name, avatar, color string) (*Member, error)
 
 	// Auth-specific methods
-	FindByPhone(phone string) (*Member, error)
-	CreateWithAuth(name, avatar, color, phone, mpinHash string) (*Member, error)
+	FindByUsername(username string) (*Member, error)
+	CreateWithAuth(name, avatar, color, username, mpinHash string) (*Member, error)
 
 	// Household / role updates
 	UpdateHouseholdAndRole(id uuid.UUID, householdID *uuid.UUID, role MemberRole) (*Member, error)

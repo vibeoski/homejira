@@ -21,7 +21,7 @@ var MemberColorPalette = []string{
 
 // RegisterInput is the payload for new member creation via the auth flow.
 type RegisterInput struct {
-	Phone         string
+	Username      string
 	Name          string
 	Avatar        string
 	Mpin          string // raw 4-digit PIN; hashed inside AuthService
@@ -31,7 +31,7 @@ type RegisterInput struct {
 // Claims holds the data embedded in a JWT token.
 type Claims struct {
 	MemberID    string
-	Phone       string
+	Username    string
 	Name        string
 	Avatar      string
 	Color       string
