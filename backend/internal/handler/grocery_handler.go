@@ -22,8 +22,7 @@ func NewGroceryHandler(svc *service.GroceryService, hub *sse.Hub) *GroceryHandle
 	return &GroceryHandler{svc: svc, hub: hub}
 }
 
-
-// Rewriting with consistency
+// GET /groceries
 func (h *GroceryHandler) ListGroceries(w http.ResponseWriter, r *http.Request) {
 	claims, ok := middleware.ClaimsFromContext(r.Context())
 	if !ok {
@@ -61,7 +60,11 @@ func (h *GroceryHandler) Get(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
 		return
 	}
-	hhID, _ := uuid.Parse(claims.HouseholdID)
+	hhID, err := uuid.Parse(claims.HouseholdID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "must be in a household"})
+		return
+	}
 
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -83,7 +86,11 @@ func (h *GroceryHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	memberID, _ := uuid.Parse(claims.MemberID)
-	hhID, _ := uuid.Parse(claims.HouseholdID)
+	hhID, err := uuid.Parse(claims.HouseholdID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "must be in a household"})
+		return
+	}
 
 	var body domain.CreateGroceryInput
 	if err := decode(r, &body); err != nil {
@@ -109,7 +116,11 @@ func (h *GroceryHandler) Update(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
 		return
 	}
-	hhID, _ := uuid.Parse(claims.HouseholdID)
+	hhID, err := uuid.Parse(claims.HouseholdID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "must be in a household"})
+		return
+	}
 
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -136,7 +147,11 @@ func (h *GroceryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
 		return
 	}
-	hhID, _ := uuid.Parse(claims.HouseholdID)
+	hhID, err := uuid.Parse(claims.HouseholdID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "must be in a household"})
+		return
+	}
 
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
