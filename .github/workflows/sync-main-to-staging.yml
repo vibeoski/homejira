@@ -8,6 +8,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   backmerge:
     name: Back-merge main into staging
@@ -50,20 +54,23 @@ jobs:
 
           if git merge origin/main --no-edit; then
             git push origin "$BRANCH"
+            BODY_FILE=$(mktemp)
+            printf '%s\n' \
+              'Automatic back-merge triggered by a push to `main` that staging did not yet contain.' \
+              '' \
+              'This keeps `staging` and `main` in sync so the next `staging → main` promotion is conflict-free.' \
+              '' \
+              '**Merge strategy:** regular merge (not squash) to preserve full history.' \
+              > "$BODY_FILE"
             PR_URL=$(gh pr create \
               --title "sync: back-merge main into staging (${SHORT})" \
-              --body "$(cat <<'EOF'
-Automatic back-merge triggered by a push to \`main\` that staging did not yet contain.
-
-This keeps \`staging\` and \`main\` in sync so the next \`staging → main\` promotion is conflict-free.
-
-**Merge strategy:** regular merge (not squash) to preserve full history.
-EOF
-)" \
+              --body-file "$BODY_FILE" \
               --base staging \
               --head "$BRANCH")
+            rm -f "$BODY_FILE"
             echo "PR created: $PR_URL"
-            gh pr merge "$BRANCH" --merge --auto
+            gh pr checks "$BRANCH" --watch --fail-fast --required
+            gh pr merge "$BRANCH" --merge --delete-branch
           else
             # Conflicts — push the branch and open a PR for manual resolution
             git merge --abort
@@ -73,7 +80,6 @@ EOF
               --title "sync: back-merge main into staging (${SHORT}) — CONFLICTS" \
               --body "Automatic back-merge of \`main\` into \`staging\` has conflicts that need manual resolution. Please resolve and merge to keep branches in sync." \
               --base staging \
-              --head "$BRANCH" \
-              --label "needs-review"
+              --head "$BRANCH"
             echo "Conflict PR created — manual resolution required."
           fi
