@@ -598,7 +598,7 @@ func TestHouseholdService_ListInvitesForPhone_EmptyPhone(t *testing.T) {
 func TestHouseholdService_AcceptInvite_Success(t *testing.T) {
 	memberRepo, householdRepo, admin, h := seedAdmin(t)
 	inviteRepo := newMockInviteRepo()
-	invitee := &domain.Member{ID: uuid.New(), Name: "Beth", Phone: "+4445556666"}
+	invitee := &domain.Member{ID: uuid.New(), Name: "Beth", Username: "+4445556666"}
 	memberRepo.seed(invitee)
 	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), inviteRepo, newMockInviteLinkRepo(), newMockTaskRepo())
 
@@ -620,7 +620,7 @@ func TestHouseholdService_AcceptInvite_Success(t *testing.T) {
 
 func TestHouseholdService_RejectInvite_Success(t *testing.T) {
 	memberRepo, householdRepo, admin, _ := seedAdmin(t)
-	invitee := &domain.Member{ID: uuid.New(), Name: "Carl", Phone: "+7778889999"}
+	invitee := &domain.Member{ID: uuid.New(), Name: "Carl", Username: "+7778889999"}
 	memberRepo.seed(invitee)
 	inviteRepo := newMockInviteRepo()
 	svc := newHouseholdSvc(householdRepo, memberRepo, newMockJoinRepo(), inviteRepo, newMockInviteLinkRepo(), newMockTaskRepo())

@@ -39,6 +39,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	inviteLinkRepo := repository.NewHouseholdInviteLinkRepository(db)
 	coinRepo := repository.NewCoinRepository(db)
 	referralRepo := repository.NewReferralRepository(db)
+	groceryRepo := repository.NewGroceryRepository(db)
 
 	featureFlagRepo := repository.NewFeatureFlagRepository(db)
 	featureFlagSvc := service.NewFeatureFlagService(featureFlagRepo)
@@ -46,6 +47,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	coinSvc := service.NewCoinService(coinRepo, referralRepo, memberRepo)
 	memberSvc := service.NewMemberService(memberRepo)
 	taskSvc := service.NewTaskService(taskRepo, memberRepo, activityRepo)
+	grocerySvc := service.NewGroceryService(groceryRepo, memberRepo)
 	authSvc := service.NewAuthService(memberRepo, coinSvc, cfg.JWTSecret, featureFlagSvc)
 	householdSvc := service.NewHouseholdService(householdRepo, memberRepo, joinRepo, inviteRepo, inviteLinkRepo, taskRepo, coinSvc)
 
@@ -53,6 +55,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 
 	memberH := handler.NewMemberHandler(memberSvc, authSvc, cfg.AppBaseURL)
 	taskH := handler.NewTaskHandler(taskSvc, hub)
+	groceryH := handler.NewGroceryHandler(grocerySvc, hub)
 	authH := handler.NewAuthHandler(authSvc)
 	householdH := handler.NewHouseholdHandler(householdSvc, hub)
 	eventH := handler.NewEventHandler(hub, authSvc, taskSvc)
@@ -113,7 +116,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 		// Public: auth endpoints (no JWT required) — rate-limited per IP
 		r.Route("/auth", func(r chi.Router) {
 			r.Use(middleware.RateLimitAuth)
-			r.Post("/check-phone", authH.CheckPhone)
+			r.Post("/check-username", authH.CheckUsername)
 			r.Post("/login", authH.Login)
 			r.Post("/register", authH.Register)
 		})
@@ -156,6 +159,15 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 				r.Delete("/{id}", taskH.Delete)
 				r.Post("/{id}/comments", taskH.AddComment)
 				r.Get("/{id}/activity", taskH.GetActivity)
+			})
+
+			// Groceries
+			r.Route("/groceries", func(r chi.Router) {
+				r.Get("/", groceryH.ListGroceries)
+				r.Post("/", groceryH.Create)
+				r.Get("/{id}", groceryH.Get)
+				r.Patch("/{id}", groceryH.Update)
+				r.Delete("/{id}", groceryH.Delete)
 			})
 
 			// Households / groups

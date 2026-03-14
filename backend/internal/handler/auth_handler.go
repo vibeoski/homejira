@@ -12,7 +12,8 @@ import (
 	"github.com/homejira/api/internal/service"
 )
 
-var phoneRegexp = regexp.MustCompile(`^\+?[0-9]{7,15}$`)
+// usernameRegexp validates: 3–30 chars, alphanumeric + underscore only.
+var usernameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_]{3,30}$`)
 
 // PATCH /auth/mpin — change mPIN (requires valid JWT + current mPIN)
 func (h *AuthHandler) ChangeMpin(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +73,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, envelope{"token": token, "member": member})
 }
 
-// AuthHandler handles the phone+mPIN authentication flow.
+// AuthHandler handles the username+mPIN authentication flow.
 type AuthHandler struct {
 	svc *service.AuthService
 }
@@ -81,23 +82,23 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 	return &AuthHandler{svc: svc}
 }
 
-// POST /auth/check-phone
-// Body:     { "phone": "+821012345678" }
+// POST /auth/check-username
+// Body:     { "username": "alice" }
 // Response: { "registered": true/false }
-func (h *AuthHandler) CheckPhone(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) CheckUsername(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Phone string `json:"phone"`
+		Username string `json:"username"`
 	}
 	if err := decode(r, &body); err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
 		return
 	}
-	if !phoneRegexp.MatchString(body.Phone) {
-		respond(w, http.StatusBadRequest, envelope{"error": "invalid phone number"})
+	if !usernameRegexp.MatchString(body.Username) {
+		respond(w, http.StatusBadRequest, envelope{"error": "username must be 3–30 chars (letters, numbers, underscores)"})
 		return
 	}
 
-	_, err := h.svc.CheckPhone(body.Phone)
+	_, err := h.svc.CheckUsername(body.Username)
 	if errors.Is(err, domain.ErrNotFound) {
 		respond(w, http.StatusOK, envelope{"registered": false})
 		return
@@ -110,12 +111,12 @@ func (h *AuthHandler) CheckPhone(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/login
-// Body:     { "phone": "...", "mpin": "1234" }
+// Body:     { "username": "alice", "mpin": "1234" }
 // Response: { "token": "...", "member": {...} }
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Phone string `json:"phone"`
-		Mpin  string `json:"mpin"`
+		Username string `json:"username"`
+		Mpin     string `json:"mpin"`
 	}
 	if err := decode(r, &body); err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
@@ -126,9 +127,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, member, err := h.svc.Login(body.Phone, body.Mpin)
+	token, member, err := h.svc.Login(body.Username, body.Mpin)
 	if errors.Is(err, domain.ErrUnauthorized) || errors.Is(err, domain.ErrWrongMpin) {
-		respond(w, http.StatusUnauthorized, envelope{"error": "invalid phone or mPIN"})
+		respond(w, http.StatusUnauthorized, envelope{"error": "invalid username or mPIN"})
 		return
 	}
 	if err != nil {
@@ -139,11 +140,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /auth/register
-// Body:     { "phone": "...", "name": "Example User", "avatar": "🧑", "mpin": "1234", "referral_token": "optional" }
+// Body:     { "username": "alice", "name": "Alice", "avatar": "🧑", "mpin": "1234", "referral_token": "optional" }
 // Response: { "token": "...", "member": {...} }
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Phone         string `json:"phone"`
+		Username      string `json:"username"`
 		Name          string `json:"name"`
 		Avatar        string `json:"avatar"`
 		Mpin          string `json:"mpin"`
@@ -153,20 +154,20 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
 		return
 	}
-	if !phoneRegexp.MatchString(body.Phone) || body.Name == "" || body.Avatar == "" || len(body.Mpin) != 4 {
+	if !usernameRegexp.MatchString(body.Username) || body.Name == "" || len(body.Mpin) != 4 {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid registration input"})
 		return
 	}
 
 	token, member, err := h.svc.Register(domain.RegisterInput{
-		Phone:         body.Phone,
+		Username:      body.Username,
 		Name:          body.Name,
 		Avatar:        body.Avatar,
 		Mpin:          body.Mpin,
 		ReferralToken: body.ReferralToken,
 	})
 	if errors.Is(err, domain.ErrAlreadyExists) {
-		respond(w, http.StatusConflict, envelope{"error": "phone already registered"})
+		respond(w, http.StatusConflict, envelope{"error": "username already taken"})
 		return
 	}
 	if err != nil {

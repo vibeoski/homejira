@@ -1,10 +1,12 @@
 import { create } from 'zustand'
-import type { Task, Member, TaskFilter, CreateTaskPayload } from '../types'
+import type { Task, Member, TaskFilter, CreateTaskPayload, Grocery, CreateGroceryPayload, UpdateGroceryPayload } from '../types'
 import { tasksApi } from '../api/tasks'
 import { membersApi } from '../api/members'
+import { groceriesApi } from '../api/groceries'
 
 interface AppStore {
   tasks: Task[]
+  groceries: Grocery[]
   members: Member[]
   filter: TaskFilter
   loading: boolean
@@ -14,15 +16,22 @@ interface AppStore {
   setFilter: (f: Partial<TaskFilter>) => void
   bumpSse: () => void
   fetchTasks: () => Promise<void>
+  fetchGroceries: () => Promise<void>
   fetchMembers: () => Promise<void>
   createTask: (payload: CreateTaskPayload) => Promise<void>
   toggleTask: (id: string, done: boolean) => Promise<void>
   deleteTask: (id: string) => Promise<void>
   addComment: (taskId: string, authorId: string, body: string) => Promise<void>
+
+  createGrocery: (payload: CreateGroceryPayload) => Promise<void>
+  toggleGrocery: (id: string, done: boolean) => Promise<void>
+  updateGrocery: (id: string, payload: UpdateGroceryPayload) => Promise<void>
+  deleteGrocery: (id: string) => Promise<void>
 }
 
 export const useStore = create<AppStore>((set, get) => ({
   tasks: [],
+  groceries: [],
   members: [],
   filter: {},
   loading: false,
@@ -44,6 +53,17 @@ export const useStore = create<AppStore>((set, get) => ({
       }
     } catch (e: unknown) {
       if (isInitial) set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false })
+    }
+  },
+
+  fetchGroceries: async () => {
+    try {
+      const groceries = await groceriesApi.list()
+      if (JSON.stringify(groceries) !== JSON.stringify(get().groceries)) {
+        set({ groceries })
+      }
+    } catch {
+      // ignore background errors
     }
   },
 
@@ -94,5 +114,39 @@ export const useStore = create<AppStore>((set, get) => ({
         t.id === taskId ? { ...t, comments: [...(t.comments ?? []), comment] } : t
       ),
     }))
+  },
+
+  createGrocery: async (payload) => {
+    const g = await groceriesApi.create(payload)
+    set((s) => ({ groceries: [g, ...s.groceries] }))
+  },
+
+  toggleGrocery: async (id, done) => {
+    const previous = get().groceries.find((g) => g.id === id)
+    set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g) }))
+    try {
+      const updated = await groceriesApi.update(id, { done })
+      set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
+    } catch {
+      if (previous) {
+        set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? previous : g) }))
+      }
+    }
+  },
+
+  updateGrocery: async (id, payload) => {
+    const updated = await groceriesApi.update(id, payload)
+    set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
+  },
+
+  deleteGrocery: async (id) => {
+    const previous = get().groceries.find((g) => g.id === id)
+    set((s) => ({ groceries: s.groceries.filter((g) => g.id !== id) }))
+    try {
+      await groceriesApi.delete(id)
+    } catch {
+      if (previous) set((s) => ({ groceries: [previous, ...s.groceries] }))
+      throw new Error('Failed to delete grocery')
+    }
   },
 }))
