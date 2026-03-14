@@ -110,8 +110,8 @@ export function PhoneStep({ onRegistered, onUnregistered }: Props) {
           <select
             value={`${selected.flag}|${selected.code}|${selected.name}`}
             onChange={(e) => {
-              const [flag, code, name] = e.target.value.split('|')
-              setSelected({ flag, code, name, tz: [] })
+              const found = COUNTRIES.find((c) => `${c.flag}|${c.code}|${c.name}` === e.target.value)
+              if (found) setSelected(found)
             }}
             style={{
               height: '100%', padding: '10px 24px 10px 10px', borderRadius: 8, fontSize: 14,
