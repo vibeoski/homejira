@@ -22,11 +22,15 @@ jobs:
         id: check
         run: |
           git fetch origin staging main
-          if git merge-base --is-ancestor origin/main origin/staging; then
-            echo "Staging already contains all of main — nothing to do."
+          # Use diff rather than ancestry — squash merges break --is-ancestor
+          # even when content is identical. Only skip if no file changes exist.
+          DIFF=$(git diff origin/staging..origin/main --name-only)
+          if [ -z "$DIFF" ]; then
+            echo "Staging content is identical to main — nothing to do."
             echo "in_sync=true" >> "$GITHUB_OUTPUT"
           else
-            echo "main has commits staging does not — backmerge needed."
+            echo "main has changes staging does not:"
+            echo "$DIFF"
             echo "in_sync=false" >> "$GITHUB_OUTPUT"
           fi
 
