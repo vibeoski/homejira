@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { authApi } from '../api/auth'
 import { householdsApi, type Household } from '../api/households'
 import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/ui/Spinner'
@@ -9,7 +10,7 @@ const ACCENT = '#6366f1'
 export function JoinPage() {
   const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, setAuth, token: authToken } = useAuthStore()
 
   const [household, setHousehold] = useState<Household | null>(null)
   const [error, setError] = useState('')
@@ -31,18 +32,26 @@ export function JoinPage() {
     if (!loading && household && isAuthenticated) {
       setJoining(true)
       householdsApi.joinByInviteToken(token!)
-        .then(() => navigate('/household', { replace: true }))
+        .then(async ({ member: joinedMember }) => {
+          try {
+            const { token: freshToken, member: freshMember } = await authApi.refresh()
+            setAuth(freshToken, freshMember)
+          } catch {
+            if (authToken) setAuth(authToken, joinedMember)
+          }
+          navigate('/household', { replace: true })
+        })
         .catch((err: unknown) => {
           setJoining(false)
           setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to join household.')
         })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, household, isAuthenticated])
+  }, [loading, household, isAuthenticated, authToken])
 
-  const handleSignUpAndJoin = () => {
+  const handleAuthAndJoin = (mode: 'login' | 'register') => {
     localStorage.setItem('hj_pending_join', token!)
-    navigate('/auth', { replace: true })
+    navigate(`/auth?mode=${mode}`, { replace: true })
   }
 
   if (loading || joining) {
@@ -90,12 +99,12 @@ export function JoinPage() {
           {household?.name}
         </p>
 
-        <button style={btnStyle} onClick={handleSignUpAndJoin}>
+        <button style={btnStyle} onClick={() => handleAuthAndJoin('register')}>
           Sign up &amp; join
         </button>
 
         <button
-          onClick={handleSignUpAndJoin}
+          onClick={() => handleAuthAndJoin('login')}
           style={{
             marginTop: 10, width: '100%', padding: '12px 0', borderRadius: 10,
             border: '1px solid #ede8e1', background: 'white',

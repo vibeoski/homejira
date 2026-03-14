@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 import { householdsApi } from '../api/households'
 import { AppLogo } from '../components/ui/AppLogo'
@@ -32,11 +33,16 @@ export function AuthPage() {
   const handleSuccess = async (token: string, member: Member) => {
     const pendingJoin = localStorage.getItem('hj_pending_join')
     if (pendingJoin) {
-      localStorage.removeItem('hj_pending_join')
       localStorage.setItem('hj_token', token)
       try {
         const { member: updated } = await householdsApi.joinByInviteToken(pendingJoin)
-        setAuth(token, updated)
+        localStorage.removeItem('hj_pending_join')
+        try {
+          const { token: freshToken, member: freshMember } = await authApi.refresh()
+          setAuth(freshToken, freshMember)
+        } catch {
+          setAuth(token, updated)
+        }
         return
       } catch {}
     }
