@@ -18,9 +18,9 @@ main (production)
 4. Verify in staging env (Railway staging + Vercel preview)
 5. Merge staging → main to promote to production
 
-**Merge strategy (critical):**
-- `feature/* → staging`: **squash merge** (`gh pr merge --squash`)
-- `staging → main`: **regular merge** (`gh pr merge --merge`) — squashing here causes divergence on every promotion
+**Merge strategy:**
+- `feature/* → staging`: **regular merge** (`gh pr merge --merge`)
+- `staging → main`: **regular merge** (`gh pr merge --merge`)
 
 **Rules:** Never commit directly to `main` or `staging`. All feature/fix PRs target `staging`. `main` only receives PRs from `staging`.
 

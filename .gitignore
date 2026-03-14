@@ -20,14 +20,17 @@ postgres-data/
 
 # Claude session data
 .claude/
+.continue/
 
 # Dev/test scratch files
 payload.json
 test_flow.js
 test_idor.sh
 vulnerabilities_report.md
+qa/reports/
 
 # OS
 .DS_Store
 Thumbs.db
 firebase-service-account.json
+.aider*

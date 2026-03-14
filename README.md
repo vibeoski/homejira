@@ -8,7 +8,7 @@
 
 | Layer      | Technology                                      |
 |------------|-------------------------------------------------|
-| Frontend   | React 18 + TypeScript + Vite + Zustand          |
+| Frontend   | React 19 + TypeScript + Vite + React Router + Zustand |
 | Backend    | Go 1.24 + Chi router + PGX                      |
 | Database   | PostgreSQL 16                                   |
 | Realtime   | Server-Sent Events (SSE)                        |
@@ -18,7 +18,7 @@
 
 ## Features
 
-- **Auth** — phone number + 4-digit MPIN, JWT (7-day TTL), rate-limited login, change PIN in-app
+- **Auth** — username + 4-digit mPIN, JWT (7-day TTL), rate-limited login, change PIN in-app
 - **Households** — create or join by code; invite by share link; admin controls (promote, remove, approve/reject join requests); leave household; delete group
 - **Tasks** — full CRUD, category (chore/errand/repair), priority (urgent/high/normal), assignee, due date, notes, search and filter
 - **Grocery list** — dedicated checklist view with quick-add, quantity field, check-all, clear done, and history grouped by day
@@ -26,8 +26,7 @@
 - **Activity history** — every task change (created, completed, assigned, priority/category/title/notes/due changed) recorded in a unified timeline alongside comments
 - **Stats** — completion ring, per-category progress bars, per-member breakdown
 - **Coins & referral** — earn coins for referring friends (+10) and for household members joining via your invite link (+20); coin balance and history in account menu
-- **Theme** — light, dark, and system-preference modes, persisted per device
-- **Guest mode** — try the app without an account (local storage only)
+- **Feature flags** — public config endpoint lets the frontend enable or hide features safely
 - **My tasks filter** — one-tap to see only tasks assigned to you
 
 ---
@@ -102,7 +101,7 @@ make ps          List running containers
 
 ### Postman Collection
 
-A complete Postman collection covering all 39 API endpoints lives at [`postman/HomeJira.postman_collection.json`](./postman/HomeJira.postman_collection.json).
+A complete Postman collection covering the current API surface lives at [`postman/HomeJira.postman_collection.json`](./postman/HomeJira.postman_collection.json).
 
 - Import the JSON file into Postman for the fully folder-organised version
 - Collection variables: `{{baseUrl}}`, `{{token}}` (auto-set by Login/Register), `{{taskId}}`, `{{memberId}}`, `{{linkToken}}`
@@ -159,17 +158,22 @@ homejira/
 │       └── db/migrations/           # golang-migrate SQL files (auto-applied on startup)
 │
 └── frontend/
+    ├── package.json
+    ├── vite.config.ts
     └── src/
-        ├── api/                     # Axios clients (tasks, members, auth, households, coins)
-        ├── store/                   # Zustand (appStore, authStore, themeStore)
+        ├── main.tsx                 # React entry point
+        ├── App.tsx                  # Router + auth guards
+        ├── api/                     # Axios client + endpoint wrappers
+        ├── store/                   # Zustand stores (app, auth, config, guest helpers)
         ├── components/
-        │   ├── ui/                  # Avatar, Badge, Chip, Spinner, AppLogo
-        │   ├── layout/              # AppLayout, BottomNav, AccountMenu, GuestBanner
-        │   ├── tasks/               # TaskCard, TaskDrawer, AddTaskSheet
+        │   ├── ui/                  # Reusable UI bits (Spinner, Avatar, AppLogo, etc.)
+        │   ├── layout/              # AppLayout, BottomNav, AccountMenu
+        │   ├── tasks/               # TaskCard, TaskDrawer, AddTaskSheet, AddGrocerySheet
         │   ├── members/             # MembersScreen, HouseholdPanel, HouseholdPromo
-        │   ├── auth/                # PhoneStep, MPINStep, RegisterStep
+        │   ├── auth/                # LoginFlow, RegisterFlow
         │   └── stats/               # StatsScreen
-        ├── pages/                   # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
+        ├── pages/                   # Auth, join/referral landing, tasks, grocery, stats, household
+        ├── index.css                # Global styles
         ├── types/index.ts
         └── utils/index.ts
 ```
@@ -178,31 +182,60 @@ homejira/
 
 ## Architecture
 
+HomeJira is a small full-stack app with a clear split between a Go API and a React SPA:
+
+- The backend composition root is `backend/cmd/server/main.go` + `backend/internal/server/server.go`: load config, connect DB, run embedded migrations, create repositories, create services, then mount handlers and middleware.
+- The frontend composition root is `frontend/src/main.tsx` + `frontend/src/App.tsx`: boot React, fetch config, guard routes based on auth state, and render the app shell.
+- Development runtime is `db` + `api` + `web`, started together with Docker Compose. Vite proxies `/api` to the Go container in local dev.
+
+### Backend layering
+
 ```
-HTTP Request
-     │
-     ▼
-┌──────────┐
-│ Handler  │  Parse request, auth claims, call service
-└────┬─────┘
-     │
-     ▼
-┌──────────┐
-│ Service  │  Business rules, validation, activity recording
-└────┬─────┘
-     │
-     ▼
-┌────────────┐
-│ Repository │  SQL queries (implements Domain interface)
-└────┬───────┘
-     │
-     ▼
-┌──────────┐
-│ Postgres │
-└──────────┘
+HTTP request
+    │
+    ▼
+Handler      HTTP parsing, auth claims, response mapping
+    │
+    ▼
+Service      Business rules, validation, permissions, workflow orchestration
+    │
+    ▼
+Repository   PGX/Postgres queries and row mapping
+    │
+    ▼
+PostgreSQL
 ```
 
-Each layer depends only on the layer below via interfaces defined in `domain/`. The domain package has zero external dependencies.
+- `internal/domain/` defines entities plus repository interfaces. This is the backend's stable core and has no framework-specific responsibilities.
+- `internal/repository/` implements those interfaces with PGX and owns SQL, joins, and scan helpers.
+- `internal/service/` holds the real application logic: auth, household membership, tasks, groceries, coins, referrals, and activity history.
+- `internal/handler/` is intentionally thin: decode request, call service, encode response, trigger SSE notifications after successful mutations.
+
+### Frontend flow
+
+```
+Page / component
+    │
+    ▼
+Zustand store action
+    │
+    ▼
+Axios API client
+    │
+    ▼
+Go API
+```
+
+- `frontend/src/components/layout/AppLayout.tsx` owns the authenticated shell and the `EventSource` connection.
+- `frontend/src/store/index.ts` is the main app store for tasks, groceries, members, loading state, and optimistic updates.
+- `frontend/src/store/authStore.ts` keeps JWT + member state in localStorage so refreshes do not flash back to auth.
+- `frontend/src/api/client.ts` centralizes the base URL, attaches the bearer token, and redirects to `/auth` on 401s.
+
+### Realtime model
+
+- The backend uses a lightweight in-memory SSE hub keyed by household and, for pending join flows, by member.
+- Mutation handlers call `hub.Notify(...)` after writes.
+- The frontend listens for SSE messages and refetches the affected datasets rather than trying to merge low-level patches client-side.
 
 ---
 
@@ -214,11 +247,11 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 | Method | Endpoint                | Auth | Description                        |
 |--------|-------------------------|------|------------------------------------|
-| POST   | `/auth/check-phone`     | No   | Check if phone is registered       |
-| POST   | `/auth/login`           | No   | Login with phone + MPIN            |
+| POST   | `/auth/check-username`  | No   | Check if username is registered    |
+| POST   | `/auth/login`           | No   | Login with username + mPIN         |
 | POST   | `/auth/register`        | No   | Register new account               |
 | POST   | `/auth/refresh`         | Yes  | Reissue JWT with fresh DB state    |
-| PATCH  | `/auth/mpin`            | Yes  | Change MPIN                        |
+| PATCH  | `/auth/mpin`            | Yes  | Change mPIN                        |
 
 ### Tasks
 
@@ -264,8 +297,8 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 | POST   | `/households/requests/:id/approve` | Approve join request (admin)     |
 | POST   | `/households/requests/:id/reject`  | Reject join request (admin)      |
 | POST   | `/households/requests/:id/cancel`  | Cancel own join request          |
-| POST   | `/households/invites`              | Send direct invite by phone (admin) |
-| GET    | `/households/invites/me`           | Get pending invites for my phone |
+| POST   | `/households/invites`              | Send direct invite (admin)       |
+| GET    | `/households/invites/me`           | Get pending invites for current user |
 | POST   | `/households/invites/:id/accept`   | Accept a household invite        |
 | POST   | `/households/invites/:id/reject`   | Reject a household invite        |
 | POST   | `/households/invite-link`          | Generate shareable invite link (admin) |
@@ -288,19 +321,28 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 | Method | Endpoint              | Auth        | Description              |
 |--------|-----------------------|-------------|--------------------------|
-| GET    | `/events?token=<jwt>` | Query param | SSE stream for household |
+| GET    | `/events?token=<jwt>` | Query param | SSE stream for household/member updates |
 
 ---
 
 ## Environment Variables
 
-| Variable       | Default                                           | Description              |
-|----------------|---------------------------------------------------|--------------------------|
-| `DATABASE_URL` | `postgres://homejira:homejira_secret@db:5432/...` | Postgres connection      |
-| `PORT`         | `8080`                                            | API server port          |
-| `JWT_SECRET`   | `dev-secret-change-in-prod`                       | JWT signing key          |
-| `CORS_ORIGINS` | `http://localhost:3000`                           | Allowed CORS origins     |
-| `ENV`          | `development`                                     | Environment name         |
+### Backend
+
+| Variable       | Default                                                          | Description                        |
+|----------------|------------------------------------------------------------------|------------------------------------|
+| `DATABASE_URL` | `postgres://homejira:homejira_secret@localhost:5432/homejira?...` | Postgres connection string         |
+| `PORT`         | `8080`                                                           | API server port                    |
+| `ENV`          | `development`                                                    | Environment name                   |
+| `CORS_ORIGINS` | `http://localhost:3000`                                          | Comma-separated allowed origins    |
+| `JWT_SECRET`   | `CHANGE_ME_IN_PRODUCTION_32_CHARS!`                              | JWT signing key                    |
+| `APP_BASE_URL` | `http://localhost:3000`                                          | Base URL used when building links  |
+
+### Frontend
+
+| Variable       | Default   | Description                                 |
+|----------------|-----------|---------------------------------------------|
+| `VITE_API_URL` | `/api/v1` | API base URL; Vite proxy handles this in dev |
 
 ---
 
