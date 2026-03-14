@@ -60,7 +60,7 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
     setComment('')
     setSendingComment(true)
     try {
-      await addComment(current.id, me.id, body)
+      await addComment(current.id, body)
       const fresh = await tasksApi.get(current.id)
       setCurrent(fresh)
     } catch {
