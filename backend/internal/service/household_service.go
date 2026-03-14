@@ -68,6 +68,9 @@ func (s *HouseholdService) CreateHousehold(creatorID uuid.UUID, name string, kin
 	if err != nil {
 		return nil, nil, err
 	}
+	if creator.HouseholdID != nil {
+		return nil, nil, fmt.Errorf("%w: already a member of a household", domain.ErrAlreadyExists)
+	}
 
 	code, err := generateJoinCode()
 	if err != nil {
