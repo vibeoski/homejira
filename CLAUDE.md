@@ -1,66 +1,45 @@
 # CLAUDE.md — HomeJira Codebase Guide
 
-This file is the authoritative reference for how code is written in this project.
-Read it before adding any new feature, endpoint, or component.
+Authoritative reference for how code is written. Read before adding any feature, endpoint, or component.
 
 ---
 
 ## Git Workflow
 
-**Branch strategy:**
 ```
 main (production)
 └── staging (staging environment)
-    └── feature/* or fix/* (your work branches)
+    └── feature/* or fix/* (work branches)
 ```
 
-**For every feature or bug fix:**
 1. Branch off `staging`: `git checkout staging && git pull && git checkout -b feature/my-thing`
-2. Build and verify locally (`make up`) on the feature branch before opening a PR
-3. Open PR targeting `staging` (never directly to `main`)
-4. CI must pass on the PR
-5. Verify the deployed preview in the staging environment (Railway staging + Vercel preview)
-6. Only then merge staging → main via PR to promote to production
+2. Verify locally (`make up`) before opening a PR
+3. PR targets `staging` — never `main`; CI must pass
+4. Verify in staging env (Railway staging + Vercel preview)
+5. Merge staging → main to promote to production
 
-**Merge strategy (critical — prevents conflicts):**
-- `feature/* → staging`: **squash merge** (`gh pr merge --squash`) — condenses noisy commits
-- `staging → main`: **regular merge** (`gh pr merge --merge`) — preserves exact SHAs so git never sees staging commits as new relative to main. Using squash here causes divergence and conflicts on every subsequent promotion.
+**Merge strategy (critical):**
+- `feature/* → staging`: **squash merge** (`gh pr merge --squash`)
+- `staging → main`: **regular merge** (`gh pr merge --merge`) — squashing here causes divergence on every promotion
 
-**Rules:**
-- Never commit directly to `main` or `staging`
-- **All PRs from feature/fix branches MUST target `staging`**, never `main`
-- `main` only ever receives PRs from `staging` (promotion PRs)
-- Always verify locally first, then in staging, before promoting staging → main
+**Rules:** Never commit directly to `main` or `staging`. All feature/fix PRs target `staging`. `main` only receives PRs from `staging`.
 
 ---
 
 ## Project Overview
 
-HomeJira is a household task management app (Jira for home).
+HomeJira — household task management ("Jira for home"). Go backend + TypeScript frontend.
 Members belong to a **Household**. Tasks are scoped to a household.
-Auth is phone + 4-digit mPIN → JWT. Guest mode is supported (localStorage only, no API calls).
+Auth: phone + 4-digit mPIN → JWT (7-day TTL). Guest mode: localStorage only, no API calls.
 
-**Service URLs (dev)**
-- Frontend: http://localhost:3000
-- API: http://localhost:8080/api/v1
+**Service URLs**
+| Env | Frontend | API |
+|-----|----------|-----|
+| Dev | http://localhost:3000 | http://localhost:8080/api/v1 |
+| Staging | https://homejira-git-staging-vibeoskis-projects.vercel.app | https://homejira-staging.up.railway.app/api/v1 |
+| Production | https://homejira.app | https://homejira.up.railway.app/api/v1 |
 
-**Service URLs (staging)**
-- Frontend: https://homejira-git-staging-vibeoskis-projects.vercel.app
-- API: https://homejira-staging.up.railway.app/api/v1
-
-**Service URLs (production)**
-- Frontend: https://homejira.app
-- API: https://homejira.up.railway.app/api/v1
-
-**Dev commands**
-```
-make up          # build + start all Docker services
-make down        # stop containers
-make seed        # seed DB with sample data
-make clean       # wipe containers + volumes (resets DB)
-make shell-db    # psql into Postgres
-make logs-api    # tail API logs
-```
+**Dev commands:** `make up` · `make down` · `make seed` · `make clean` · `make shell-db` · `make logs-api`
 
 ---
 
@@ -68,100 +47,71 @@ make logs-api    # tail API logs
 
 ```
 homejira/
-├── Makefile
 ├── backend/
-│   ├── cmd/server/main.go          # entry point: config -> db -> server.Start()
+│   ├── cmd/server/main.go          # entry point
 │   ├── cmd/seed/main.go            # DB seeder
 │   ├── config/config.go            # env-backed Config struct
 │   └── internal/
-│       ├── domain/                 # entities, repository interfaces, sentinel errors
+│       ├── domain/                 # entities, interfaces, sentinel errors
 │       ├── repository/             # pgx SQL implementations
 │       ├── service/                # business logic
 │       ├── handler/                # HTTP handlers + respond helpers
-│       ├── middleware/             # auth JWT middleware, logger
+│       ├── middleware/             # auth JWT, logger
 │       ├── server/server.go        # DI wiring + chi router
-│       └── db/
-│           ├── db.go               # pgxpool connection with retry
-│           ├── migrate.go          # golang-migrate via embed.FS
-│           └── migrations/         # numbered SQL migration files
-└── frontend/
-    └── src/
-        ├── api/                    # axios wrappers (client.ts, tasks.ts, members.ts, households.ts, auth.ts)
-        ├── store/
-        │   ├── index.ts            # Zustand app store (tasks, members)
-        │   ├── authStore.ts        # Zustand auth store (token, member, guest)
-        │   └── guest.ts            # guest-mode localStorage helpers
-        ├── components/
-        │   ├── ui/                 # Badge, Avatar, Chip, Spinner, AppLogo
-        │   ├── layout/             # AppLayout, BottomNav, GuestBanner, AccountMenu
-        │   ├── tasks/              # TaskCard, TaskDrawer, AddTaskSheet
-        │   ├── members/            # MembersScreen, HouseholdPanel, HouseholdPromo
-        │   ├── stats/              # StatsScreen
-        │   └── auth/               # PhoneStep, MPINStep, RegisterStep
-        ├── pages/                  # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
-        ├── types/index.ts          # all TS interfaces and enum-like const maps
-        └── utils/index.ts          # pure utility functions (timeAgo, etc.)
+│       └── db/migrations/          # numbered SQL migration files
+└── frontend/src/
+    ├── api/                        # axios wrappers (client.ts, tasks.ts, members.ts, households.ts, auth.ts)
+    ├── store/                      # index.ts (app), authStore.ts (auth), guest.ts
+    ├── components/                 # ui/, layout/, tasks/, members/, stats/, auth/
+    ├── pages/                      # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
+    ├── types/index.ts              # all TS interfaces and enum-like const maps
+    └── utils/index.ts              # pure utility functions
 ```
 
 ---
 
 ## Backend Architecture
 
-### Layer Rules (strict, no exceptions)
+### Layer Rules (strict)
 
 ```
 domain  <-- repository  <-- service  <-- handler
 ```
 
-- **domain**: pure Go structs, repository interfaces, sentinel errors. Zero imports from other internal packages.
+- **domain**: pure Go structs, interfaces, sentinel errors. Zero imports from other internal packages.
 - **repository**: implements domain interfaces using `pgxpool`. Raw SQL only. No business logic.
-- **service**: imports domain interfaces. Validates input, enforces business rules, calls repository methods.
-- **handler**: calls service, reads from `r.Context()` / request body, writes JSON responses. No direct DB access.
-- **server.go**: the only place where concrete types are wired together (DI).
+- **service**: imports domain interfaces. Validates input, enforces business rules.
+- **handler**: calls service, reads context/body, writes JSON. No direct DB access.
+- **server.go**: only place where concrete types are wired (DI).
 
-### Adding a New Feature (backend checklist)
+### New Feature Checklist (backend)
 
-1. Add entity + repository interface to `internal/domain/`.
-2. Add sentinel errors to `internal/domain/errors.go` if new error cases are needed.
-3. Implement the repository in `internal/repository/` — one file per aggregate (e.g. `thing_repo.go`).
-4. Add a service in `internal/service/` — one file per aggregate (e.g. `thing_service.go`).
-5. Add a handler in `internal/handler/` — one file per aggregate (e.g. `thing_handler.go`).
-6. Wire up repos, services, and handlers in `internal/server/server.go`.
-7. Register routes in the `r.Route("/api/v1", ...)` block.
-8. Write a migration if the DB schema changes.
+1. Add entity + repository interface to `internal/domain/`
+2. Add sentinel errors to `domain/errors.go` if needed
+3. Implement repository in `internal/repository/thing_repo.go`
+4. Add service in `internal/service/thing_service.go`
+5. Add handler in `internal/handler/thing_handler.go`
+6. Wire in `internal/server/server.go`
+7. Register routes in `r.Route("/api/v1", ...)` block
+8. Write migration if schema changes
 
 ### Domain Conventions
 
 ```go
-// Typed string enums — always use typed constants, never raw strings
 type Category string
-const (
-    CategoryGrocery Category = "grocery"
-    ...
-)
+const ( CategoryGrocery Category = "grocery" ... )
 
-// Entities carry only DB fields + optional join fields (pointer or slice)
 type Task struct {
     ID       uuid.UUID `json:"id"`
-    ...
     Assignee *Member   `json:"assignee,omitempty"` // populated from JOIN
 }
 
-// Separate input structs for Create and Update
-type CreateTaskInput struct { ... }
 type UpdateTaskInput struct {
-    Title *string `json:"title,omitempty"` // all fields are pointers (partial update)
+    Title *string `json:"title,omitempty"` // all update fields are pointers
 }
 
-// Filter structs for list queries
-type TaskFilter struct {
-    HouseholdID *uuid.UUID
-    Category    *Category
-    Done        *bool
-    Search      string
-}
+type TaskFilter struct { HouseholdID *uuid.UUID; Category *Category; Done *bool; Search string }
 
-// Repository interface lives in domain alongside the entity it manages
 type TaskRepository interface {
     FindAll(filter TaskFilter) ([]Task, error)
     FindByID(id uuid.UUID) (*Task, error)
@@ -172,139 +122,68 @@ type TaskRepository interface {
 }
 ```
 
-**Sentinel errors** (`internal/domain/errors.go`):
-```go
-var (
-    ErrNotFound      = errors.New("resource not found")
-    ErrInvalidInput  = errors.New("invalid input")
-    ErrAlreadyExists = errors.New("resource already exists")
-    ErrUnauthorized  = errors.New("unauthorized")
-    ErrWrongMpin     = errors.New("wrong mPIN")
-)
-```
-Services always wrap these: `fmt.Errorf("%w: detail", domain.ErrInvalidInput)`.
+**Sentinel errors** (`domain/errors.go`): `ErrNotFound`, `ErrInvalidInput`, `ErrAlreadyExists`, `ErrUnauthorized`, `ErrWrongMpin`.
+Wrap with: `fmt.Errorf("%w: detail", domain.ErrXxx)`.
 
 ### Repository Conventions
 
-- Struct is unexported (`type taskRepo struct`), constructor returns the interface.
-- Always `context.Background()` for DB calls (no request-scoped context).
-- Map `pgx.ErrNoRows` → `domain.ErrNotFound`.
-- Map Postgres error code `"23505"` (unique violation) → `domain.ErrAlreadyExists`.
-- Use `RETURNING *` or specific columns after INSERT/UPDATE — never do a separate SELECT.
-- Use CTE pattern (`WITH ins AS (INSERT ... RETURNING *) SELECT ... FROM ins JOIN ...`) when you need joined data back from a write.
+- Unexported struct (`type taskRepo struct`), constructor returns the interface.
+- Always `context.Background()` for DB calls.
+- Map `pgx.ErrNoRows` → `domain.ErrNotFound`; Postgres `"23505"` → `domain.ErrAlreadyExists`.
+- Use `RETURNING *` after INSERT/UPDATE. Use CTE pattern when joined data needed from a write.
 - Define column constants for repeated SELECT lists (e.g. `taskSelectCols`).
-- Always `defer rows.Close()` after `Query`.
-- For NULL-able TEXT columns, use `COALESCE(col, '')` in the scan to avoid null pointer issues.
-- Dynamic WHERE clauses: build `[]string{"1=1"}` + `[]any{}` with a counter `i := 1` for `$N` placeholders.
-- Dynamic SET clauses: build `[]string{}` + `[]any{}` with the same counter pattern.
+- Always `defer rows.Close()`. Always `rows.Err()` after loop.
+- NULL-able TEXT columns: `COALESCE(col, '')` in every scan — never scan nullable TEXT into non-pointer `string`.
+- Dynamic WHERE/SET: `[]string{"1=1"}`+`[]any{}` with `i := 1` counter for `$N` placeholders.
 
 ### Service Conventions
 
-- Constructor: `func NewXxxService(dep domain.XxxRepository, ...) *XxxService`.
-- Services take domain interfaces, not concrete types — keeps them testable.
-- Validate all input at the start of mutation methods before calling the repo.
-- Authorization checks (role, household membership) live in the service, not the handler.
-- Method names follow Go conventions: `ListTasks`, `GetTask`, `CreateTask`, `UpdateTask`, `DeleteTask`.
+- Constructor: `func NewXxxService(repo domain.XxxRepository, ...) *XxxService`
+- Validate all input before calling repo. Authorization checks (role, household) live here.
+- Method names: `ListXxx`, `GetXxx`, `CreateXxx`, `UpdateXxx`, `DeleteXxx`.
 
 ### Handler Conventions
 
-All response helpers live in `handler/respond.go`:
 ```go
-type envelope map[string]any
-
-respond(w, http.StatusOK, envelope{"task": task})     // success
-respondError(w, err)                                   // auto-maps domain errors to HTTP status
-respond(w, http.StatusNoContent, nil)                  // 204 for deletes
+respond(w, http.StatusOK, envelope{"task": task})
+respondError(w, err)          // auto-maps domain errors → HTTP status
+respond(w, http.StatusNoContent, nil)  // 204 for deletes
 ```
 
-**HTTP status mapping** (enforced in `respondError`):
-| domain error       | HTTP status |
-|--------------------|-------------|
-| ErrNotFound        | 404         |
-| ErrInvalidInput    | 422         |
-| ErrUnauthorized    | 401         |
-| ErrAlreadyExists   | 409         |
-| (other)            | 500         |
+**Error mapping:** `ErrNotFound`→404, `ErrInvalidInput`→422, `ErrUnauthorized`→401, `ErrAlreadyExists`→409, other→500.
 
-Handler pattern:
-```go
-// GET /things/{id}
-func (h *ThingHandler) Get(w http.ResponseWriter, r *http.Request) {
-    id, err := uuid.Parse(chi.URLParam(r, "id"))
-    if err != nil {
-        respond(w, http.StatusBadRequest, envelope{"error": "invalid thing id"})
-        return
-    }
-    thing, err := h.svc.GetThing(id)
-    if err != nil {
-        respondError(w, err)
-        return
-    }
-    respond(w, http.StatusOK, envelope{"thing": thing})
-}
-```
-
-- Extract claims with `middleware.ClaimsFromContext(r.Context())` — always check the `ok` bool.
-- Parse UUIDs from URL params and JWT claims at the handler level before passing to the service.
-- Decode request body with the shared `decode(r, &body)` helper.
-- Response envelope key is always the singular noun: `"task"`, `"member"`, `"household"`. Collections use plural: `"tasks"`, `"members"`.
-- Add a comment above each handler with the HTTP method + path (e.g. `// GET /tasks/{id}`).
+- Extract claims: `middleware.ClaimsFromContext(r.Context())` — always check `ok`.
+- Parse UUIDs from URL params at handler level. Decode body with `decode(r, &body)`.
+- Envelope keys: singular (`"task"`) for single resource, plural (`"tasks"`) for collections.
+- Comment above each handler: `// GET /tasks/{id}`.
 
 ### Middleware / Auth
 
-- `middleware.RequireAuth(authSvc)` validates the Bearer JWT and injects `*domain.Claims` into context.
-- `middleware.ClaimsFromContext(ctx)` retrieves it.
-- Claims fields: `MemberID`, `Phone`, `Name`, `Avatar`, `Color`, `HouseholdID` (empty string if not in a household).
-- All `/api/v1` routes except `/auth/*` are inside the `r.Group(func(r chi.Router) { r.Use(middleware.RequireAuth(authSvc)) ... })` block.
-- JWT TTL is 7 days. Token includes `household_id` so household context is available without a DB lookup.
-
-### Router (server.go)
-
-- Routes are defined inside `server.New(...)` only. No route registration elsewhere.
-- Group structure: public auth routes first, then the protected group.
-- Resource-based route nesting: `/api/v1/tasks/{id}/comments`.
-- Add new route groups in the protected block.
+- `middleware.RequireAuth(authSvc)` — validates Bearer JWT, injects `*domain.Claims` into context.
+- Claims: `MemberID`, `Phone`, `Name`, `Avatar`, `Color`, `HouseholdID` (empty string if none).
+- All routes except `/auth/*` are inside the `RequireAuth` group.
+- JWT TTL 7 days. `household_id` embedded in token.
 
 ### Config
 
-- All config from env vars via `config.Load()` using `getEnv(key, fallback)`.
-- Config struct fields: `DatabaseURL`, `Port`, `Env`, `CORSOrigins`, `JWTSecret`.
-- Never read `os.Getenv` directly outside `config/config.go`.
+- All config from env via `config.Load()`. Fields: `DatabaseURL`, `Port`, `Env`, `CORSOrigins`, `JWTSecret`.
+- Never `os.Getenv` outside `config/config.go`.
 
 ---
 
 ## Database Migrations
 
-### Naming Convention
+**Naming:** `NNNNNN_short_description.up.sql` / `.down.sql` (zero-padded 6-digit, lowercase underscores).
+Every `.up.sql` has a paired `.down.sql`. Migrations embedded at compile time via `//go:embed`.
 
-```
-NNNNNN_short_description.up.sql
-NNNNNN_short_description.down.sql
-```
+**SQL Style:**
+- Identifiers: `snake_case`. PKs: `UUID DEFAULT gen_random_uuid()`. Strings: `TEXT`. Timestamps: `TIMESTAMPTZ NOT NULL DEFAULT NOW()`.
+- FKs: always explicit `ON DELETE` (`CASCADE`/`RESTRICT`/`SET NULL`).
+- Enums: `TEXT NOT NULL CHECK (col IN (...))` — no Postgres ENUM types.
+- Indexes: `CREATE INDEX IF NOT EXISTS idx_<table>_<column>` on FK cols, WHERE cols, status cols.
+- Always use `IF NOT EXISTS` / `IF EXISTS` guards.
 
-- Zero-padded 6-digit sequence: `000001`, `000002`, etc.
-- Descriptions are lowercase, words separated by underscores.
-- Every `.up.sql` must have a paired `.down.sql` that reverses it exactly.
-- Migrations are embedded at compile time via `//go:embed migrations/*.sql` and run automatically on startup.
-
-### SQL Style
-
-- All identifiers: `snake_case`.
-- Column types: `UUID` with `DEFAULT gen_random_uuid()` for PKs, `TEXT` for strings, `TIMESTAMPTZ` for timestamps, `BOOLEAN` for flags.
-- Timestamps: always `NOT NULL DEFAULT NOW()`.
-- Foreign keys: always specify `ON DELETE` behaviour explicitly (`CASCADE`, `RESTRICT`, or `SET NULL`).
-- Enums: use `TEXT NOT NULL CHECK (col IN (...))` — no Postgres ENUM types.
-- Nullable foreign keys use `NULL` (no `NOT NULL`) so the constraint is optional by design.
-- Always add indexes on: FK columns, columns used in WHERE filters, status columns.
-- Use `CREATE INDEX IF NOT EXISTS idx_<table>_<column>` naming.
-- Use `IF NOT EXISTS` and `IF EXISTS` to make migrations re-runnable safely.
-- Partial indexes where appropriate (see migration 5: unique pending join requests).
-
-### Migration Rules
-
-- Never modify an existing migration. Always add a new numbered migration.
-- Keep each migration focused on one concern.
-- Add comments at the top of each migration file explaining what it does.
+**Rules:** Never modify existing migrations. One concern per migration. Add comment at top.
 
 ---
 
@@ -312,213 +191,146 @@ NNNNNN_short_description.down.sql
 
 ### Stores
 
-Two Zustand stores — keep them separate:
-
 | Store | File | Responsibility |
 |-------|------|----------------|
-| `useAuthStore` | `store/authStore.ts` | JWT token, member profile, guest mode, localStorage persistence |
+| `useAuthStore` | `store/authStore.ts` | JWT token, member profile, guest mode, localStorage |
 | `useStore` | `store/index.ts` | tasks, members, filters, loading/error state |
 
-- Auth store is initialized from `localStorage` at module load to prevent auth flash.
+- Auth store initialized from `localStorage` at module load (prevents auth flash).
 - localStorage keys: `hj_token`, `hj_member`, `hj_guest`, `hj_guest_tasks`.
-- Guest mode: all mutations go to localStorage via `store/guest.ts` helpers; no API calls.
-- Optimistic updates: apply state change immediately, revert on error (see `toggleTask`).
+- Optimistic updates: apply immediately, revert on error.
 
 ### API Layer
 
-- All HTTP calls go through `api/client.ts` (axios instance with base URL `/api/v1`).
-- Axios request interceptor attaches `Authorization: Bearer <token>` from localStorage.
-- Axios response interceptor: on 401, clears credentials and redirects to `/auth`.
-- Each resource has its own file: `api/tasks.ts`, `api/members.ts`, `api/households.ts`, `api/auth.ts`.
-- Exported as named object: `export const tasksApi = { list, get, create, update, remove, addComment }`.
-- Functions return the unwrapped resource (not the full axios response): `return data.task`.
-- Never call `axios` directly in components or stores — always go through these api modules.
+- All HTTP via `api/client.ts` (axios, base URL `/api/v1`).
+- Request interceptor: attaches `Authorization: Bearer <token>`.
+- Response interceptor: on 401, clears credentials + redirects to `/auth`.
+- Named export per resource: `export const tasksApi = { list, get, create, update, remove, addComment }`.
+- Functions return unwrapped resource: `return data.task`. Never call `axios` directly.
 
 ### Types
 
-All shared TypeScript types live in `src/types/index.ts`:
-- Domain types: `Task`, `Member`, `Comment`, `Category`, `Priority`
-- Payload types: `CreateTaskPayload`, `UpdateTaskPayload`, `LoginPayload`, `RegisterPayload`
-- Filter types: `TaskFilter`
-- Display constants: `CATEGORIES`, `PRIORITIES` (Record maps with label/icon/color)
-- Auth types: `AuthCheckResponse`, `AuthResponse`
-
-Household-specific types (`Household`, `JoinRequest`, `HouseholdInvite`) live in `api/households.ts` since they're only used there and in the members components.
+All shared TS types in `src/types/index.ts`. Household-specific types (`Household`, `JoinRequest`, `HouseholdInvite`) live in `api/households.ts`.
 
 ### Component Conventions
 
-- All components are named exports (not default exports): `export function TaskCard(...)`.
-- Props interface is named `Props` (local to the file, not exported unless reused).
-- Inline styles only — no CSS modules, no Tailwind classes. The design uses a warm neutral palette:
-  - Background: `#faf7f2`
-  - Border: `#ede8e1`
-  - Text primary: `#1c1917`
-  - Text secondary: `#78716c`
-  - Text muted: `#a8a29e`
-  - Indigo (primary interactive): `#6366f1`
-  - Indigo light (active backgrounds): `#eef2ff`
-  - Semantic orange `#f97316` — used only for Chore category and High priority data badges. Do not use for interactive chrome.
-  - Semantic red (overdue/error): `#ef4444` text, `#fecaca` light border
-  - Semantic amber (due-soon/warning): `#d97706` text, `#fde68a` border, `#fffbeb` pill background
-- Border radius convention: `8–10px` for small elements, `12–14px` for cards/inputs, `20–24px` for panels, `99px` for pills.
-- Font: `Fraunces, serif` for headings, system sans-serif for body text.
-- Transitions: `all .15s` or `background 0.2s` for interactive elements.
-- `slide-up` className is the only CSS animation class (defined in `index.css`).
-
-### Pages
-
-Pages are route-level components in `src/pages/`. They:
-- Read from stores with `useStore()` / `useAuthStore()`.
-- Compose components — minimal inline logic.
-- Handle navigation redirects (e.g. redirect to `/household` if no household yet).
-- Named exports, PascalCase: `export function TasksPage()`.
+- Named exports only: `export function TaskCard(...)`. Props interface named `Props` (local).
+- Inline styles only. Warm neutral palette:
+  - Background `#faf7f2` · Border `#ede8e1` · Text `#1c1917` · Secondary `#78716c` · Muted `#a8a29e`
+  - Primary interactive: `#6366f1` (indigo) · Active bg: `#eef2ff`
+  - Orange `#f97316`: Chore/High priority data only — not interactive chrome
+  - Error: `#ef4444` text / `#fecaca` border · Warning: `#d97706` text / `#fde68a` border / `#fffbeb` bg
+- Border radius: `8–10px` small · `12–14px` cards/inputs · `20–24px` panels · `99px` pills.
+- Font: `Fraunces, serif` headings, system sans-serif body. Transitions: `all .15s`.
+- `slide-up` is the only CSS animation class.
 
 ### Routing
 
 ```
-/auth          → AuthPage (public; redirect to / if already authenticated)
-/              → TasksPage  (requires auth or guest)
-/stats         → StatsPage  (requires auth or guest)
-/household     → MembersPage (requires auth or guest)
-*              → redirect to / or /auth
+/auth → AuthPage (public)   / → TasksPage   /stats → StatsPage   /household → MembersPage
 ```
-
-- `canAccessApp = isAuthenticated || isGuest` — the gate condition.
-- `AppLayout` wraps all app routes: max-width 520px, warm background, `BottomNav`, optional `GuestBanner`.
+`canAccessApp = isAuthenticated || isGuest`. `AppLayout`: max-width 520px, `BottomNav`, optional `GuestBanner`.
 
 ### Guest Mode
 
-- `isGuest` is set when the user skips login.
-- Guest tasks stored in `localStorage` (`hj_guest_tasks`) via helpers in `store/guest.ts`.
-- Every store action checks `useAuthStore.getState().isGuest` and branches to local-only logic.
-- `GUEST_MEMBER` is a static synthetic member used as the assignee.
-- `GuestBanner` prompts the guest to register.
+`isGuest` skips login. Every store action checks `useAuthStore.getState().isGuest` and branches to localStorage or skips. `GUEST_MEMBER` is the synthetic assignee.
 
 ---
 
 ## Naming Conventions
 
-### Go (backend)
+**Go:** packages lowercase (`domain`), files `snake_case`, exported types `PascalCase`, repo structs camelCase (`taskRepo`), constructors `New<Type>`, repo methods `FindAll/FindByID/Create/Update/Delete`, service methods `ListXxx/GetXxx/CreateXxx`, handlers match HTTP (`List/Get/Create/Update/Delete`).
 
-| Thing | Convention | Example |
-|-------|-----------|---------|
-| Packages | lowercase single word | `domain`, `repository`, `service`, `handler` |
-| Files | `snake_case` | `task_repo.go`, `auth_handler.go` |
-| Exported types | `PascalCase` | `TaskService`, `CreateTaskInput` |
-| Unexported repo structs | camelCase | `taskRepo`, `memberRepo` |
-| Constructor functions | `New<Type>` | `NewTaskService`, `NewTaskRepository` |
-| Repository methods | `FindAll`, `FindByID`, `FindByXxx`, `Create`, `Update`, `Delete` | |
-| Service methods | `ListXxx`, `GetXxx`, `CreateXxx`, `UpdateXxx`, `DeleteXxx` | |
-| Handler methods | `List`, `Get`, `Create`, `Update`, `Delete` | match HTTP semantics |
-| Domain typed strings | `TypeName` + `TypeNameValue` | `Category`, `CategoryGrocery` |
+**SQL:** tables `snake_case` plural, columns `snake_case`, indexes `idx_<table>_<column>`, constraints `fk_<table>_<ref>`.
 
-### SQL
-
-| Thing | Convention | Example |
-|-------|-----------|---------|
-| Tables | `snake_case` plural | `tasks`, `household_join_requests` |
-| Columns | `snake_case` | `assignee_id`, `created_at`, `mpin_hash` |
-| Indexes | `idx_<table>_<column>` | `idx_tasks_category` |
-| Constraints | `fk_<table>_<ref>`, `uq_<description>` | `fk_tasks_household`, `uq_pending_join_request` |
-
-### TypeScript (frontend)
-
-| Thing | Convention | Example |
-|-------|-----------|---------|
-| Files | `PascalCase.tsx` for components, `camelCase.ts` for everything else | `TaskCard.tsx`, `authStore.ts` |
-| Components | `PascalCase` named export | `export function TaskCard(...)` |
-| Hooks/stores | `useXxx` | `useStore`, `useAuthStore` |
-| API modules | `xxxApi` object | `tasksApi`, `householdsApi` |
-| Types/interfaces | `PascalCase` | `Task`, `CreateTaskPayload` |
-| Type union literals | lowercase strings | `'grocery' | 'chore'` |
-| Store actions | camelCase verbs | `fetchTasks`, `toggleTask`, `addComment` |
+**TypeScript:** component files `PascalCase.tsx`, others `camelCase.ts`; components named export `PascalCase`; stores `useXxx`; API modules `xxxApi`; types `PascalCase`; store actions camelCase verbs.
 
 ---
 
 ## Security Rules
 
-- `MpinHash` is tagged `json:"-"` on the `Member` struct — never serialized in any response.
-- `phone` is tagged `json:"phone,omitempty"` — only included when explicitly needed.
-- mPINs are hashed with `bcrypt.DefaultCost` before storage. Never log or return raw PINs.
-- All SQL uses parameterized queries (`$1`, `$2`, ...). Never concatenate user input into SQL strings.
-- JWT secret comes from `cfg.JWTSecret` (env var). The default value (`CHANGE_ME_IN_PRODUCTION_32_CHARS!`) must be overridden in production.
-- Authorization for household-scoped actions is enforced in the service layer by checking `member.HouseholdID` and `member.Role` — never trust client-supplied household IDs for access control.
-- Tasks are always filtered by the `household_id` from the JWT claims, not from query parameters.
+- `MpinHash` tagged `json:"-"` — never serialized. `phone` tagged `json:"phone,omitempty"`.
+- mPINs hashed with `bcrypt.DefaultCost`. Never log raw PINs.
+- All SQL uses parameterized queries. Never concatenate user input.
+- JWT secret from env (`cfg.JWTSecret`). Override `CHANGE_ME_IN_PRODUCTION_32_CHARS!` in production.
+- Household authorization (role, membership) enforced in service layer — never trust client-supplied household IDs.
+- Tasks filtered by `household_id` from JWT claims, not query params.
+
+---
+
+## Backend Notes
+
+- SSE endpoints: ensure middleware wrappers implement `http.Flusher` — otherwise returns 500 (can't flush response).
 
 ---
 
 ## Rules Claude Must Follow
 
-1. **Never bypass the layer boundary.** Handlers do not call repositories. Services do not call handlers. Domain has no imports from other internal packages.
+1. **Never bypass layer boundary.** Handlers → service only. No repo calls from handlers. No handler calls from services.
 
-2. **New domain errors go in `domain/errors.go`.** Use `fmt.Errorf("%w: detail", domain.ErrXxx)` for wrapping. Never create ad-hoc `errors.New(...)` outside the domain package.
+2. **New domain errors in `domain/errors.go`.** Wrap: `fmt.Errorf("%w: detail", domain.ErrXxx)`. No ad-hoc `errors.New(...)` elsewhere.
 
-3. **New routes go in `server.go` only.** Register them inside the existing `r.Route("/api/v1", ...)` block. Protected routes go inside the `RequireAuth` group.
+3. **New routes in `server.go` only.** Inside `r.Route("/api/v1", ...)`. Protected routes inside `RequireAuth` group.
 
-4. **New repository always returns the domain interface.** Constructor signature: `func NewXxxRepository(db *pgxpool.Pool) domain.XxxRepository`.
+4. **Repository constructor returns domain interface.** `func NewXxxRepository(db *pgxpool.Pool) domain.XxxRepository`.
 
-5. **New service takes domain interfaces, not concrete types.** Constructor signature: `func NewXxxService(repo domain.XxxRepository, ...) *XxxService`.
+5. **Service constructor takes domain interfaces.** `func NewXxxService(repo domain.XxxRepository, ...) *XxxService`.
 
-6. **Every new DB table/column needs a migration.** Create `NNNNNN_description.up.sql` and `NNNNNN_description.down.sql`. Never modify existing migration files.
+6. **Every new DB table/column needs a migration.** Create both `.up.sql` and `.down.sql`. Never modify existing migrations.
 
-7. **All migrations use `IF NOT EXISTS` / `IF EXISTS` guards.** All FK columns have explicit `ON DELETE` clauses. All new columns queried in WHERE get an index.
+7. **All migrations use `IF NOT EXISTS`/`IF EXISTS` guards.** All FK columns have `ON DELETE`. Indexed columns used in WHERE.
 
 8. **No raw SQL in services or handlers.** SQL lives only in repository files.
 
-9. **Response envelopes use consistent key names.** Singular noun for single resource (`"task"`), plural for collections (`"tasks"`). Deletes return `204 No Content` with a nil body.
+9. **Response envelopes use consistent keys.** Singular (`"task"`) for single, plural (`"tasks"`) for collections. Deletes → `204 No Content`.
 
-10. **HTTP error responses always use `respondError(w, err)`.** Only call `respond(w, http.StatusBadRequest, ...)` for input parsing errors that happen before the service is called.
+10. **HTTP errors use `respondError(w, err)`.** Only use `respond(w, http.StatusBadRequest, ...)` for pre-service input parsing errors.
 
-11. **Frontend: no direct axios calls.** All HTTP calls go through the api modules (`tasksApi`, `householdsApi`, etc.).
+11. **Frontend: no direct axios calls.** All HTTP through api modules.
 
-12. **Frontend: all new shared types go in `src/types/index.ts`.** API-specific response shapes that are not reused elsewhere may live in the api file.
+12. **Frontend: shared types in `src/types/index.ts`.** API-only shapes may live in the api file.
 
-13. **Frontend: every store action must handle guest mode.** Check `useAuthStore.getState().isGuest` and either operate on localStorage or skip the API call gracefully.
+13. **Frontend: every store action handles guest mode.** Check `useAuthStore.getState().isGuest` — localStorage or skip.
 
-14. **Frontend: inline styles only.** No new CSS files, no CSS-in-JS libraries, no utility class frameworks.
+14. **Frontend: inline styles only.** No CSS files, CSS-in-JS, or utility frameworks.
 
-15. **Frontend: components are named exports.** Never use default exports for components.
+15. **Frontend: components are named exports.** Never default export components.
 
-16. **Do not add ORM, query builder, or any abstraction over pgx.** Raw SQL with parameterized queries is the pattern.
+16. **No ORM or query builder.** Raw SQL + parameterized queries only.
 
-17. **Do not introduce new packages without discussion.** The current dependency set is intentionally minimal.
+17. **No new packages without discussion.** Dependency set is intentionally minimal.
 
-18. **Any API change must update the Postman collection.** When adding, removing, or modifying any route, request body, response shape, or query parameter:
-    1. Update `postman/HomeJira.postman_collection.json` to reflect the change (add/edit/remove the relevant request item).
-    2. Use the Postman MCP tool (`putCollection` with `collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`) to push the updated JSON to Postman.
-    3. Stage the collection file alongside the API change — the pre-commit hook blocks commits where handler/server files change but the collection does not.
-    The collection JSON is the source of truth; the live Postman collection is always derived from it.
+18. **Any API change must update the Postman collection.**
+    1. Update `postman/HomeJira.postman_collection.json`.
+    2. Push via Postman MCP `putCollection` (`collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`).
+    3. Stage collection file alongside the API change — pre-commit hook blocks mismatched commits.
 
-19. **Run live API smoke tests after every release to staging and production.** After any PR merges to `staging` or `main`, run the following checks against the live API before declaring the release complete:
-
-    **Staging API:** `https://homejira-staging.up.railway.app/api/v1`
-    **Production API:** `https://homejira.up.railway.app/api/v1`
+19. **Run smoke tests after every release to staging and production.**
 
     ```bash
-    # 1. Health endpoint — DB ok, commit SHA present
-    curl -s "$API/../health"                                   # → 200 {"status":"ok","db":"ok",...}
-
-    # 2. Public config endpoint responds 200 with flags object
-    curl -s "$API/config"                                      # → 200 {"flags":{...}}
-
-    # 3. Auth guard active — unauthenticated requests return 401
-    curl -s -o /dev/null -w "%{http_code}" "$API/tasks"        # → 401
-    curl -s -o /dev/null -w "%{http_code}" "$API/members"      # → 401
-
-    # 4. Known-bad join code returns 401 (auth gate) — NOT 500
+    API=https://homejira-staging.up.railway.app/api/v1  # or production URL
+    curl -s "$API/../health"                                          # → 200 {status:ok, db:ok}
+    curl -s "$API/config"                                             # → 200 {flags:{...}}
+    curl -s -o /dev/null -w "%{http_code}" "$API/tasks"              # → 401
+    curl -s -o /dev/null -w "%{http_code}" "$API/members"            # → 401
     curl -s -o /dev/null -w "%{http_code}" -X POST \
-      -H "Content-Type: application/json" \
-      -d '{"code":"XXXXXX"}' "$API/households/join-by-code"   # → 401 (not 500)
-
-    # 5. /auth/check-phone public route exists (path is check-phone, not check)
+      -H "Content-Type: application/json" -d '{"code":"XXXXXX"}' \
+      "$API/households/join-by-code"                                  # → 401 (not 500)
     curl -s -o /dev/null -w "%{http_code}" -X POST \
-      -H "Content-Type: application/json" \
-      -d '{"phone":"+10000000000"}' "$API/auth/check-phone"   # → 200 (not 500)
+      -H "Content-Type: application/json" -d '{"phone":"+10000000000"}' \
+      "$API/auth/check-phone"                                         # → 200
     ```
 
-    Any 5xx response is a release blocker — roll back and investigate before proceeding.
-    Use the full 16-check smoke suite in the session history for thorough post-deploy verification.
+    Any 5xx = release blocker — roll back immediately.
 
-20. **All PRs touching backend or frontend code require QA sign-off before merge.** Backend-only PRs: invoke QA-1 (`/qa1`). Frontend-only: invoke QA-2 (`/qa2`). Full-stack: both. QA agent posts a sign-off comment ("QA-1 ✅" or "QA-2 ✅") on the PR. No merge without sign-off.
+20. **All PRs require QA sign-off before merge.** Backend-only → `/qa1`. Frontend-only → `/qa2`. Full-stack → both. No merge without "QA-1 ✅" / "QA-2 ✅" comment on the PR.
 
-21. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** When a TEXT column is nullable in the DB schema, never scan it directly into a non-pointer Go `string` — it will panic on NULL rows. Use `COALESCE(col, '')` in every SELECT/RETURNING query that includes that column. Apply this to all queries for that column, not just new ones.
+21. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** Apply to every SELECT/RETURNING query for that column, not just new ones.
+
+22. **Run QA automation scripts in the background to avoid token bloat.** When executing test or smoke-test scripts (e.g. `test_idor_local.sh`, curl smoke suites, `go test ./...`), use the Bash tool with `run_in_background: true`. Only read the output via `TaskOutput` if the script fails or the user asks for results. Never stream verbose test output into the main conversation context.
+
+---
+
+## Preferences
+
+- When asked to create multiple deliverables (e.g., diagrams, docs, collections), create ALL of them without asking.

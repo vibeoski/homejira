@@ -3,7 +3,7 @@ import type { Task, Member, Comment } from '../types'
 export const GUEST_MEMBER: Member = {
   id: 'guest',
   name: 'Guest',
-  avatar: '👤',
+  avatar: 'G',
   color: '#f97316',
   created_at: new Date().toISOString(),
 }

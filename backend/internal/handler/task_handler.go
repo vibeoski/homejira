@@ -71,12 +71,32 @@ func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // GET /tasks/{id}
 func (h *TaskHandler) Get(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	memberID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	hhID, err := h.svc.GetMemberHouseholdID(memberID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if hhID == nil {
+		respond(w, http.StatusForbidden, envelope{"error": "must be in a household to access tasks"})
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid task id"})
 		return
 	}
-	task, err := h.svc.GetTask(id)
+	task, err := h.svc.GetTask(id, hhID)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -139,6 +159,16 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
 		return
 	}
+	hhID, err := h.svc.GetMemberHouseholdID(actorID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if hhID == nil {
+		respond(w, http.StatusForbidden, envelope{"error": "must be in a household to update tasks"})
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid task id"})
@@ -149,7 +179,7 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
 		return
 	}
-	task, err := h.svc.UpdateTask(id, body, actorID)
+	task, err := h.svc.UpdateTask(id, body, actorID, hhID)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -160,12 +190,32 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // GET /tasks/{id}/activity
 func (h *TaskHandler) GetActivity(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	actorID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	hhID, err := h.svc.GetMemberHouseholdID(actorID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if hhID == nil {
+		respond(w, http.StatusForbidden, envelope{"error": "must be in a household to read activities"})
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid task id"})
 		return
 	}
-	activities, err := h.svc.GetActivity(id)
+	activities, err := h.svc.GetActivity(id, hhID)
 	if err != nil {
 		respondError(w, err)
 		return
@@ -175,17 +225,37 @@ func (h *TaskHandler) GetActivity(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /tasks/{id}
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	actorID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	hhID, err := h.svc.GetMemberHouseholdID(actorID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if hhID == nil {
+		respond(w, http.StatusForbidden, envelope{"error": "must be in a household to delete tasks"})
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid task id"})
 		return
 	}
-	task, err := h.svc.GetTask(id)
+	task, err := h.svc.GetTask(id, hhID)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	if err := h.svc.DeleteTask(id); err != nil {
+	if err := h.svc.DeleteTask(id, hhID); err != nil {
 		respondError(w, err)
 		return
 	}
@@ -195,6 +265,26 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // POST /tasks/{id}/comments
 func (h *TaskHandler) AddComment(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		respond(w, http.StatusUnauthorized, envelope{"error": "unauthorized"})
+		return
+	}
+	actorID, err := uuid.Parse(claims.MemberID)
+	if err != nil {
+		respond(w, http.StatusBadRequest, envelope{"error": "invalid member id in token"})
+		return
+	}
+	hhID, err := h.svc.GetMemberHouseholdID(actorID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	if hhID == nil {
+		respond(w, http.StatusForbidden, envelope{"error": "must be in a household to comment"})
+		return
+	}
+
 	taskID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid task id"})
@@ -208,12 +298,12 @@ func (h *TaskHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
 		return
 	}
-	task, err := h.svc.GetTask(taskID)
+	task, err := h.svc.GetTask(taskID, hhID)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	comment, err := h.svc.AddComment(taskID, body.AuthorID, body.Body)
+	comment, err := h.svc.AddComment(taskID, body.AuthorID, body.Body, hhID)
 	if err != nil {
 		respondError(w, err)
 		return

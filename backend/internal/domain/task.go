@@ -10,10 +10,9 @@ import (
 type Category string
 
 const (
-	CategoryGrocery Category = "grocery"
-	CategoryChore   Category = "chore"
-	CategoryErrand  Category = "errand"
-	CategoryRepair  Category = "repair"
+	CategoryChore  Category = "chore"
+	CategoryErrand Category = "errand"
+	CategoryRepair Category = "repair"
 )
 
 // Priority represents a task's urgency level.

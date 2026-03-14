@@ -11,7 +11,7 @@ import (
 	"github.com/homejira/api/internal/domain"
 )
 
-// AuthService handles phone+mPIN authentication and JWT issuance.
+// AuthService handles username+mPIN authentication and JWT issuance.
 type AuthService struct {
 	members   domain.MemberRepository
 	coins     *CoinService
@@ -26,18 +26,17 @@ func NewAuthService(members domain.MemberRepository, coins *CoinService, jwtSecr
 		coins:     coins,
 		jwtSecret: []byte(jwtSecret),
 		jwtTTL:    7 * 24 * time.Hour,
-		flags:     flags,
 	}
 }
 
-// CheckPhone returns the member if the phone is registered, ErrNotFound otherwise.
-func (s *AuthService) CheckPhone(phone string) (*domain.Member, error) {
-	return s.members.FindByPhone(phone)
+// CheckUsername returns the member if the username is registered, ErrNotFound otherwise.
+func (s *AuthService) CheckUsername(username string) (*domain.Member, error) {
+	return s.members.FindByUsername(username)
 }
 
 // Login verifies the mPIN and returns a JWT + member on success.
-func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) {
-	m, err := s.members.FindByPhone(phone)
+func (s *AuthService) Login(username, mpin string) (string, *domain.Member, error) {
+	m, err := s.members.FindByUsername(username)
 	if err != nil {
 		return "", nil, domain.ErrUnauthorized
 	}
@@ -51,7 +50,7 @@ func (s *AuthService) Login(phone, mpin string) (string, *domain.Member, error) 
 	return token, m, nil
 }
 
-// Register creates a new member with phone+mPIN credentials and returns a JWT.
+// Register creates a new member with username+mPIN credentials and returns a JWT.
 func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Member, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Mpin), bcrypt.DefaultCost)
 	if err != nil {
@@ -65,7 +64,7 @@ func (s *AuthService) Register(input domain.RegisterInput) (string, *domain.Memb
 	}
 	color := domain.MemberColorPalette[len(all)%len(domain.MemberColorPalette)]
 
-	m, err := s.members.CreateWithAuth(input.Name, input.Avatar, color, input.Phone, string(hash))
+	m, err := s.members.CreateWithAuth(input.Name, input.Avatar, color, input.Username, string(hash))
 	if err != nil {
 		return "", nil, err
 	}
@@ -104,7 +103,7 @@ func (s *AuthService) ValidateToken(tokenStr string) (*domain.Claims, error) {
 		return v, ok
 	}
 	memberID, ok1 := claimStr("member_id")
-	phone, ok2 := claimStr("phone")
+	username, ok2 := claimStr("username")
 	name, ok3 := claimStr("name")
 	avatar, ok4 := claimStr("avatar")
 	color, ok5 := claimStr("color")
@@ -113,7 +112,7 @@ func (s *AuthService) ValidateToken(tokenStr string) (*domain.Claims, error) {
 	}
 	claims := &domain.Claims{
 		MemberID: memberID,
-		Phone:    phone,
+		Username: username,
 		Name:     name,
 		Avatar:   avatar,
 		Color:    color,
@@ -157,8 +156,8 @@ func (s *AuthService) ChangeMpin(memberID uuid.UUID, currentMpin, newMpin string
 	if err != nil {
 		return err
 	}
-	// Fetch full member (with mpin_hash) via phone
-	full, err := s.members.FindByPhone(m.Phone)
+	// Fetch full member (with mpin_hash) via username
+	full, err := s.members.FindByUsername(m.Username)
 	if err != nil {
 		return err
 	}
@@ -175,7 +174,7 @@ func (s *AuthService) ChangeMpin(memberID uuid.UUID, currentMpin, newMpin string
 func (s *AuthService) issueToken(m *domain.Member) (string, error) {
 	claims := jwt.MapClaims{
 		"member_id": m.ID.String(),
-		"phone":     m.Phone,
+		"username":  m.Username,
 		"name":      m.Name,
 		"avatar":    m.Avatar,
 		"color":     m.Color,

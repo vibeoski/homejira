@@ -34,8 +34,15 @@ func (s *TaskService) GetMemberHouseholdID(memberID uuid.UUID) (*uuid.UUID, erro
 	return m.HouseholdID, nil
 }
 
-func (s *TaskService) GetTask(id uuid.UUID) (*domain.Task, error) {
-	return s.tasks.FindByID(id)
+func (s *TaskService) GetTask(id uuid.UUID, callerHouseholdID *uuid.UUID) (*domain.Task, error) {
+	t, err := s.tasks.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if callerHouseholdID != nil && t.HouseholdID != *callerHouseholdID {
+		return nil, domain.ErrNotFound
+	}
+	return t, nil
 }
 
 func (s *TaskService) CreateTask(input domain.CreateTaskInput) (*domain.Task, error) {
@@ -51,10 +58,13 @@ func (s *TaskService) CreateTask(input domain.CreateTaskInput) (*domain.Task, er
 	return task, nil
 }
 
-func (s *TaskService) UpdateTask(id uuid.UUID, input domain.UpdateTaskInput, actorID uuid.UUID) (*domain.Task, error) {
+func (s *TaskService) UpdateTask(id uuid.UUID, input domain.UpdateTaskInput, actorID uuid.UUID, callerHouseholdID *uuid.UUID) (*domain.Task, error) {
 	old, err := s.tasks.FindByID(id)
 	if err != nil {
 		return nil, err
+	}
+	if callerHouseholdID != nil && old.HouseholdID != *callerHouseholdID {
+		return nil, domain.ErrNotFound
 	}
 	if input.Category != nil && !validCategory(*input.Category) {
 		return nil, fmt.Errorf("%w: invalid category", domain.ErrInvalidInput)
@@ -78,16 +88,27 @@ func (s *TaskService) UpdateTask(id uuid.UUID, input domain.UpdateTaskInput, act
 	return task, nil
 }
 
-func (s *TaskService) DeleteTask(id uuid.UUID) error {
+func (s *TaskService) DeleteTask(id uuid.UUID, callerHouseholdID *uuid.UUID) error {
+	t, err := s.tasks.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if callerHouseholdID != nil && t.HouseholdID != *callerHouseholdID {
+		return domain.ErrNotFound
+	}
 	return s.tasks.Delete(id)
 }
 
-func (s *TaskService) AddComment(taskID, authorID uuid.UUID, body string) (*domain.Comment, error) {
+func (s *TaskService) AddComment(taskID, authorID uuid.UUID, body string, callerHouseholdID *uuid.UUID) (*domain.Comment, error) {
 	if strings.TrimSpace(body) == "" {
 		return nil, fmt.Errorf("%w: comment body required", domain.ErrInvalidInput)
 	}
-	if _, err := s.tasks.FindByID(taskID); err != nil {
+	t, err := s.tasks.FindByID(taskID)
+	if err != nil {
 		return nil, err
+	}
+	if callerHouseholdID != nil && t.HouseholdID != *callerHouseholdID {
+		return nil, domain.ErrNotFound
 	}
 	if _, err := s.members.FindByID(authorID); err != nil {
 		return nil, fmt.Errorf("%w: author not found", domain.ErrInvalidInput)
@@ -95,7 +116,14 @@ func (s *TaskService) AddComment(taskID, authorID uuid.UUID, body string) (*doma
 	return s.tasks.AddComment(taskID, authorID, body)
 }
 
-func (s *TaskService) GetActivity(taskID uuid.UUID) ([]domain.Activity, error) {
+func (s *TaskService) GetActivity(taskID uuid.UUID, callerHouseholdID *uuid.UUID) ([]domain.Activity, error) {
+	t, err := s.tasks.FindByID(taskID)
+	if err != nil {
+		return nil, err
+	}
+	if callerHouseholdID != nil && t.HouseholdID != *callerHouseholdID {
+		return nil, domain.ErrNotFound
+	}
 	return s.activities.FindByTask(taskID)
 }
 
@@ -181,7 +209,7 @@ func (s *TaskService) validateTaskInput(title string, category domain.Category, 
 
 func validCategory(c domain.Category) bool {
 	switch c {
-	case domain.CategoryGrocery, domain.CategoryChore, domain.CategoryErrand, domain.CategoryRepair:
+	case domain.CategoryChore, domain.CategoryErrand, domain.CategoryRepair:
 		return true
 	}
 	return false

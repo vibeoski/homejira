@@ -224,8 +224,8 @@ func (s *HouseholdService) AcceptInvite(memberID, inviteID uuid.UUID) (*domain.H
 		return nil, nil, err
 	}
 
-	// Optional: ensure phone matches, if present.
-	if inv.InvitedPhone != "" && member.Phone != "" && inv.InvitedPhone != member.Phone {
+	// Optional: ensure username matches, if present.
+	if inv.InvitedPhone != "" && member.Username != "" && inv.InvitedPhone != member.Username {
 		return nil, nil, domain.ErrUnauthorized
 	}
 

@@ -373,17 +373,17 @@ func (h *HouseholdHandler) ListMyInvites(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Use phone from claims if available; fallback to query param.
-	phone := claims.Phone
-	if phone == "" {
-		phone = r.URL.Query().Get("phone")
+	// Use username from claims if available; fallback to query param.
+	username := claims.Username
+	if username == "" {
+		username = r.URL.Query().Get("username")
 	}
-	if phone == "" {
-		respond(w, http.StatusBadRequest, envelope{"error": "phone required"})
+	if username == "" {
+		respond(w, http.StatusBadRequest, envelope{"error": "username required"})
 		return
 	}
 
-	invites, err := h.svc.ListInvitesForPhone(phone)
+	invites, err := h.svc.ListInvitesForPhone(username)
 	if err != nil {
 		respondError(w, err)
 		return

@@ -7,6 +7,8 @@ interface Props {
   members: Member[]
   onClose: () => void
   onAdded: () => void
+  hiddenCategories?: Category[]
+  defaultCategory?: Category
 }
 
 const CATEGORY_CONFIG: Record<Category, {
@@ -16,13 +18,6 @@ const CATEGORY_CONFIG: Record<Category, {
   defaultPriority: Priority
   submitLabel: string
 }> = {
-  grocery: {
-    heading: 'Grocery',
-    titlePlaceholder: 'e.g. Milk, bread, eggs',
-    notesPlaceholder: 'Quantity / brand…',
-    defaultPriority: 'normal',
-    submitLabel: 'Add to list',
-  },
   chore: {
     heading: 'Chore',
     titlePlaceholder: 'e.g. Vacuum the living room',
@@ -69,13 +64,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function AddTaskSheet({ members, onClose, onAdded }: Props) {
+export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defaultCategory }: Props) {
   const { createTask } = useStore()
   const { member } = useAuthStore()
 
   const defaultAssignee = members[0]?.id ?? ''
-  const initialCategory: Category = 'grocery'
-
+  const initialCategory: Category = defaultCategory ?? (hiddenCategories?.includes('chore') ? (Object.keys(CATEGORY_CONFIG) as Category[]).find(c => !hiddenCategories.includes(c))! : 'chore')
+  
   const [form, setForm] = useState<CreateTaskPayload>({
     title: '', notes: '', category: initialCategory,
     priority: CATEGORY_CONFIG[initialCategory].defaultPriority,
@@ -129,7 +124,7 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>
-            {CATEGORIES[form.category].icon} {cfg.heading}
+            {cfg.heading}
           </p>
           <button
             onClick={onClose}
@@ -139,9 +134,11 @@ export function AddTaskSheet({ members, onClose, onAdded }: Props) {
 
         <SectionLabel>Category</SectionLabel>
         <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
-          {(Object.entries(CATEGORIES) as [Category, { label: string; icon: string; color: string }][]).map(([k, v]) => (
-            <Pill key={k} label={`${v.icon} ${v.label}`} color={v.color} active={form.category === k} onClick={() => handleCategoryChange(k)} />
-          ))}
+          {(Object.entries(CATEGORIES) as [Category, { label: string; color: string }][])
+            .filter(([k]) => !hiddenCategories?.includes(k))
+            .map(([k, v]) => (
+              <Pill key={k} label={v.label} color={v.color} active={form.category === k} onClick={() => handleCategoryChange(k)} />
+            ))}
         </div>
 
         <input
