@@ -7,6 +7,7 @@ import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 
 const ACCENT = '#6366f1'
+const PENDING_HOUSEHOLD_NAME_KEY = 'hj_pending_household_name'
 
 type HouseholdData = Awaited<ReturnType<typeof householdsApi.getMine>>['household']
 type RequestsData = Awaited<ReturnType<typeof householdsApi.listRequests>>['requests']
@@ -23,7 +24,7 @@ export function HouseholdPanel() {
   const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
   const [loadingHousehold, setLoadingHousehold] = useState(_cache === null)
 
-  const [createKind] = useState<'home' | 'group'>('home')
+  const [createKind, setCreateKind] = useState<'home' | 'group'>('home')
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
 
@@ -81,7 +82,14 @@ export function HouseholdPanel() {
 
     if (!member.household_id) {
       householdsApi.getMyRequest().then(({ request }) => {
-        if (request) setWaitingRequest({ id: request.id, householdName: '' })
+        if (request) {
+          setWaitingRequest({
+            id: request.id,
+            householdName: localStorage.getItem(PENDING_HOUSEHOLD_NAME_KEY) ?? '',
+          })
+        } else {
+          localStorage.removeItem(PENDING_HOUSEHOLD_NAME_KEY)
+        }
       }).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,10 +110,12 @@ export function HouseholdPanel() {
         if (request) return // still pending
         const { token, member: freshMember } = await authApi.refresh()
         if (freshMember.household_id) {
+          localStorage.removeItem(PENDING_HOUSEHOLD_NAME_KEY)
           setAuth(token, freshMember)
           await Promise.all([fetchMembers(), fetchTasks()])
           navigate('/')
         } else {
+          localStorage.removeItem(PENDING_HOUSEHOLD_NAME_KEY)
           setWaitingRequest(null)
           setError('Your join request was declined.')
         }
@@ -122,6 +132,7 @@ export function HouseholdPanel() {
     setCancelBusy(true)
     try {
       await householdsApi.cancelRequest(waitingRequest.id)
+      localStorage.removeItem(PENDING_HOUSEHOLD_NAME_KEY)
       setWaitingRequest(null)
     } catch {
       setError('Could not cancel request.')
@@ -237,6 +248,7 @@ export function HouseholdPanel() {
     try {
       const { request: req, household: h } = await householdsApi.joinByCode({ code: trimmed })
       setCode('')
+      localStorage.setItem(PENDING_HOUSEHOLD_NAME_KEY, h.name)
       setWaitingRequest({ id: req.id, householdName: h.name })
     } catch {
       setError('Invalid code. Please try again.')
@@ -349,6 +361,37 @@ export function HouseholdPanel() {
               {/* Create */}
               <div style={{ background: 'white', borderRadius: 12, padding: 18, border: '1px solid #ede8e1' }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, marginBottom: 12 }}>CREATE</p>
+
+                <div style={{ display: 'flex', background: '#ede8e1', borderRadius: 99, padding: 2, gap: 2, marginBottom: 12 }}>
+                  {([
+                    { id: 'home' as const, label: 'Home' },
+                    { id: 'group' as const, label: 'Group' },
+                  ]).map((option) => {
+                    const active = createKind === option.id
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setCreateKind(option.id)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 0',
+                          borderRadius: 99,
+                          border: 'none',
+                          background: active ? 'white' : 'transparent',
+                          boxShadow: active ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
+                          color: active ? '#1c1917' : '#78716c',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
 
                 <input
                   value={createName}
