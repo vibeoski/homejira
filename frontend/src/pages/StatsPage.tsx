@@ -5,9 +5,9 @@ import { StatsScreen } from '../components/stats/StatsScreen'
 
 export function StatsPage() {
   const { tasks, members } = useStore()
-  const { member } = useAuthStore()
+  const { member, isGuest } = useAuthStore()
 
-  if (member && !member.household_id) {
+  if (!isGuest && member && !member.household_id) {
     return <Navigate to="/household" replace />
   }
 

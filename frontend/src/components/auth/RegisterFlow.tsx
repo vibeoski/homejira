@@ -11,8 +11,6 @@ interface Props {
 const ACCENT = '#6366f1'
 const TOTAL_STEPS = 3
 
-const AVATARS: string[] = []
-
 function StepIndicator({ step }: { step: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
@@ -43,7 +41,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
   const [username, setUsername] = useState('')
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'taken' | 'ok'>('idle')
   const [name, setName] = useState('')
-  const [avatar, setAvatar] = useState('')
+  const [avatar] = useState('')
   const [mpin, setMpin] = useState(['', '', '', ''])
   const [confirmMpin, setConfirmMpin] = useState(['', '', '', ''])
   const [loading, setLoading] = useState(false)

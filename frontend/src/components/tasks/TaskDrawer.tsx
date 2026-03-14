@@ -24,16 +24,20 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
-  const { addComment, deleteTask } = useStore()
-  const { member: authMember } = useAuthStore()
+  const { addComment, deleteTask, updateTask } = useStore()
+  const { member: authMember, isGuest } = useAuthStore()
   const me = members.find((m) => m.id === authMember?.id) ?? members[0]
 
   const fetchActivities = useCallback(async () => {
+    if (isGuest) {
+      setActivities([])
+      return
+    }
     try {
       const data = await tasksApi.getActivity(current.id)
       setActivities(data)
     } catch {}
-  }, [current.id])
+  }, [current.id, isGuest])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 
@@ -42,7 +46,7 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
     setSaving(true)
     setSaveError(null)
     try {
-      const updated = await tasksApi.update(current.id, payload)
+      const updated = await updateTask(current.id, payload)
       setCurrent(updated)
       onUpdated(updated)
       fetchActivities()
@@ -61,8 +65,8 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
     setSendingComment(true)
     try {
       await addComment(current.id, body)
-      const fresh = await tasksApi.get(current.id)
-      setCurrent(fresh)
+      const fresh = useStore.getState().tasks.find((taskItem) => taskItem.id === current.id)
+      if (fresh) setCurrent(fresh)
     } catch {
       setComment(body)
     } finally {
