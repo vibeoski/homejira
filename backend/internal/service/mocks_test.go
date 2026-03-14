@@ -442,6 +442,71 @@ func (r *mockFeatureFlagRepo) List() ([]domain.FeatureFlag, error) {
 	return out, nil
 }
 
+// ── Grocery mock ─────────────────────────────────────────────────────────────
+
+type mockGroceryRepo struct {
+	items map[uuid.UUID]*domain.Grocery
+}
+
+func newMockGroceryRepo() *mockGroceryRepo {
+	return &mockGroceryRepo{items: make(map[uuid.UUID]*domain.Grocery)}
+}
+
+func (r *mockGroceryRepo) FindAll(filter domain.GroceryFilter) ([]domain.Grocery, error) {
+	var out []domain.Grocery
+	for _, g := range r.items {
+		if g.HouseholdID != filter.HouseholdID {
+			continue
+		}
+		out = append(out, *g)
+	}
+	return out, nil
+}
+
+func (r *mockGroceryRepo) FindByID(id uuid.UUID) (*domain.Grocery, error) {
+	if g, ok := r.items[id]; ok {
+		cp := *g
+		return &cp, nil
+	}
+	return nil, domain.ErrNotFound
+}
+
+func (r *mockGroceryRepo) Create(input domain.CreateGroceryInput) (*domain.Grocery, error) {
+	g := &domain.Grocery{
+		ID:          uuid.New(),
+		Title:       input.Title,
+		Notes:       input.Notes,
+		HouseholdID: input.HouseholdID,
+		AssigneeID:  input.AssigneeID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	r.items[g.ID] = g
+	return g, nil
+}
+
+func (r *mockGroceryRepo) Update(id uuid.UUID, input domain.UpdateGroceryInput) (*domain.Grocery, error) {
+	g, ok := r.items[id]
+	if !ok {
+		return nil, domain.ErrNotFound
+	}
+	if input.Title != nil {
+		g.Title = *input.Title
+	}
+	if input.Done != nil {
+		g.Done = *input.Done
+	}
+	return g, nil
+}
+
+func (r *mockGroceryRepo) Delete(id uuid.UUID) error {
+	if _, ok := r.items[id]; !ok {
+		return domain.ErrNotFound
+	}
+	delete(r.items, id)
+	return nil
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func mustHashMpin(mpin string) string {
