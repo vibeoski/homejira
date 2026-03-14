@@ -1,10 +1,13 @@
 import type { Task, Member, Comment } from '../types'
 
+export const GUEST_STORAGE_KEY = 'hj_guest'
+
 export const GUEST_MEMBER: Member = {
   id: 'guest',
   name: 'Guest',
   avatar: 'G',
-  color: '#f97316',
+  color: '#6366f1',
+  username: 'guest',
   created_at: new Date().toISOString(),
 }
 

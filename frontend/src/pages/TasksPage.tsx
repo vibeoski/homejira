@@ -15,7 +15,7 @@ const ACCENT = '#6366f1'
 
 export function TasksPage() {
   const { tasks, members, loading, fetchTasks, toggleTask, deleteTask } = useStore()
-  const { member } = useAuthStore()
+  const { member, isGuest } = useAuthStore()
   const [catTab, setCatTab] = useState<Category | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('open')
   const [sortBy, setSortBy] = useState<SortBy>('priority')
@@ -48,7 +48,7 @@ export function TasksPage() {
     }
   }, [toggleTask, undoTask, undoTimer])
 
-  if (member && !member.household_id) {
+  if (!isGuest && member && !member.household_id) {
     return <Navigate to="/household" replace />
   }
 
@@ -231,7 +231,7 @@ export function TasksPage() {
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>No tasks yet</h2>
             <p style={{ fontSize: 13, color: '#a8a29e', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
-              Add your household's first task to get started.
+              {isGuest ? 'Add a few preview tasks to try the app locally.' : 'Add your household\'s first task to get started.'}
             </p>
             <button
               onClick={() => setShowAdd(true)}

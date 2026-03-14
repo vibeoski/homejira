@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
 import { Spinner } from '../components/ui/Spinner'
+import { GuestOnlyNotice } from '../components/ui/GuestOnlyNotice'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
 import type { Grocery } from '../types'
 
 const ACCENT = '#6366f1'
 
 export function GroceryPage() {
-  const { member } = useAuthStore()
+  const { isGuest } = useAuthStore()
   const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
 
   const [loading, setLoading] = useState(groceries.length === 0)
@@ -18,16 +19,20 @@ export function GroceryPage() {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
   const [showAdd, setShowAdd] = useState(false)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       await fetchGroceries()
     } finally {
       setLoading(false)
     }
-  }
+  }, [fetchGroceries])
 
-  useEffect(() => { load() }, [])
-  useEffect(() => { if (sseVersion > 0) load() }, [sseVersion])
+  useEffect(() => {
+    if (!isGuest) load()
+  }, [isGuest, load])
+  useEffect(() => {
+    if (!isGuest && sseVersion > 0) load()
+  }, [isGuest, load, sseVersion])
 
   const active = groceries.filter(g => !g.done)
   const done = groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -39,6 +44,25 @@ export function GroceryPage() {
   }
 
   const handleClearDone = () => setShowDone(false)
+
+  if (isGuest) {
+    return (
+      <>
+        <div style={{
+          background: 'white', padding: '10px 16px',
+          borderBottom: '1px solid #ede8e1',
+          position: 'sticky', top: 57, zIndex: 49,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
+        </div>
+        <GuestOnlyNotice
+          title="Grocery lists unlock with an account"
+          description="Guest mode is a lightweight task preview. Create an account to share groceries, sync across devices, and collaborate with your household."
+        />
+      </>
+    )
+  }
 
   if (loading) return <Spinner />
 

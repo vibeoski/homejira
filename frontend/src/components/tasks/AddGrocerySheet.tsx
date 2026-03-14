@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { type Member, type CreateGroceryPayload } from '../../types'
 import { useStore } from '../../store'
-import { useAuthStore } from '../../store/authStore'
 
 interface Props {
   members: Member[]
@@ -11,7 +10,6 @@ interface Props {
 
 export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
   const { createGrocery } = useStore()
-  const { member } = useAuthStore()
 
   const [form, setForm] = useState<CreateGroceryPayload>({
     title: '', quantity: '', notes: '',

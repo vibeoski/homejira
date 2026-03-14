@@ -14,31 +14,32 @@ import { GroceryPage } from './pages/GroceryPage'
 
 export function App() {
   const { fetchTasks, fetchMembers } = useStore()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, isGuest } = useAuthStore()
   const { fetchConfig } = useConfigStore()
+  const canAccessApp = isAuthenticated || isGuest
 
   useEffect(() => {
     fetchConfig()
   }, [fetchConfig])
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (canAccessApp) {
       fetchMembers()
       fetchTasks()
     }
-  }, [isAuthenticated, fetchTasks, fetchMembers])
+  }, [canAccessApp, fetchTasks, fetchMembers])
 
   return (
     <BrowserRouter>
       <Routes>
         <Route
           path="/auth"
-          element={isAuthenticated ? <Navigate to="/" replace /> : <AuthPage />}
+          element={canAccessApp ? <Navigate to="/" replace /> : <AuthPage />}
         />
 
         <Route
           path="/"
-          element={isAuthenticated ? <AppLayout /> : <Navigate to="/auth" replace />}
+          element={canAccessApp ? <AppLayout /> : <Navigate to="/auth" replace />}
         >
           <Route index element={<TasksPage />} />
           <Route path="grocery" element={<GroceryPage />} />
@@ -49,7 +50,7 @@ export function App() {
         <Route path="/join/:token" element={<JoinPage />} />
         <Route path="/refer/:token" element={<ReferralPage />} />
 
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/auth'} replace />} />
+        <Route path="*" element={<Navigate to={canAccessApp ? '/' : '/auth'} replace />} />
       </Routes>
     </BrowserRouter>
   )

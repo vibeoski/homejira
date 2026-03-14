@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { householdsApi } from '../api/households'
 import { AppLogo } from '../components/ui/AppLogo'
@@ -16,8 +16,18 @@ const FEATURES = [
 ]
 
 export function AuthPage() {
-  const [mode, setMode] = useState<Mode>('landing')
-  const { setAuth } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { setAuth, setGuest } = useAuthStore()
+  const requestedMode = searchParams.get('mode')
+  const mode: Mode = requestedMode === 'login' || requestedMode === 'register' ? requestedMode : 'landing'
+
+  const goToMode = (nextMode: Mode) => {
+    if (nextMode === 'landing') {
+      setSearchParams({})
+      return
+    }
+    setSearchParams({ mode: nextMode })
+  }
 
   const handleSuccess = async (token: string, member: Member) => {
     const pendingJoin = localStorage.getItem('hj_pending_join')
@@ -38,8 +48,8 @@ export function AuthPage() {
       <AuthShell>
         <LoginFlow 
           onSuccess={handleSuccess} 
-          onBack={() => setMode('landing')} 
-          onGoRegister={() => setMode('register')}
+          onBack={() => goToMode('landing')}
+          onGoRegister={() => goToMode('register')}
         />
       </AuthShell>
     )
@@ -48,7 +58,7 @@ export function AuthPage() {
   if (mode === 'register') {
     return (
       <AuthShell>
-        <RegisterFlow onSuccess={handleSuccess} onBack={() => setMode('landing')} />
+        <RegisterFlow onSuccess={handleSuccess} onBack={() => goToMode('landing')} />
       </AuthShell>
     )
   }
@@ -122,7 +132,7 @@ export function AuthPage() {
       <div className="hj-fade-up-3" style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
         <button
           className="hj-btn-primary"
-          onClick={() => setMode('register')}
+          onClick={() => goToMode('register')}
           style={{
             width: '100%', padding: '15px 0', borderRadius: 14, border: 'none',
             background: ACCENT, color: 'white', fontSize: 15, fontWeight: 700,
@@ -134,7 +144,7 @@ export function AuthPage() {
         </button>
         <button
           className="hj-btn-secondary"
-          onClick={() => setMode('login')}
+          onClick={() => goToMode('login')}
           style={{
             width: '100%', padding: '15px 0', borderRadius: 14,
             border: '1.5px solid #e0deff', background: 'white',
@@ -144,6 +154,24 @@ export function AuthPage() {
           }}
         >
           Sign in
+        </button>
+        <button
+          type="button"
+          onClick={setGuest}
+          style={{
+            width: '100%',
+            padding: '13px 0',
+            borderRadius: 14,
+            border: '1px dashed #c7d2fe',
+            background: '#eef2ff',
+            color: ACCENT,
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: -0.1,
+            cursor: 'pointer',
+          }}
+        >
+          Try as guest
         </button>
       </div>
 
