@@ -12,8 +12,10 @@ import (
 // ── Member mock ───────────────────────────────────────────────────────────────
 
 type mockMemberRepo struct {
-	members map[uuid.UUID]*domain.Member
-	byPhone map[string]*domain.Member
+	members          map[uuid.UUID]*domain.Member
+	byPhone          map[string]*domain.Member
+	findAllErr       error
+	findByHouseholdErr error
 }
 
 func newMockMemberRepo() *mockMemberRepo {
@@ -31,6 +33,9 @@ func (m *mockMemberRepo) seed(member *domain.Member) {
 }
 
 func (m *mockMemberRepo) FindAll() ([]domain.Member, error) {
+	if m.findAllErr != nil {
+		return nil, m.findAllErr
+	}
 	out := make([]domain.Member, 0, len(m.members))
 	for _, v := range m.members {
 		out = append(out, *v)
@@ -39,6 +44,9 @@ func (m *mockMemberRepo) FindAll() ([]domain.Member, error) {
 }
 
 func (m *mockMemberRepo) FindByHousehold(householdID uuid.UUID) ([]domain.Member, error) {
+	if m.findByHouseholdErr != nil {
+		return nil, m.findByHouseholdErr
+	}
 	var out []domain.Member
 	for _, v := range m.members {
 		if v.HouseholdID != nil && *v.HouseholdID == householdID {
@@ -309,8 +317,9 @@ func (r *mockInviteLinkRepo) FindByToken(token string) (*domain.HouseholdInviteL
 // ── Task mock ─────────────────────────────────────────────────────────────────
 
 type mockTaskRepo struct {
-	tasks    map[uuid.UUID]*domain.Task
-	comments map[uuid.UUID]*domain.Comment
+	tasks      map[uuid.UUID]*domain.Task
+	comments   map[uuid.UUID]*domain.Comment
+	findAllErr error
 }
 
 func newMockTaskRepo() *mockTaskRepo {
@@ -321,6 +330,9 @@ func newMockTaskRepo() *mockTaskRepo {
 }
 
 func (r *mockTaskRepo) FindAll(_ domain.TaskFilter) ([]domain.Task, error) {
+	if r.findAllErr != nil {
+		return nil, r.findAllErr
+	}
 	out := make([]domain.Task, 0, len(r.tasks))
 	for _, v := range r.tasks {
 		out = append(out, *v)

@@ -1,0 +1,1187 @@
+openapi: 3.0.3
+
+info:
+  title: HomeJira API
+  description: |
+    Household task management API — Jira for home.
+
+    ## Authentication
+    Most endpoints require a **Bearer JWT** obtained from `/api/v1/auth/login` or `/api/v1/auth/register`.
+    Pass it as `Authorization: Bearer <token>` on every protected request.
+
+    Tokens are valid for **7 days**. Call `POST /api/v1/auth/refresh` to reissue a fresh token
+    (e.g. after your join request is approved and your `household_id` changes).
+
+    ## Guest mode
+    The frontend supports a localStorage-only guest mode. Guest users never call this API.
+  version: 1.0.0
+  contact:
+    url: https://homejira.app
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://homejira-staging.up.railway.app
+    description: Staging
+  - url: https://homejira.up.railway.app
+    description: Production
+
+tags:
+  - name: System
+    description: Health and configuration
+  - name: Auth
+    description: Phone + mPIN authentication
+  - name: Members
+    description: Member profiles and coins
+  - name: Tasks
+    description: Task CRUD, comments, and activity
+  - name: Households
+    description: Household management, join flow, and invite links
+
+security:
+  - bearerAuth: []
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Components
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    Member:
+      type: object
+      properties:
+        id:          { type: string, format: uuid, example: "3fa85f64-5717-4562-b3fc-2c963f66afa6" }
+        name:        { type: string, example: "Alice" }
+        avatar:      { type: string, example: "A", description: "First letter of the member's name (letter avatar)" }
+        color:       { type: string, example: "#6366f1" }
+        phone:       { type: string, example: "+15551234567", description: "Only included in auth responses" }
+        household_id:{ type: string, format: uuid, nullable: true }
+        role:        { type: string, enum: [admin, member], example: "member" }
+        created_at:  { type: string, format: date-time }
+
+    Task:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        title:        { type: string, example: "Buy milk" }
+        notes:        { type: string, example: "2% fat, 1 litre" }
+        category:     { type: string, enum: [grocery, chore, errand, repair] }
+        priority:     { type: string, enum: [urgent, high, normal] }
+        assignee_id:  { type: string, format: uuid, nullable: true }
+        household_id: { type: string, format: uuid }
+        done:         { type: boolean }
+        done_at:      { type: string, format: date-time, nullable: true }
+        due_at:       { type: string, format: date-time, nullable: true }
+        quantity:     { type: string, nullable: true, example: "2 litres", description: "Only for grocery tasks" }
+        created_at:   { type: string, format: date-time }
+        updated_at:   { type: string, format: date-time }
+        assignee:
+          allOf: [{ $ref: '#/components/schemas/Member' }]
+          nullable: true
+        comments:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
+
+    Comment:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        task_id:    { type: string, format: uuid }
+        author_id:  { type: string, format: uuid }
+        body:       { type: string }
+        created_at: { type: string, format: date-time }
+        author:
+          allOf: [{ $ref: '#/components/schemas/Member' }]
+          nullable: true
+
+    Activity:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        task_id:    { type: string, format: uuid }
+        actor_id:   { type: string, format: uuid, nullable: true }
+        kind:
+          type: string
+          enum:
+            - created
+            - title_changed
+            - notes_changed
+            - category_changed
+            - priority_changed
+            - assignee_changed
+            - done
+            - reopened
+            - due_at_set
+            - due_at_cleared
+          example: "done"
+        meta:       { type: object, additionalProperties: { type: string } }
+        created_at: { type: string, format: date-time }
+
+    Household:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        name:       { type: string, example: "Smith Family" }
+        kind:       { type: string, enum: [home, group], example: "home" }
+        join_code:  { type: string, example: "XK9P2F" }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+
+    JoinRequest:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        household_id: { type: string, format: uuid }
+        requester_id: { type: string, format: uuid }
+        status:       { type: string, enum: [pending, approved, rejected] }
+        created_at:   { type: string, format: date-time }
+        decided_at:   { type: string, format: date-time, nullable: true }
+        decided_by:   { type: string, format: uuid, nullable: true }
+        note:         { type: string, nullable: true }
+        requester:
+          allOf: [{ $ref: '#/components/schemas/Member' }]
+          nullable: true
+
+    Invite:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        household_id:  { type: string, format: uuid }
+        invited_phone: { type: string }
+        invited_name:  { type: string }
+        status:        { type: string, enum: [pending, accepted, rejected, expired] }
+        created_by:    { type: string, format: uuid }
+        created_at:    { type: string, format: date-time }
+
+    InviteLink:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        household_id: { type: string, format: uuid }
+        token:        { type: string }
+        expires_at:   { type: string, format: date-time }
+        created_at:   { type: string, format: date-time }
+
+    CoinTransaction:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        member_id:  { type: string, format: uuid }
+        amount:     { type: integer }
+        reason:     { type: string }
+        meta:       { type: object }
+        created_at: { type: string, format: date-time }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, example: "resource not found" }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── System ─────────────────────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Returns server status, DB connectivity, commit SHA, uptime, and build time. Used by deployment pipelines.
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:      { type: string, example: "ok" }
+                  env:         { type: string, example: "production" }
+                  commit:      { type: string, example: "a1b2c3d" }
+                  built_at:    { type: string, example: "2026-03-14T00:00:00Z" }
+                  uptime_sec:  { type: integer, example: 3600 }
+                  db:          { type: string, example: "ok" }
+
+  /api/v1/config:
+    get:
+      tags: [System]
+      summary: Feature flags
+      description: Returns all feature flags. Used by the frontend to conditionally show/hide features.
+      security: []
+      responses:
+        '200':
+          description: Feature flags map
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flags:
+                    type: object
+                    additionalProperties: { type: boolean }
+                    example: { "coins": false, "referrals": false }
+
+  /api/v1/events:
+    get:
+      tags: [System]
+      summary: SSE live-sync stream
+      description: |
+        Server-Sent Events stream. Sends a `ping` event every 15 s and a `update` event
+        whenever the member's household data changes (new task, new member, etc.).
+
+        Because `EventSource` cannot set `Authorization` headers, authenticate via the
+        `?token=<jwt>` query parameter instead.
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+          description: JWT bearer token
+      responses:
+        '200':
+          description: SSE stream (text/event-stream)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: ping\n\ndata: update\n\n"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Auth ───────────────────────────────────────────────────────────────────
+
+  /api/v1/auth/check-phone:
+    post:
+      tags: [Auth]
+      summary: Check if a phone number is registered
+      description: Rate-limited to 10 req/min per IP. Returns whether the phone is already registered so the frontend can route to Login vs Register.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, example: "+15551234567" }
+      responses:
+        '200':
+          description: Phone status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registered: { type: boolean }
+        '400':
+          description: Invalid phone number format
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with phone + mPIN
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, mpin]
+              properties:
+                phone: { type: string, example: "+15551234567" }
+                mpin:  { type: string, minLength: 4, maxLength: 4, example: "1234" }
+      responses:
+        '200':
+          description: JWT token and member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:  { type: string }
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          description: Invalid phone or mPIN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new member
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, name, avatar, mpin]
+              properties:
+                phone:          { type: string, example: "+15551234567" }
+                name:           { type: string, example: "Alice" }
+                avatar:         { type: string, example: "A", description: "Single letter used as avatar" }
+                mpin:           { type: string, minLength: 4, maxLength: 4, example: "1234" }
+                referral_token: { type: string, description: "Optional referral token" }
+      responses:
+        '201':
+          description: JWT token and new member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:  { type: string }
+                  member: { $ref: '#/components/schemas/Member' }
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh JWT token
+      description: |
+        Reissues a fresh JWT reflecting the current DB state.
+        Call this after a household join request is approved so the new `household_id` is embedded in the token.
+      responses:
+        '200':
+          description: Fresh token and updated member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:  { type: string }
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/mpin:
+    patch:
+      tags: [Auth]
+      summary: Change mPIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_mpin, new_mpin]
+              properties:
+                current_mpin: { type: string, minLength: 4, maxLength: 4, example: "1234" }
+                new_mpin:     { type: string, minLength: 4, maxLength: 4, example: "5678" }
+      responses:
+        '204':
+          description: mPIN updated
+        '401':
+          description: Invalid current mPIN or bad JWT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ── Members ────────────────────────────────────────────────────────────────
+
+  /api/v1/members:
+    get:
+      tags: [Members]
+      summary: List household members
+      description: Returns all members of the caller's household. Returns empty array if the caller has no household.
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/members/me:
+    patch:
+      tags: [Members]
+      summary: Update my profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:   { type: string, example: "Alice" }
+                avatar: { type: string, example: "A" }
+                color:  { type: string, example: "#6366f1" }
+      responses:
+        '200':
+          description: Updated member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/members/me/coins:
+    get:
+      tags: [Members]
+      summary: Get my coin balance and transaction history
+      description: Feature-flagged. Returns 0 balance and empty list when coins feature is disabled.
+      responses:
+        '200':
+          description: Coin balance and transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    type: integer
+                    example: 150
+                  transactions:
+                    type: array
+                    items: { $ref: '#/components/schemas/CoinTransaction' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/members/me/referral-link:
+    get:
+      tags: [Members]
+      summary: Get or create my referral link
+      description: Feature-flagged. Creates a referral link if one doesn't exist yet.
+      responses:
+        '200':
+          description: Referral link
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, example: "https://homejira.app/referral/abc123" }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/members/{id}:
+    get:
+      tags: [Members]
+      summary: Get a member by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Tasks ──────────────────────────────────────────────────────────────────
+
+  /api/v1/tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks
+      description: Returns tasks for the caller's household, optionally filtered.
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string, enum: [grocery, chore, errand, repair] }
+        - name: done
+          in: query
+          schema: { type: boolean }
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Full-text search on title and notes
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items: { $ref: '#/components/schemas/Task' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Tasks]
+      summary: Create a task
+      description: Caller must be in a household. `household_id` is set from the JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, category, priority]
+              properties:
+                title:       { type: string, example: "Buy milk" }
+                notes:       { type: string, example: "2% fat" }
+                category:    { type: string, enum: [grocery, chore, errand, repair] }
+                priority:    { type: string, enum: [urgent, high, normal] }
+                assignee_id: { type: string, format: uuid, nullable: true }
+                due_at:      { type: string, format: date-time, nullable: true }
+                quantity:    { type: string, nullable: true, example: "2 litres" }
+      responses:
+        '201':
+          description: Created task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task: { $ref: '#/components/schemas/Task' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Get a task by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Task with comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task: { $ref: '#/components/schemas/Task' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Tasks]
+      summary: Update a task (partial)
+      description: All fields are optional. Send only the fields you want to change.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:        { type: string }
+                notes:        { type: string }
+                category:     { type: string, enum: [grocery, chore, errand, repair] }
+                priority:     { type: string, enum: [urgent, high, normal] }
+                assignee_id:  { type: string, format: uuid, nullable: true }
+                done:         { type: boolean }
+                due_at:       { type: string, format: date-time, nullable: true }
+                clear_due_at: { type: boolean, description: "Set to true to remove the due date" }
+                quantity:     { type: string, nullable: true }
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task: { $ref: '#/components/schemas/Task' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Task deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tasks/{id}/comments:
+    post:
+      tags: [Tasks]
+      summary: Add a comment to a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [author_id, body]
+              properties:
+                author_id: { type: string, format: uuid }
+                body:      { type: string, example: "On it!" }
+      responses:
+        '201':
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comment: { $ref: '#/components/schemas/Comment' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tasks/{id}/activity:
+    get:
+      tags: [Tasks]
+      summary: Get activity history for a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Activity log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activities:
+                    type: array
+                    items: { $ref: '#/components/schemas/Activity' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Households ─────────────────────────────────────────────────────────────
+
+  /api/v1/households/me:
+    get:
+      tags: [Households]
+      summary: Get my household
+      responses:
+        '200':
+          description: Current household
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  household: { $ref: '#/components/schemas/Household' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Caller is not in a household
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/households:
+    post:
+      tags: [Households]
+      summary: Create a household
+      description: Creates a new household and makes the caller its admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, kind]
+              properties:
+                name: { type: string, example: "Smith Family" }
+                kind: { type: string, enum: [home, group] }
+      responses:
+        '201':
+          description: New household and updated member (now admin)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  household: { $ref: '#/components/schemas/Household' }
+                  member:    { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      tags: [Households]
+      summary: Delete my household
+      description: Admin only. Removes the household and clears all members from it.
+      responses:
+        '204':
+          description: Household deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/leave:
+    post:
+      tags: [Households]
+      summary: Leave my household
+      description: Cannot leave if you are the sole admin.
+      responses:
+        '200':
+          description: Updated member (household_id is now null)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/households/join-by-code:
+    post:
+      tags: [Households]
+      summary: Request to join a household by 6-character join code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, example: "XK9P2F", minLength: 6, maxLength: 6 }
+      responses:
+        '201':
+          description: Join request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request:   { $ref: '#/components/schemas/JoinRequest' }
+                  household: { $ref: '#/components/schemas/Household' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Invalid join code
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Already in a household or request already pending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/households/invite-link:
+    post:
+      tags: [Households]
+      summary: Create a shareable invite link
+      description: Admin only. Returns a token valid for 7 days.
+      responses:
+        '201':
+          description: Invite link token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:     { type: string }
+                  household: { $ref: '#/components/schemas/Household' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/link/{token}:
+    get:
+      tags: [Households]
+      summary: Resolve an invite link token (public)
+      description: Returns household info before the user logs in, so they know what they are joining.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Household info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  household: { $ref: '#/components/schemas/Household' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/households/link/{token}/join:
+    post:
+      tags: [Households]
+      summary: Join a household via invite link
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Updated member (now part of household)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/households/members/{id}/remove:
+    post:
+      tags: [Households]
+      summary: Remove a member from the household
+      description: Admin only. Cannot remove yourself.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Removed member (household_id is now null)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/households/members/{id}/promote:
+    post:
+      tags: [Households]
+      summary: Promote a member to admin
+      description: Admin only. Idempotent — promoting an existing admin is a no-op error.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Promoted member
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/households/requests:
+    get:
+      tags: [Households]
+      summary: List pending join requests
+      description: Admin only. Returns all pending join requests for the caller's household.
+      responses:
+        '200':
+          description: Pending join requests (with requester embedded)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    type: array
+                    items: { $ref: '#/components/schemas/JoinRequest' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/requests/mine:
+    get:
+      tags: [Households]
+      summary: Get my pending join request
+      responses:
+        '200':
+          description: My current pending request (null if none)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request:
+                    allOf: [{ $ref: '#/components/schemas/JoinRequest' }]
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/requests/{id}/approve:
+    post:
+      tags: [Households]
+      summary: Approve a join request
+      description: Admin only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Approved request and updated member
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request: { $ref: '#/components/schemas/JoinRequest' }
+                  member:  { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/households/requests/{id}/reject:
+    post:
+      tags: [Households]
+      summary: Reject a join request
+      description: Admin only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Rejected request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request: { $ref: '#/components/schemas/JoinRequest' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/households/requests/{id}/cancel:
+    post:
+      tags: [Households]
+      summary: Cancel my pending join request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Request cancelled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/households/invites:
+    post:
+      tags: [Households]
+      summary: Invite a member by phone number
+      description: Admin only. Creates a direct phone invite for a specific number.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, example: "+15559876543" }
+                name:  { type: string, example: "Bob", description: "Optional display name hint" }
+      responses:
+        '201':
+          description: Created invite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite: { $ref: '#/components/schemas/Invite' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/invites/me:
+    get:
+      tags: [Households]
+      summary: List invites for my phone number
+      description: Returns all pending invites addressed to the caller's phone.
+      responses:
+        '200':
+          description: Pending invites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invites:
+                    type: array
+                    items: { $ref: '#/components/schemas/Invite' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/households/invites/{id}/accept:
+    post:
+      tags: [Households]
+      summary: Accept a household invite
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Accepted invite and updated member
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite: { $ref: '#/components/schemas/Invite' }
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/households/invites/{id}/reject:
+    post:
+      tags: [Households]
+      summary: Reject a household invite
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Rejected invite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite: { $ref: '#/components/schemas/Invite' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/referral/{token}:
+    get:
+      tags: [Members]
+      summary: Resolve a referral token to a public profile
+      description: Public endpoint. Returns the referrer's public profile to display on the referral landing page.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Referrer's public profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member: { $ref: '#/components/schemas/Member' }
+        '404':
+          $ref: '#/components/responses/NotFound'

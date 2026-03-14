@@ -96,9 +96,9 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
                 {overdue ? '⚠ ' : dueSoon ? '⏰ ' : ''}{formatDate(task.due_at)}
               </span>
             )}
-            {(task.comments?.length ?? 0) > 0 && (
+            {task.comments && task.comments.length > 0 && (
               <span style={{ fontSize: 11, color: '#a8a29e' }}>
-                {task.comments!.length} comment{task.comments!.length !== 1 ? 's' : ''}
+                {task.comments.length} comment{task.comments.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
