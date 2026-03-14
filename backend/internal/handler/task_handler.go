@@ -291,8 +291,7 @@ func (h *TaskHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		AuthorID uuid.UUID `json:"author_id"`
-		Body     string    `json:"body"`
+		Body string `json:"body"`
 	}
 	if err := decode(r, &body); err != nil {
 		respond(w, http.StatusBadRequest, envelope{"error": "invalid request body"})
@@ -303,7 +302,7 @@ func (h *TaskHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 		respondError(w, err)
 		return
 	}
-	comment, err := h.svc.AddComment(taskID, body.AuthorID, body.Body, hhID)
+	comment, err := h.svc.AddComment(taskID, actorID, body.Body, hhID)
 	if err != nil {
 		respondError(w, err)
 		return

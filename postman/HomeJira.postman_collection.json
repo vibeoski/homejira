@@ -217,7 +217,7 @@
             "url": "{{baseUrl}}/tasks/{{taskId}}/comments",
             "body": {
               "mode": "raw",
-              "raw": "{\"author_id\": \"{{memberId}}\", \"body\": \"Looks urgent!\"}",
+              "raw": "{\"body\": \"Looks urgent!\"}",
               "options": { "raw": { "language": "json" } }
             },
             "description": "Add a comment to a task. Triggers SSE.\n\nResponse: `{ \"comment\": {...} }`"
