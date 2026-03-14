@@ -154,6 +154,10 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 		tasks = append(tasks, t)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	// Fetch comments for all tasks in one query
 	if len(tasks) > 0 {
 		if err := r.populateComments(tasks); err != nil {
@@ -370,5 +374,5 @@ func (r *taskRepo) fetchComments(taskIDs []uuid.UUID) (map[uuid.UUID][]domain.Co
 		c.Author = &author
 		result[c.TaskID] = append(result[c.TaskID], c)
 	}
-	return result, nil
+	return result, rows.Err()
 }

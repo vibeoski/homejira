@@ -56,7 +56,7 @@ func (r *householdInviteRepo) FindPendingForPhone(phone string) ([]domain.Househ
 		}
 		out = append(out, inv)
 	}
-	return out, nil
+	return out, rows.Err()
 }
 
 func (r *householdInviteRepo) FindByID(id uuid.UUID) (*domain.HouseholdInvite, error) {
