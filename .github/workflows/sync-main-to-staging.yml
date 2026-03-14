@@ -1,0 +1,79 @@
+name: Sync main → staging
+
+# After any push to main, ensure staging gets those commits back.
+# Prevents staging→main conflicts caused by commits that bypass staging
+# (promotion merge commits, emergency hotfixes, etc.).
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  backmerge:
+    name: Back-merge main into staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if staging already contains main
+        id: check
+        run: |
+          git fetch origin staging main
+          # Use diff rather than ancestry — squash merges break --is-ancestor
+          # even when content is identical. Only skip if no file changes exist.
+          DIFF=$(git diff origin/staging..origin/main --name-only)
+          if [ -z "$DIFF" ]; then
+            echo "Staging content is identical to main — nothing to do."
+            echo "in_sync=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "main has changes staging does not:"
+            echo "$DIFF"
+            echo "in_sync=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create sync branch and PR
+        if: steps.check.outputs.in_sync == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ github.sha }}"
+          SHORT="${SHA:0:7}"
+          BRANCH="sync/main-into-staging-${SHORT}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH" origin/staging
+
+          if git merge origin/main --no-edit; then
+            git push origin "$BRANCH"
+            PR_URL=$(gh pr create \
+              --title "sync: back-merge main into staging (${SHORT})" \
+              --body "$(cat <<'EOF'
+Automatic back-merge triggered by a push to \`main\` that staging did not yet contain.
+
+This keeps \`staging\` and \`main\` in sync so the next \`staging → main\` promotion is conflict-free.
+
+**Merge strategy:** regular merge (not squash) to preserve full history.
+EOF
+)" \
+              --base staging \
+              --head "$BRANCH")
+            echo "PR created: $PR_URL"
+            gh pr merge "$BRANCH" --merge --auto
+          else
+            # Conflicts — push the branch and open a PR for manual resolution
+            git merge --abort
+            git checkout "$BRANCH"
+            git push origin "$BRANCH"
+            gh pr create \
+              --title "sync: back-merge main into staging (${SHORT}) — CONFLICTS" \
+              --body "Automatic back-merge of \`main\` into \`staging\` has conflicts that need manual resolution. Please resolve and merge to keep branches in sync." \
+              --base staging \
+              --head "$BRANCH" \
+              --label "needs-review"
+            echo "Conflict PR created — manual resolution required."
+          fi
