@@ -4,6 +4,8 @@ import { useStore } from './store'
 import { useAuthStore } from './store/authStore'
 import { useConfigStore } from './store/configStore'
 import { AppLayout } from './components/layout/AppLayout'
+import { DesktopLayout } from './components/layout/desktop/DesktopLayout'
+import { useBreakpoint } from './hooks/useBreakpoint'
 import { TasksPage } from './pages/TasksPage'
 import { StatsPage } from './pages/StatsPage'
 import { MembersPage } from './pages/MembersPage'
@@ -17,6 +19,8 @@ export function App() {
   const { isAuthenticated, isGuest } = useAuthStore()
   const { fetchConfig } = useConfigStore()
   const canAccessApp = isAuthenticated || isGuest
+  const isDesktop = useBreakpoint()
+  const Layout = isDesktop ? DesktopLayout : AppLayout
 
   useEffect(() => {
     fetchConfig()
@@ -39,7 +43,7 @@ export function App() {
 
         <Route
           path="/"
-          element={canAccessApp ? <AppLayout /> : <Navigate to="/auth" replace />}
+          element={canAccessApp ? <Layout /> : <Navigate to="/auth" replace />}
         >
           <Route index element={<TasksPage />} />
           <Route path="grocery" element={<GroceryPage />} />
