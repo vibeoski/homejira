@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Avatar } from '../ui/Avatar'
-import { CATEGORIES, PRIORITIES, type Task } from '../../types'
+import { CATEGORIES, PRIORITIES, STATUSES, type Task } from '../../types'
 import { formatDate, isOverdue, isDueSoon } from '../../utils'
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 export function TaskCard({ task, onToggle, onOpen }: Props) {
   const [popping, setPopping] = useState(false)
   const cat = CATEGORIES[task.category]
+  const statusInfo = STATUSES[task.status ?? 'open']
   const overdue = isOverdue(task.due_at, task.done)
   const dueSoon = isDueSoon(task.due_at, task.done)
 
@@ -68,16 +69,22 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{task.title}</p>
 
-        {/* Category + notes */}
+        {/* Category + status + notes */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: (task.due_at && !task.done) || (task.comments?.length ?? 0) > 0 ? 4 : 0 }}>
           <span style={{
             fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5,
             background: cat.color + '12', color: cat.color,
           }}>{cat.label}</span>
+          {!task.done && task.status !== 'open' && (
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5,
+              background: statusInfo.color + '15', color: statusInfo.color,
+            }}>{statusInfo.label}</span>
+          )}
           {task.notes && (
             <span style={{
               fontSize: 12, color: '#a8a29e',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100,
             }}>{task.notes}</span>
           )}
         </div>

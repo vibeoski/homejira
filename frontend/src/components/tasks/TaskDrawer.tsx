@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Avatar } from '../ui/Avatar'
-import { CATEGORIES, PRIORITIES, type Task, type Member, type UpdateTaskPayload, type Category, type Priority, type Activity } from '../../types'
+import { CATEGORIES, PRIORITIES, STATUSES, type Task, type Member, type UpdateTaskPayload, type Category, type Priority, type TaskStatus, type Activity } from '../../types'
 import { tasksApi } from '../../api/tasks'
 import { timeAgo, toDateInputValue } from '../../utils'
 import { useStore } from '../../store'
@@ -187,6 +187,17 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
 
         {/* Zone 2: Classification */}
         <div style={{ background: 'white', margin: '0 10px', borderRadius: 12, padding: '14px 14px', marginBottom: 8, border: '1px solid #ede8e1' }}>
+          <FieldLabel>Status</FieldLabel>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+            {(Object.entries(STATUSES) as [TaskStatus, { label: string; color: string }][]).map(([k, v]) => (
+              <PillBtn key={k} active={(current.status ?? 'open') === k} color={v.color} onClick={() => patch({ status: k })}>
+                {v.label}
+              </PillBtn>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: '#faf7f2', marginBottom: 14 }} />
+
           <FieldLabel>Category</FieldLabel>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
             {(Object.entries(CATEGORIES) as [string, { label: string; color: string }][]).map(([k, v]) => (
@@ -349,6 +360,7 @@ function describeActivity(a: Activity): string {
     case 'notes_changed':    return 'updated the notes'
     case 'due_set':          return `set due date to ${m.to}`
     case 'due_cleared':      return 'removed the due date'
+    case 'status_changed':   return `moved to ${STATUSES[m.to as TaskStatus]?.label ?? m.to}`
     default:                 return a.kind
   }
 }

@@ -56,7 +56,7 @@ func NewTaskRepository(db *pgxpool.Pool) domain.TaskRepository {
 
 const taskSelectCols = `
 	t.id, t.title, t.notes, t.category, t.priority,
-	t.assignee_id, t.household_id, t.done, t.done_at, t.due_at, t.quantity, t.created_at, t.updated_at,
+	t.assignee_id, t.household_id, t.status, t.done, t.done_at, t.due_at, t.quantity, t.created_at, t.updated_at,
 	m.id, COALESCE(m.name, ''), COALESCE(m.avatar, ''), COALESCE(m.color, ''), m.created_at
 `
 
@@ -67,7 +67,7 @@ func scanTaskWithMember(row pgx.Row) (*domain.Task, error) {
 	var mCreatedAt *time.Time
 	err := row.Scan(
 		&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
-		&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
+		&t.AssigneeID, &t.HouseholdID, &t.Status, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
 		&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -142,7 +142,7 @@ func (r *taskRepo) FindAll(filter domain.TaskFilter) ([]domain.Task, error) {
 		var mCreatedAt *time.Time
 		if err := rows.Scan(
 			&t.ID, &t.Title, &t.Notes, &t.Category, &t.Priority,
-			&t.AssigneeID, &t.HouseholdID, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
+			&t.AssigneeID, &t.HouseholdID, &t.Status, &t.Done, &t.DoneAt, &t.DueAt, &t.Quantity, &t.CreatedAt, &t.UpdatedAt,
 			&mID, &mName, &mAvatar, &mColor, &mCreatedAt,
 		); err != nil {
 			return nil, err
@@ -242,18 +242,43 @@ func (r *taskRepo) Update(id uuid.UUID, input domain.UpdateTaskInput) (*domain.T
 		args = append(args, *input.AssigneeID)
 		i++
 	}
-	if input.Done != nil {
-		setClauses = append(setClauses, fmt.Sprintf("done = $%d", i))
-		args = append(args, *input.Done)
+	if input.Status != nil {
+		// Status is the source of truth; keep done/done_at in sync.
+		isDone := *input.Status == domain.TaskStatusDone
+		setClauses = append(setClauses, fmt.Sprintf("status = $%d", i))
+		args = append(args, string(*input.Status))
 		i++
-		if *input.Done {
-			now := time.Now()
+		setClauses = append(setClauses, fmt.Sprintf("done = $%d", i))
+		args = append(args, isDone)
+		i++
+		if isDone {
 			setClauses = append(setClauses, fmt.Sprintf("done_at = $%d", i))
-			args = append(args, now)
+			args = append(args, time.Now())
 			i++
 		} else {
 			setClauses = append(setClauses, fmt.Sprintf("done_at = $%d", i))
 			args = append(args, nil)
+			i++
+		}
+	} else if input.Done != nil {
+		// Backward-compat: Done toggle derives status (open ↔ done only).
+		isDone := *input.Done
+		setClauses = append(setClauses, fmt.Sprintf("done = $%d", i))
+		args = append(args, isDone)
+		i++
+		if isDone {
+			setClauses = append(setClauses, fmt.Sprintf("done_at = $%d", i))
+			args = append(args, time.Now())
+			i++
+			setClauses = append(setClauses, fmt.Sprintf("status = $%d", i))
+			args = append(args, string(domain.TaskStatusDone))
+			i++
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("done_at = $%d", i))
+			args = append(args, nil)
+			i++
+			setClauses = append(setClauses, fmt.Sprintf("status = $%d", i))
+			args = append(args, string(domain.TaskStatusOpen))
 			i++
 		}
 	}

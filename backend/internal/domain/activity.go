@@ -19,6 +19,7 @@ const (
 	ActivityNotesChanged    ActivityKind = "notes_changed"
 	ActivityDueSet          ActivityKind = "due_set"
 	ActivityDueCleared      ActivityKind = "due_cleared"
+	ActivityStatusChanged   ActivityKind = "status_changed"
 )
 
 // Activity is an immutable event on a task.
