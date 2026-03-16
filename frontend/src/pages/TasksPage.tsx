@@ -6,6 +6,8 @@ import { TaskCard } from '../components/tasks/TaskCard'
 import { TaskDrawer } from '../components/tasks/TaskDrawer'
 import { AddTaskSheet } from '../components/tasks/AddTaskSheet'
 import { Spinner } from '../components/ui/Spinner'
+import { DesktopTaskDetail } from '../components/layout/desktop/DesktopTaskDetail'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { CATEGORIES, type Task, type Category } from '../types'
 
 type FilterStatus = 'open' | 'done' | 'all'
@@ -25,6 +27,7 @@ export function TasksPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [undoTask, setUndoTask] = useState<{ id: string } | null>(null)
   const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const isDesktop = useBreakpoint()
   const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
   const handleToggle = useCallback(async (id: string, done: boolean) => {
@@ -214,55 +217,61 @@ export function TasksPage() {
         >{sortBy === 'priority' ? 'Sort: Priority' : 'Sort: Recent'}</button>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '4px 12px 140px' }}>
-        {loading ? (
-          <Spinner />
-        ) : tasks.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '72px 24px 32px', textAlign: 'center' }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 20, background: '#eef2ff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-            }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-              </svg>
+      {/* Content — two columns on desktop, single column on mobile */}
+      <div style={{ display: 'flex', flex: 1 }}>
+        <div style={{ flex: 1, padding: '4px 12px', paddingBottom: isDesktop ? 40 : 140, minWidth: 0 }}>
+          {loading ? (
+            <Spinner />
+          ) : tasks.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '72px 24px 32px', textAlign: 'center' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 20, background: '#eef2ff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>
+              </div>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>No tasks yet</h2>
+              <p style={{ fontSize: 13, color: '#a8a29e', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
+                {isGuest ? 'Add a few preview tasks to try the app locally.' : 'Add your household\'s first task to get started.'}
+              </p>
+              <button
+                onClick={() => setShowAdd(true)}
+                style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: ACCENT, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >Add first task</button>
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>No tasks yet</h2>
-            <p style={{ fontSize: 13, color: '#a8a29e', margin: '0 0 24px', lineHeight: 1.6, maxWidth: 240 }}>
-              {isGuest ? 'Add a few preview tasks to try the app locally.' : 'Add your household\'s first task to get started.'}
-            </p>
-            <button
-              onClick={() => setShowAdd(true)}
-              style={{
-                padding: '10px 24px', borderRadius: 8, border: 'none',
-                background: ACCENT, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              }}
-            >Add first task</button>
-          </div>
-        ) : visible.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '64px 20px' }}>
-            <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>All clear!</p>
-            <p style={{ fontSize: 13, color: '#a8a29e', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
-            <button
-              onClick={() => { setCatTab('all'); setFilterStatus('open'); setMyTasks(false); setSearch('') }}
-              style={{
-                padding: '8px 20px', borderRadius: 8, border: '1px solid #ede8e1',
-                background: 'white', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              }}
-            >Reset filters</button>
-          </div>
-        ) : visible.map((task) => (
-          <TaskCard key={task.id} task={task} onToggle={handleToggle} onOpen={setSelected} />
-        ))}
+          ) : visible.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '64px 20px' }}>
+              <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>All clear!</p>
+              <p style={{ fontSize: 13, color: '#a8a29e', marginTop: 6, marginBottom: 20 }}>Nothing matches these filters.</p>
+              <button
+                onClick={() => { setCatTab('all'); setFilterStatus('open'); setMyTasks(false); setSearch('') }}
+                style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #ede8e1', background: 'white', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >Reset filters</button>
+            </div>
+          ) : visible.map((task) => (
+            <TaskCard key={task.id} task={task} onToggle={handleToggle} onOpen={setSelected} />
+          ))}
+        </div>
+
+        {/* Desktop detail panel */}
+        {isDesktop && selected && (
+          <DesktopTaskDetail
+            task={selected} members={members}
+            onClose={() => setSelected(null)}
+            onUpdated={(t) => { setSelected(t); refresh() }}
+            onDeleted={(id) => { deleteTask(id); setSelected(null) }}
+          />
+        )}
       </div>
 
       {/* FAB */}
       <button
         onClick={() => setShowAdd(true)}
         style={{
-          position: 'fixed', bottom: 72, right: 20, width: 50, height: 50,
+          position: 'fixed', bottom: isDesktop ? 24 : 72, right: 24, width: 50, height: 50,
           borderRadius: 14, background: ACCENT, color: 'white', border: 'none',
           fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 16px rgba(99,102,241,0.35)', zIndex: 40, cursor: 'pointer',
@@ -272,8 +281,8 @@ export function TasksPage() {
         onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
       >+</button>
 
-      {/* Modals */}
-      {selected && (
+      {/* Mobile drawer — only on mobile */}
+      {!isDesktop && selected && (
         <TaskDrawer
           task={selected} members={members}
           onClose={() => setSelected(null)}
