@@ -20,14 +20,6 @@
 - [ ] `go build ./...` and `go vet ./...` pass
 - [ ] `npm run build` and `npm run lint` pass
 
-## QA Sign-off
-
-<!-- Invoke /qa1 (backend) and/or /qa2 (frontend) before requesting merge.
-     QA agent will post "QA-1 ✅" or "QA-2 ✅" as a comment. -->
-
-- [ ] QA-1 sign-off (backend / API changes)
-- [ ] QA-2 sign-off (frontend / UI changes)
-
 ## Screenshots (if UI change)
 
 <!-- Before / after screenshots or a short screen recording -->

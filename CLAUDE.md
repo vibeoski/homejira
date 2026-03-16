@@ -323,11 +323,9 @@ All shared TS types in `src/types/index.ts`. Household-specific types (`Househol
 
     Any 5xx = release blocker — roll back immediately.
 
-20. **All PRs require QA sign-off before merge.** Backend-only → `/qa1`. Frontend-only → `/qa2`. Full-stack → both. No merge without "QA-1 ✅" / "QA-2 ✅" comment on the PR.
+20. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** Apply to every SELECT/RETURNING query for that column, not just new ones.
 
-21. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** Apply to every SELECT/RETURNING query for that column, not just new ones.
-
-22. **Run QA automation scripts in the background to avoid token bloat.** When executing test or smoke-test scripts (e.g. `test_idor_local.sh`, curl smoke suites, `go test ./...`), use the Bash tool with `run_in_background: true`. Only read the output via `TaskOutput` if the script fails or the user asks for results. Never stream verbose test output into the main conversation context.
+21. **Run QA automation scripts in the background to avoid token bloat.** When executing test or smoke-test scripts (e.g. `test_idor_local.sh`, curl smoke suites, `go test ./...`), use the Bash tool with `run_in_background: true`. Only read the output via `TaskOutput` if the script fails or the user asks for results. Never stream verbose test output into the main conversation context.
 
 ---
 
