@@ -131,7 +131,6 @@ All diagrams are hosted in FigJam. Claim the links below to add them to your wor
 homejira/
 ├── Makefile
 ├── docker-compose.yml
-├── BACKLOG.md
 ├── postman/
 │   ├── HomeJira.postman_collection.json  # Postman collection v2.1 (source of truth)
 │   └── postman.json                      # Collection UID + workspace metadata
@@ -348,7 +347,12 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 
 ## Roadmap
 
-See [BACKLOG.md](./BACKLOG.md) for the full prioritised backlog.
+GitHub Issues are the source of truth for active backlog and roadmap work:
+
+- Open issues: <https://github.com/vibeoski/homejira/issues>
+- Roadmap issues: <https://github.com/vibeoski/homejira/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap>
+- Necessary issues: <https://github.com/vibeoski/homejira/issues?q=is%3Aissue+is%3Aopen+label%3Anecessary>
+- Blockers: <https://github.com/vibeoski/homejira/issues?q=is%3Aissue+is%3Aopen+label%3Ablocker>
 
 **Open bugs (Sprint 5):**
 - #70 JoinPage: authenticated auto-join does not refresh JWT (stale household_id)
