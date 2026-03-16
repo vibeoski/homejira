@@ -689,12 +689,9 @@ func TestHouseholdService_JoinByInviteToken_AlreadyInSameHousehold(t *testing.T)
 
 	token, _, _ := svc.CreateInviteLink(admin.ID)
 
-	// Joining the same household you already belong to is idempotent — returns member, nil.
-	member, err := svc.JoinByInviteToken(admin.ID, token)
-	if err != nil {
-		t.Fatalf("expected nil error for same-household join (idempotent), got: %v", err)
-	}
-	if member == nil {
-		t.Fatal("expected member returned for same-household join (idempotent), got nil")
+	// Joining the same household you already belong to returns 422 (issue #83).
+	_, err := svc.JoinByInviteToken(admin.ID, token)
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("expected ErrInvalidInput for same-household join, got: %v", err)
 	}
 }

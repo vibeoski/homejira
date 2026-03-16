@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "HomeJira API",
-    "description": "Complete API collection for HomeJira — household task management app (Jira for home).\n\nBase URL: {{baseUrl}} = http://localhost:8080/api/v1\n\nQuick start:\n1. Run 'Login' (or Register) — JWT auto-saved to {{token}}\n2. All protected requests inherit Bearer auth from collection level\n3. Key IDs auto-saved by test scripts: {{taskId}}, {{memberId}}, {{linkToken}}\n\nAuth: Phone + 4-digit mPIN → JWT (30-day TTL).\nAll routes except /auth/check-phone, /auth/login, /auth/register, /config, /health, /referral/:token, /households/link/:token require Bearer token.",
+    "description": "Complete API collection for HomeJira — household task management app (Jira for home).\n\nBase URL: {{baseUrl}} = http://localhost:8080/api/v1\n\nQuick start:\n1. Run 'Login' (or Register) — JWT auto-saved to {{token}}\n2. All protected requests inherit Bearer auth from collection level\n3. Key IDs auto-saved by test scripts: {{taskId}}, {{groceryId}}, {{memberId}}, {{linkToken}}\n\nAuth: Username + 4-digit mPIN → JWT (7-day TTL).\nAll routes except /auth/check-username, /auth/login, /auth/register, /config, /health, /referral/:token, /households/link/:token require Bearer token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -14,6 +14,7 @@
     { "key": "baseUrl",       "value": "http://localhost:8080/api/v1", "description": "API base URL" },
     { "key": "token",         "value": "", "description": "JWT Bearer token — auto-set by Login/Register" },
     { "key": "taskId",        "value": "", "description": "Task UUID — auto-set by Create Task" },
+    { "key": "groceryId",     "value": "", "description": "Grocery UUID — auto-set by Create Grocery" },
     { "key": "memberId",      "value": "", "description": "Member UUID — auto-set by Login/Register" },
     { "key": "requestId",     "value": "", "description": "Join request UUID" },
     { "key": "inviteId",      "value": "", "description": "Invite UUID" },
@@ -23,21 +24,21 @@
   "item": [
     {
       "name": "Auth",
-      "description": "Authentication — phone + 4-digit mPIN. Login/Register auto-save JWT to {{token}}.",
+      "description": "Authentication — username + 4-digit mPIN. Login/Register auto-save JWT to {{token}}.",
       "item": [
         {
-          "name": "Check Phone",
+          "name": "Check Username",
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/auth/check-phone",
+            "url": "{{baseUrl}}/auth/check-username",
             "body": {
               "mode": "raw",
-              "raw": "{\"phone\": \"+1234567890\"}",
+              "raw": "{\"username\": \"alice_home\"}",
               "options": { "raw": { "language": "json" } }
             },
-            "description": "Check if a phone number is already registered.\n\nResponse: `{ \"registered\": true|false }`"
+            "description": "Check if a username is already registered.\n\nResponse: `{ \"registered\": true|false }`"
           }
         },
         {
@@ -65,10 +66,10 @@
             "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
-              "raw": "{\"phone\": \"+1234567890\", \"mpin\": \"1234\"}",
+              "raw": "{\"username\": \"alice_home\", \"mpin\": \"1234\"}",
               "options": { "raw": { "language": "json" } }
             },
-            "description": "Authenticate with phone + 4-digit mPIN. JWT auto-saved to {{token}}, memberId to {{memberId}}.\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
+            "description": "Authenticate with username + 4-digit mPIN. JWT auto-saved to {{token}}, memberId to {{memberId}}.\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
           }
         },
         {
@@ -96,7 +97,7 @@
             "url": "{{baseUrl}}/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"+1234567890\",\n  \"name\": \"Alice\",\n  \"avatar\": \"A\",\n  \"mpin\": \"1234\"\n}",
+              "raw": "{\n  \"username\": \"alice_home\",\n  \"name\": \"Alice\",\n  \"avatar\": \"A\",\n  \"mpin\": \"1234\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "description": "Create a new account. Optional: `referral_token` field.\nToken + memberId auto-saved.\n\nResponse: `{ \"token\": \"...\", \"member\": {...} }`"
@@ -141,7 +142,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["tasks"],
               "query": [
-                { "key": "category", "value": "grocery",  "disabled": true, "description": "grocery|chore|errand|repair" },
+                { "key": "category", "value": "chore",    "disabled": true, "description": "chore|errand|repair" },
                 { "key": "done",     "value": "false",    "disabled": true, "description": "true|false" },
                 { "key": "search",   "value": "",         "disabled": true, "description": "Search by title or notes" }
               ]
@@ -171,10 +172,10 @@
             "url": "{{baseUrl}}/tasks",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Buy milk\",\n  \"notes\": \"Get 2L whole milk\",\n  \"category\": \"grocery\",\n  \"priority\": \"normal\",\n  \"assignee_id\": null,\n  \"due_at\": null\n}",
+              "raw": "{\n  \"title\": \"Fix hallway light\",\n  \"notes\": \"Check the spare bulbs first\",\n  \"category\": \"chore\",\n  \"priority\": \"normal\",\n  \"assignee_id\": null,\n  \"due_at\": null\n}",
               "options": { "raw": { "language": "json" } }
             },
-            "description": "Create a new task. taskId auto-saved to {{taskId}}.\n\ncategory: `grocery | chore | errand | repair`\npriority: `urgent | high | normal`\nassignee_id: UUID or null\ndue_at: ISO 8601 timestamp or null\n\nTriggers SSE notification to household."
+            "description": "Create a new task. taskId auto-saved to {{taskId}}.\n\ncategory: `chore | errand | repair`\npriority: `urgent | high | normal`\nassignee_id: UUID or null\ndue_at: ISO 8601 timestamp or null\n\nTriggers SSE notification to household."
           }
         },
         {
@@ -230,6 +231,89 @@
             "header": [],
             "url": "{{baseUrl}}/tasks/{{taskId}}/activity",
             "description": "Chronological activity log for a task.\n\nActivity kinds: created, completed, reopened, assigned, priority_changed, category_changed, title_changed, notes_changed, due_set, due_cleared\n\nResponse: `{ \"activities\": [...] }`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Groceries",
+      "description": "Grocery list CRUD scoped to the authenticated member's household.",
+      "item": [
+        {
+          "name": "List Groceries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/groceries",
+              "host": ["{{baseUrl}}"],
+              "path": ["groceries"],
+              "query": [
+                { "key": "done",   "value": "false", "disabled": true, "description": "true|false" },
+                { "key": "search", "value": "",      "disabled": true, "description": "Search by title or notes" }
+              ]
+            },
+            "description": "List all groceries in the household.\n\nResponse: `{ \"groceries\": [...] }`"
+          }
+        },
+        {
+          "name": "Create Grocery",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('groceryId', pm.response.json().grocery.id);",
+                  "    console.log('groceryId saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/groceries",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Milk\",\n  \"quantity\": \"2 litres\",\n  \"notes\": \"2% fat\",\n  \"assignee_id\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Create a grocery item. groceryId auto-saved to {{groceryId}}.\n\nResponse: `{ \"grocery\": {...} }`"
+          }
+        },
+        {
+          "name": "Get Grocery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/groceries/{{groceryId}}",
+            "description": "Get a grocery item by ID.\n\nResponse: `{ \"grocery\": {...} }`"
+          }
+        },
+        {
+          "name": "Update Grocery",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/groceries/{{groceryId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Milk and eggs\",\n  \"done\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Partial update for a grocery item.\n\nResponse: `{ \"grocery\": {...} }`"
+          }
+        },
+        {
+          "name": "Delete Grocery",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/groceries/{{groceryId}}",
+            "description": "Delete a grocery item. Returns 204 No Content."
           }
         }
       ]
@@ -414,7 +498,7 @@
     },
     {
       "name": "Households — Invites",
-      "description": "Direct phone-number invites sent by household admins.",
+      "description": "Direct invites sent by household admins. The request field remains `phone` for backward compatibility, but current clients send usernames there.",
       "item": [
         {
           "name": "Send Invite",
@@ -424,10 +508,10 @@
             "url": "{{baseUrl}}/households/invites",
             "body": {
               "mode": "raw",
-              "raw": "{\"phone\": \"+1987654321\", \"name\": \"Jane Doe\"}",
+              "raw": "{\"phone\": \"alice_home\", \"name\": \"Jane Doe\"}",
               "options": { "raw": { "language": "json" } }
             },
-            "description": "Admin: send direct invite to a phone number. `name` is optional.\n\nResponse: `{ \"invite\": {...} }`"
+            "description": "Admin: send direct invite to a username via the legacy `phone` field. `name` is optional.\n\nResponse: `{ \"invite\": {...} }`"
           }
         },
         {
@@ -436,7 +520,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/households/invites/me",
-            "description": "List pending invites for authenticated member's phone.\n\nResponse: `{ \"invites\": [...] }`"
+            "description": "List pending invites for the authenticated member's username.\n\nResponse: `{ \"invites\": [...] }`"
           }
         },
         {
@@ -502,7 +586,7 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/households/link/{{linkToken}}/join",
-            "description": "Join a household via invite link. Triggers SSE.\n\nReturns 422 if the member is already in any household (including the same one).\n\nResponse: `{ \"member\": {...} }`"
+            "description": "Join a household via invite link. Triggers SSE.\n\nReturns 200 if the member is already in the same household, and 422 if they are already in a different household.\n\nResponse: `{ \"member\": {...} }`"
           }
         }
       ]

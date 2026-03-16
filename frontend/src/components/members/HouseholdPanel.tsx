@@ -23,7 +23,7 @@ export function HouseholdPanel() {
   const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
   const [loadingHousehold, setLoadingHousehold] = useState(_cache === null)
 
-  const [createKind, setCreateKind] = useState<'home' | 'group'>('home')
+  const [createKind] = useState<'home' | 'group'>('home')
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
 
