@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { householdsApi, type Household } from '../api/households'
+import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/ui/Spinner'
 
@@ -9,7 +10,7 @@ const ACCENT = '#6366f1'
 export function JoinPage() {
   const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, setAuth } = useAuthStore()
 
   const [household, setHousehold] = useState<Household | null>(null)
   const [error, setError] = useState('')
@@ -31,7 +32,11 @@ export function JoinPage() {
     if (!loading && household && isAuthenticated) {
       setJoining(true)
       householdsApi.joinByInviteToken(token!)
-        .then(() => navigate('/household', { replace: true }))
+        .then(() => authApi.refresh())
+        .then(({ token: newToken, member }) => {
+          setAuth(newToken, member)
+          navigate('/household', { replace: true })
+        })
         .catch((err: unknown) => {
           setJoining(false)
           setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to join household.')
