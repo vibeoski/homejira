@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { Spinner } from '../components/ui/Spinner'
 import { GuestOnlyNotice } from '../components/ui/GuestOnlyNotice'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import type { Grocery } from '../types'
 
 const ACCENT = '#6366f1'
@@ -11,6 +12,7 @@ const ACCENT = '#6366f1'
 export function GroceryPage() {
   const { isGuest } = useAuthStore()
   const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
+  const isDesktop = useBreakpoint()
 
   const [loading, setLoading] = useState(groceries.length === 0)
   const [showDone, setShowDone] = useState(true)
@@ -139,126 +141,156 @@ export function GroceryPage() {
     )
   }
 
-  return (
-    <div style={{ paddingBottom: 80 }}>
-      <div style={{
-        background: 'white', padding: '10px 16px',
-        borderBottom: '1px solid #ede8e1',
-        position: 'sticky', top: 57, zIndex: 49,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
-        <button
-          onClick={() => setHistoryMode(true)}
-          style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12,6 12,12 16,14" />
-          </svg>
-          History {done.length > 0 && `(${done.length})`}
-        </button>
+  const subHeader = (
+    <div style={{
+      background: 'white', padding: '10px 16px',
+      borderBottom: '1px solid #ede8e1',
+      position: 'sticky', top: 57, zIndex: 49,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    }}>
+      <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
+      <button
+        onClick={() => setHistoryMode(true)}
+        style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12,6 12,12 16,14" />
+        </svg>
+        History {done.length > 0 && `(${done.length})`}
+      </button>
+    </div>
+  )
+
+  const emptyState = (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', textAlign: 'center' }}>
+      <div style={{ width: 60, height: 60, borderRadius: 18, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
       </div>
+      <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
+      <p style={{ fontSize: 13, color: '#a8a29e', margin: 0, lineHeight: 1.6 }}>Tap the + button to add items to your list.</p>
+    </div>
+  )
 
-      <div style={{ padding: '0 12px 0' }}>
-        {active.length > 1 && (
-          <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handleCheckAll}
-              style={{
-                background: 'none', border: 'none', color: '#78716c', fontSize: 11,
-                fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6,
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20,6 9,17 4,12" />
-              </svg>
-              Check all
-            </button>
-          </div>
-        )}
+  return (
+    <div style={{ paddingBottom: isDesktop ? 40 : 80 }}>
+      {subHeader}
 
-        {active.length === 0 && done.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', textAlign: 'center' }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 18, background: '#eef2ff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-            }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 01-8 0" />
-              </svg>
-            </div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
-            <p style={{ fontSize: 13, color: '#a8a29e', margin: 0, lineHeight: 1.6 }}>Tap the + button to add items to your list.</p>
-          </div>
-        )}
-
-        {active.length > 0 && (
-          <div style={{ padding: '12px 0' }}>
-            {active.map((item) => (
-              <GroceryRow 
-                key={item.id} 
-                item={item} 
-                onToggle={(checked) => toggleGrocery(item.id, checked)} 
-                onEdit={(updates) => updateGrocery(item.id, updates)} 
-                onDelete={() => deleteGrocery(item.id)} 
-              />
-            ))}
-          </div>
-        )}
-
-        {done.length > 0 && (
-          <div style={{ padding: '8px 0 0' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '6px 4px',
-            }}>
-              <button
-                onClick={() => setShowDone((v) => !v)}
-                style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
-              >
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ transform: showDone ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
-                >
-                  <polyline points="9,18 15,12 9,6" />
-                </svg>
-                Done ({done.length})
-              </button>
-              {showDone && (
+      {isDesktop ? (
+        /* Desktop: two-column layout */
+        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+          {/* Left: active items */}
+          <div style={{ flex: 1, padding: '0 16px', borderRight: '1px solid #ede8e1', minWidth: 0 }}>
+            {active.length > 1 && (
+              <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
-                  onClick={handleClearDone}
-                  style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  onClick={handleCheckAll}
+                  style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
                 >
-                  Hide
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                  Check all
                 </button>
-              )}
-            </div>
-
-            {showDone && (
-              <div style={{ padding: '8px 0' }}>
-                {done.map((item) => (
-                  <GroceryRow 
-                    key={item.id} 
-                    item={item} 
-                    done 
-                    onToggle={(checked) => toggleGrocery(item.id, checked)} 
-                  />
-                ))}
               </div>
             )}
+            {active.length === 0 && done.length === 0 && emptyState}
+            {active.length === 0 && done.length > 0 && (
+              <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>All done!</p>
+                <p style={{ fontSize: 13, color: '#a8a29e', margin: 0 }}>Everything has been checked off.</p>
+              </div>
+            )}
+            <div style={{ padding: '12px 0' }}>
+              {active.map((item) => (
+                <GroceryRow key={item.id} item={item} onToggle={(checked) => toggleGrocery(item.id, checked)} onEdit={(updates) => updateGrocery(item.id, updates)} onDelete={() => deleteGrocery(item.id)} />
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Right: done items */}
+          <div style={{ width: 340, flexShrink: 0, padding: '0 16px' }}>
+            {done.length === 0 ? (
+              <div style={{ padding: '48px 0', textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: '#a8a29e' }}>No completed items yet.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 4px' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: 0 }}>Done ({done.length})</p>
+                </div>
+                <div>
+                  {done.map((item) => (
+                    <GroceryRow key={item.id} item={item} done onToggle={(checked) => toggleGrocery(item.id, checked)} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Mobile: single column */
+        <div style={{ padding: '0 12px 0' }}>
+          {active.length > 1 && (
+            <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleCheckAll}
+                style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20,6 9,17 4,12" />
+                </svg>
+                Check all
+              </button>
+            </div>
+          )}
+
+          {active.length === 0 && done.length === 0 && emptyState}
+
+          {active.length > 0 && (
+            <div style={{ padding: '12px 0' }}>
+              {active.map((item) => (
+                <GroceryRow key={item.id} item={item} onToggle={(checked) => toggleGrocery(item.id, checked)} onEdit={(updates) => updateGrocery(item.id, updates)} onDelete={() => deleteGrocery(item.id)} />
+              ))}
+            </div>
+          )}
+
+          {done.length > 0 && (
+            <div style={{ padding: '8px 0 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px' }}>
+                <button
+                  onClick={() => setShowDone((v) => !v)}
+                  style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showDone ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>
+                    <polyline points="9,18 15,12 9,6" />
+                  </svg>
+                  Done ({done.length})
+                </button>
+                {showDone && (
+                  <button onClick={handleClearDone} style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Hide</button>
+                )}
+              </div>
+              {showDone && (
+                <div style={{ padding: '8px 0' }}>
+                  {done.map((item) => (
+                    <GroceryRow key={item.id} item={item} done onToggle={(checked) => toggleGrocery(item.id, checked)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         onClick={() => setShowAdd(true)}
         style={{
-          position: 'fixed', bottom: 72, right: 20, width: 56, height: 56,
+          position: 'fixed', bottom: isDesktop ? 24 : 72, right: 20, width: 56, height: 56,
           borderRadius: 16, background: ACCENT, color: 'white', border: 'none',
           fontSize: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: `0 8px 24px ${ACCENT}40`, zIndex: 40, cursor: 'pointer',
@@ -269,11 +301,7 @@ export function GroceryPage() {
       >+</button>
 
       {showAdd && (
-        <AddGrocerySheet 
-          members={members} 
-          onClose={() => setShowAdd(false)} 
-          onAdded={() => { setShowAdd(false); }} 
-        />
+        <AddGrocerySheet members={members} onClose={() => setShowAdd(false)} onAdded={() => { setShowAdd(false); }} />
       )}
     </div>
   )
