@@ -1,5 +1,6 @@
 export type Category = 'chore' | 'errand' | 'repair'
 export type Priority = 'urgent' | 'high' | 'normal'
+export type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 
 export interface Member {
   id: string
@@ -16,7 +17,7 @@ export interface Comment {
 }
 export interface Task {
   id: string; title: string; notes: string; category: Category; priority: Priority
-  assignee_id: string; done: boolean; done_at?: string; due_at?: string; quantity?: string; created_at: string; updated_at: string
+  assignee_id: string; status: TaskStatus; done: boolean; done_at?: string; due_at?: string; quantity?: string; created_at: string; updated_at: string
   assignee?: Member; comments?: Comment[]
 }
 
@@ -36,7 +37,7 @@ export interface CreateTaskPayload {
 }
 export interface UpdateTaskPayload {
   title?: string; notes?: string; category?: Category; priority?: Priority
-  assignee_id?: string; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
+  assignee_id?: string; status?: TaskStatus; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
 }
 
 export const CATEGORIES: Record<Category, { label: string; color: string }> = {
@@ -49,11 +50,18 @@ export const PRIORITIES: Record<Priority, { label: string; color: string }> = {
   high: { label: 'High', color: '#f97316' },
   urgent: { label: 'Urgent', color: '#ef4444' },
 }
+export const STATUSES: Record<TaskStatus, { label: string; color: string }> = {
+  open:        { label: 'Open',        color: '#78716c' },
+  in_progress: { label: 'In Progress', color: '#6366f1' },
+  on_hold:     { label: 'On Hold',     color: '#d97706' },
+  done:        { label: 'Done',        color: '#22c55e' },
+}
 
 export type ActivityKind =
   | 'created' | 'completed' | 'reopened'
   | 'assigned' | 'priority_changed' | 'category_changed'
   | 'title_changed' | 'notes_changed' | 'due_set' | 'due_cleared'
+  | 'status_changed'
 
 export interface Activity {
   id: string

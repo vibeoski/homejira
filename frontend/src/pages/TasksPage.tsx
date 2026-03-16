@@ -63,7 +63,13 @@ export function TasksPage() {
     .sort((a, b) => {
       if (sortBy === 'recent') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       const po: Record<string, number> = { urgent: 0, high: 1, normal: 2 }
-      return ((a.done ? 10 : 0) + po[a.priority]) - ((b.done ? 10 : 0) + po[b.priority])
+      const so: Record<string, number> = { in_progress: 0, open: 1, on_hold: 2, done: 3 }
+      const aDone = a.done ? 1 : 0
+      const bDone = b.done ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+      const statusDiff = (so[a.status ?? 'open'] ?? 1) - (so[b.status ?? 'open'] ?? 1)
+      if (statusDiff !== 0) return statusDiff
+      return po[a.priority] - po[b.priority]
     })
 
   const openCount = tasks.filter((t) => !t.done).length

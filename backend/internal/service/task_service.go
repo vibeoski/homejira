@@ -66,6 +66,9 @@ func (s *TaskService) UpdateTask(id uuid.UUID, input domain.UpdateTaskInput, act
 	if callerHouseholdID != nil && old.HouseholdID != *callerHouseholdID {
 		return nil, domain.ErrNotFound
 	}
+	if input.Status != nil && !validStatus(*input.Status) {
+		return nil, fmt.Errorf("%w: invalid status", domain.ErrInvalidInput)
+	}
 	if input.Category != nil && !validCategory(*input.Category) {
 		return nil, fmt.Errorf("%w: invalid category", domain.ErrInvalidInput)
 	}
@@ -129,7 +132,17 @@ func (s *TaskService) GetActivity(taskID uuid.UUID, callerHouseholdID *uuid.UUID
 
 // recordUpdateActivities diffs old vs new task and creates an activity for each changed field.
 func (s *TaskService) recordUpdateActivities(old, new *domain.Task, input domain.UpdateTaskInput, actorID *uuid.UUID) {
-	if input.Done != nil && *input.Done != old.Done {
+	if input.Status != nil && *input.Status != old.Status {
+		if *input.Status == domain.TaskStatusDone {
+			s.activities.Create(new.ID, actorID, domain.ActivityCompleted, nil) //nolint:errcheck
+		} else if old.Status == domain.TaskStatusDone {
+			s.activities.Create(new.ID, actorID, domain.ActivityReopened, nil) //nolint:errcheck
+		}
+		s.activities.Create(new.ID, actorID, domain.ActivityStatusChanged, map[string]string{ //nolint:errcheck
+			"from": string(old.Status),
+			"to":   string(*input.Status),
+		})
+	} else if input.Done != nil && *input.Done != old.Done {
 		kind := domain.ActivityReopened
 		if *input.Done {
 			kind = domain.ActivityCompleted
@@ -205,6 +218,14 @@ func (s *TaskService) validateTaskInput(title string, category domain.Category, 
 		}
 	}
 	return nil
+}
+
+func validStatus(s domain.TaskStatus) bool {
+	switch s {
+	case domain.TaskStatusOpen, domain.TaskStatusInProgress, domain.TaskStatusOnHold, domain.TaskStatusDone:
+		return true
+	}
+	return false
 }
 
 func validCategory(c domain.Category) bool {

@@ -6,6 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// TaskStatus represents the workflow phase of a task.
+type TaskStatus string
+
+const (
+	TaskStatusOpen       TaskStatus = "open"
+	TaskStatusInProgress TaskStatus = "in_progress"
+	TaskStatusOnHold     TaskStatus = "on_hold"
+	TaskStatusDone       TaskStatus = "done"
+)
+
 // Category represents a task category.
 type Category string
 
@@ -33,6 +43,7 @@ type Task struct {
 	Priority    Priority   `json:"priority"`
 	AssigneeID  *uuid.UUID `json:"assignee_id"`
 	HouseholdID uuid.UUID  `json:"household_id"`
+	Status      TaskStatus `json:"status"`
 	Done        bool       `json:"done"`
 	DoneAt      *time.Time `json:"done_at,omitempty"`
 	DueAt       *time.Time `json:"due_at,omitempty"`
@@ -76,10 +87,11 @@ type UpdateTaskInput struct {
 	Category   *Category  `json:"category,omitempty"`
 	Priority   *Priority  `json:"priority,omitempty"`
 	AssigneeID *uuid.UUID `json:"assignee_id,omitempty"`
-	Done       *bool      `json:"done,omitempty"`
-	DueAt      *time.Time `json:"due_at,omitempty"`
-	ClearDueAt bool       `json:"clear_due_at,omitempty"`
-	Quantity   *string    `json:"quantity,omitempty"`
+	Status     *TaskStatus `json:"status,omitempty"`
+	Done       *bool       `json:"done,omitempty"`
+	DueAt      *time.Time  `json:"due_at,omitempty"`
+	ClearDueAt bool        `json:"clear_due_at,omitempty"`
+	Quantity   *string     `json:"quantity,omitempty"`
 }
 
 // TaskFilter contains optional query filters.

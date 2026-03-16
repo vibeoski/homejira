@@ -19,10 +19,19 @@ function hydrateGuestTasks(tasks: Task[]): Task[] {
 
 function applyTaskPatch(task: Task, payload: UpdateTaskPayload, members: Member[]): Task {
   const now = new Date().toISOString()
-  const nextDone = payload.done ?? task.done
   const nextAssigneeID = payload.assignee_id !== undefined ? payload.assignee_id : task.assignee_id
   const nextDueAt = payload.clear_due_at ? undefined : payload.due_at !== undefined ? payload.due_at : task.due_at
   const nextQuantity = payload.quantity !== undefined ? payload.quantity : task.quantity
+
+  // Status is source of truth; done is derived
+  let nextStatus = payload.status ?? task.status
+  let nextDone = task.done
+  if (payload.status !== undefined) {
+    nextDone = payload.status === 'done'
+  } else if (payload.done !== undefined) {
+    nextDone = payload.done
+    nextStatus = payload.done ? 'done' : 'open'
+  }
 
   return {
     ...task,
@@ -34,6 +43,7 @@ function applyTaskPatch(task: Task, payload: UpdateTaskPayload, members: Member[
     assignee: members.find((member) => member.id === nextAssigneeID) ?? task.assignee,
     due_at: nextDueAt,
     quantity: nextQuantity,
+    status: nextStatus,
     done: nextDone,
     done_at: nextDone ? task.done_at ?? now : undefined,
     updated_at: now,
@@ -145,6 +155,7 @@ export const useStore = create<AppStore>((set, get) => ({
         category: payload.category,
         priority: payload.priority,
         assignee_id: payload.assignee_id || GUEST_MEMBER.id,
+        status: 'open',
         done: false,
         due_at: payload.due_at,
         quantity: payload.quantity,
