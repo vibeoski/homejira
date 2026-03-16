@@ -1,26 +1,67 @@
 import { useState } from 'react'
 import { Avatar } from '../ui/Avatar'
-import { CATEGORIES, PRIORITIES, STATUSES, type Task } from '../../types'
+import { CATEGORIES, PRIORITIES, STATUSES, type Task, type TaskStatus } from '../../types'
 import { formatDate, isOverdue, isDueSoon } from '../../utils'
 
 interface Props {
   task: Task
-  onToggle: (id: string, done: boolean) => void
+  onStatusChange: (id: string, status: TaskStatus) => void
   onOpen: (task: Task) => void
 }
 
-export function TaskCard({ task, onToggle, onOpen }: Props) {
-  const [popping, setPopping] = useState(false)
+function StatusIcon({ status }: { status: TaskStatus }) {
+  const s = STATUSES[status]
+  if (status === 'done') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="10" fill="#22c55e" />
+        <path d="M5.5 10l3 3 6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (status === 'in_progress') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="#6366f1" strokeWidth="1.5" />
+        <circle cx="10" cy="10" r="9" stroke="#6366f1" strokeWidth="1.5"
+          strokeDasharray="56.5" strokeDashoffset="28" strokeLinecap="round"
+          transform="rotate(-90 10 10)" fill="#6366f115" />
+        <circle cx="10" cy="10" r="3.5" fill="#6366f1" />
+      </svg>
+    )
+  }
+  if (status === 'on_hold') {
+    return (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="#d97706" strokeWidth="1.5" />
+        <rect x="7" y="6.5" width="2" height="7" rx="1" fill="#d97706" />
+        <rect x="11" y="6.5" width="2" height="7" rx="1" fill="#d97706" />
+      </svg>
+    )
+  }
+  // open — empty ring
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="9" stroke={s.color} strokeWidth="1.5" strokeDasharray="3 2" />
+    </svg>
+  )
+}
+
+export function TaskCard({ task, onStatusChange, onOpen }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const cat = CATEGORIES[task.category]
-  const statusInfo = STATUSES[task.status ?? 'open']
   const overdue = isOverdue(task.due_at, task.done)
   const dueSoon = isDueSoon(task.due_at, task.done)
 
-  const handleToggle = (e: React.MouseEvent) => {
+  const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setPopping(true)
-    onToggle(task.id, !task.done)
-    setTimeout(() => setPopping(false), 400)
+    setMenuOpen((v) => !v)
+  }
+
+  const handleSelect = (e: React.MouseEvent, status: TaskStatus) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    onStatusChange(task.id, status)
   }
 
   return (
@@ -38,26 +79,71 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
         opacity: task.done ? 0.5 : 1,
         cursor: 'pointer',
         transition: 'opacity .15s',
+        position: 'relative',
       }}
     >
-      {/* Checkbox */}
+      {/* Status icon — tap to open status menu */}
       <button
-        onClick={handleToggle}
-        className={popping ? 'check-pop' : undefined}
+        onClick={handleStatusClick}
+        title="Change status"
         style={{
-          width: 20, height: 20, borderRadius: 6, marginTop: 2, flexShrink: 0,
-          border: task.done ? 'none' : '1.5px solid #d4d4d8',
-          background: task.done ? '#22c55e' : 'white',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', padding: 0, transition: 'background .15s',
+          flexShrink: 0, marginTop: 1, padding: 0, border: 'none', background: 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: '50%',
         }}
       >
-        {task.done && (
-          <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
-            <path d="M1 4l3 3 6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
+        <StatusIcon status={task.status ?? 'open'} />
       </button>
+
+      {/* Status popover */}
+      {menuOpen && (
+        <>
+          {/* Invisible backdrop to close on outside tap */}
+          <div
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }}
+            style={{ position: 'fixed', inset: 0, zIndex: 19 }}
+          />
+          <div style={{
+            position: 'absolute',
+            top: 32, left: 4,
+            background: 'white',
+            borderRadius: 12,
+            border: '1px solid #ede8e1',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.13)',
+            zIndex: 20,
+            padding: '4px',
+            minWidth: 148,
+          }}>
+            {(Object.entries(STATUSES) as [TaskStatus, { label: string; color: string }][]).map(([k, v]) => {
+              const active = (task.status ?? 'open') === k
+              return (
+                <button
+                  key={k}
+                  onClick={(e) => handleSelect(e, k)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 9,
+                    width: '100%', padding: '8px 10px', borderRadius: 8,
+                    border: 'none',
+                    background: active ? v.color + '12' : 'transparent',
+                    cursor: 'pointer', fontSize: 13,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? v.color : '#1c1917',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: v.color, flexShrink: 0 }} />
+                  {v.label}
+                  {active && (
+                    <svg style={{ marginLeft: 'auto' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={v.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -69,8 +155,8 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{task.title}</p>
 
-        {/* Category + status + notes */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: (task.due_at && !task.done) || (task.comments?.length ?? 0) > 0 ? 4 : 0 }}>
+        {/* Category + status chip + notes */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: (task.due_at && !task.done) || (task.comments?.length ?? 0) > 0 ? 4 : 0 }}>
           <span style={{
             fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5,
             background: cat.color + '12', color: cat.color,
@@ -78,8 +164,9 @@ export function TaskCard({ task, onToggle, onOpen }: Props) {
           {!task.done && task.status !== 'open' && (
             <span style={{
               fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5,
-              background: statusInfo.color + '15', color: statusInfo.color,
-            }}>{statusInfo.label}</span>
+              background: STATUSES[task.status].color + '15',
+              color: STATUSES[task.status].color,
+            }}>{STATUSES[task.status].label}</span>
           )}
           {task.notes && (
             <span style={{
