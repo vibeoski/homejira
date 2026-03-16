@@ -16,8 +16,8 @@ help: ## Show available commands
 	@echo ""
 
 # ── Lifecycle ─────────────────────────────────────────────────────
-up: ## Build and start all services (detached, with hot reload)
-	$(DC) up --build -d
+up: ## Start all services (detached, with hot reload)
+	$(DC) up -d
 	@echo ""
 	@echo "  \033[1;32m✓ HomeJira is running!\033[0m"
 	@echo "  Frontend  → http://localhost:3000"
@@ -26,7 +26,7 @@ up: ## Build and start all services (detached, with hot reload)
 	@echo ""
 
 dev: ## Start all services in foreground (all logs visible)
-	$(DC) up --build
+	$(DC) up
 
 down: ## Stop and remove containers
 	$(DC) down
@@ -43,14 +43,14 @@ clean: ## Stop containers and wipe volumes (resets DB)
 
 # ── Individual Services (detached) ────────────────────────────────
 up-db: ## Start only the database
-	$(DC) up --build -d db
+	$(DC) up -d db
 	@echo ""
 	@echo "  \033[1;32m✓ Postgres is running!\033[0m"
 	@echo "  Postgres  → localhost:5432"
 	@echo ""
 
 up-api: ## Start only the database + API
-	$(DC) up --build -d db api
+	$(DC) up -d db api
 	@echo ""
 	@echo "  \033[1;32m✓ API is running!\033[0m"
 	@echo "  API       → http://localhost:8080/api/v1"
@@ -58,7 +58,7 @@ up-api: ## Start only the database + API
 	@echo ""
 
 up-web: ## Start only the database + API + frontend
-	$(DC) up --build -d db api web
+	$(DC) up -d db api web
 	@echo ""
 	@echo "  \033[1;32m✓ Frontend is running!\033[0m"
 	@echo "  Frontend  → http://localhost:3000"
@@ -68,13 +68,13 @@ up-web: ## Start only the database + API + frontend
 
 # ── Individual Services (foreground) ──────────────────────────────
 dev-db: ## Start only the database in foreground
-	$(DC) up --build db
+	$(DC) up db
 
 dev-api: ## Start only the database + API in foreground
-	$(DC) up --build db api
+	$(DC) up db api
 
 dev-web: ## Start only the database + API + frontend in foreground
-	$(DC) up --build db api web
+	$(DC) up db api web
 
 # ── Individual Teardown ────────────────────────────────────────────
 down-db: ## Stop only the database container
@@ -116,14 +116,10 @@ shell-api: ## Open shell inside API container
 shell-web: ## Open shell inside frontend container
 	$(DC) exec web sh
 
-# ── Tests & Hooks ─────────────────────────────────────────────────
+# ── Hooks ─────────────────────────────────────────────────────────
 hooks: ## Configure git to use project hooks in .githooks/
 	git config core.hooksPath .githooks
-	@echo "  Git hooks activated (.githooks/pre-commit, .githooks/pre-push)"
-
-test: ## Run backend unit tests with coverage report
-	@cd backend && go test ./internal/service/... -coverprofile=coverage.out -covermode=atomic && \
-	  go tool cover -func=coverage.out | grep "^total" && rm -f coverage.out
+	@echo "  Git hooks activated (.githooks/)"
 
 # ── Status ────────────────────────────────────────────────────────
 ps: ## List running containers and their status

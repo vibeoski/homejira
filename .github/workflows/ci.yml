@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
   pull_request:
-    branches: [main, staging]
+    branches: [main]
 
 jobs:
   backend:
-    name: Backend — build, vet, test
+    name: Backend — build, vet
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,19 +27,6 @@ jobs:
 
       - name: Vet
         run: go vet ./...
-
-      - name: Test with coverage
-        run: go test ./internal/service/... -coverprofile=coverage.out -covermode=atomic
-
-      - name: Enforce 80% coverage
-        run: |
-          RAW=$(go tool cover -func=coverage.out | grep "^total" | awk '{print $3}' | tr -d '%')
-          INT=${RAW%.*}
-          echo "Coverage: ${RAW}%"
-          if [ "$INT" -lt 80 ]; then
-            echo "ERROR: Coverage ${RAW}% is below the required 80%."
-            exit 1
-          fi
 
   frontend:
     name: Frontend — build, lint

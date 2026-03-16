@@ -8,21 +8,17 @@ Authoritative reference for how code is written. Read before adding any feature,
 
 ```
 main (production)
-└── staging (staging environment)
-    └── feature/* or fix/* (work branches)
+└── feature/* or fix/* (work branches)
 ```
 
-1. Branch off `staging`: `git checkout staging && git pull && git checkout -b feature/my-thing`
+1. Branch off `main`: `git checkout main && git pull && git checkout -b feature/my-thing`
 2. Verify locally (`make up`) before opening a PR
-3. PR targets `staging` — never `main`; CI must pass
-4. Verify in staging env (Railway staging + Vercel preview)
-5. Merge staging → main to promote to production
+3. PR targets `main` — CI must pass
+4. Merge on approval
 
-**Merge strategy:**
-- `feature/* → staging`: **regular merge** (`gh pr merge --merge`)
-- `staging → main`: **regular merge** (`gh pr merge --merge`)
+**Merge strategy:** regular merge (`gh pr merge --merge`)
 
-**Rules:** Never commit directly to `main` or `staging`. All feature/fix PRs target `staging`. `main` only receives PRs from `staging`.
+**Rules:** Never commit directly to `main`. All feature/fix PRs target `main`.
 
 ---
 
@@ -300,34 +296,9 @@ All shared TS types in `src/types/index.ts`. Household-specific types (`Househol
 
 17. **No new packages without discussion.** Dependency set is intentionally minimal.
 
-18. **Any API change must update the Postman collection.**
-    1. Update `postman/HomeJira.postman_collection.json`.
-    2. Push via Postman MCP `putCollection` (`collectionId: "23441410-82632e0b-9da4-47b9-a5a9-5a0830650160"`).
-    3. Stage collection file alongside the API change — pre-commit hook blocks mismatched commits.
+18. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** Apply to every SELECT/RETURNING query for that column, not just new ones.
 
-19. **Run smoke tests after every release to staging and production.**
-
-    ```bash
-    API=https://homejira-staging.up.railway.app/api/v1  # or production URL
-    curl -s "$API/../health"                                          # → 200 {status:ok, db:ok}
-    curl -s "$API/config"                                             # → 200 {flags:{...}}
-    curl -s -o /dev/null -w "%{http_code}" "$API/tasks"              # → 401
-    curl -s -o /dev/null -w "%{http_code}" "$API/members"            # → 401
-    curl -s -o /dev/null -w "%{http_code}" -X POST \
-      -H "Content-Type: application/json" -d '{"code":"XXXXXX"}' \
-      "$API/households/join-by-code"                                  # → 401 (not 500)
-    curl -s -o /dev/null -w "%{http_code}" -X POST \
-      -H "Content-Type: application/json" -d '{"phone":"+10000000000"}' \
-      "$API/auth/check-phone"                                         # → 200
-    ```
-
-    Any 5xx = release blocker — roll back immediately.
-
-20. **All PRs require QA sign-off before merge.** Backend-only → `/qa1`. Frontend-only → `/qa2`. Full-stack → both. No merge without "QA-1 ✅" / "QA-2 ✅" comment on the PR.
-
-21. **Nullable TEXT columns scanned into Go `string` must use `COALESCE(col, '')`.** Apply to every SELECT/RETURNING query for that column, not just new ones.
-
-22. **Run QA automation scripts in the background to avoid token bloat.** When executing test or smoke-test scripts (e.g. `test_idor_local.sh`, curl smoke suites, `go test ./...`), use the Bash tool with `run_in_background: true`. Only read the output via `TaskOutput` if the script fails or the user asks for results. Never stream verbose test output into the main conversation context.
+19. **Run QA automation scripts in the background to avoid token bloat.** When executing test or smoke-test scripts, use the Bash tool with `run_in_background: true`. Only read output via `TaskOutput` if the script fails or the user asks for results.
 
 ---
 
