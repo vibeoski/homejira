@@ -8,7 +8,7 @@ import { AddTaskSheet } from '../components/tasks/AddTaskSheet'
 import { Spinner } from '../components/ui/Spinner'
 import { DesktopTaskDetail } from '../components/layout/desktop/DesktopTaskDetail'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { CATEGORIES, type Task, type Category } from '../types'
+import { CATEGORIES, type Task, type Category, type TaskStatus } from '../types'
 
 type FilterStatus = 'open' | 'done' | 'all'
 type SortBy = 'priority' | 'recent'
@@ -16,7 +16,7 @@ type SortBy = 'priority' | 'recent'
 const ACCENT = '#6366f1'
 
 export function TasksPage() {
-  const { tasks, members, loading, fetchTasks, toggleTask, deleteTask } = useStore()
+  const { tasks, members, loading, fetchTasks, updateTask, deleteTask } = useStore()
   const { member, isGuest } = useAuthStore()
   const [catTab, setCatTab] = useState<Category | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('open')
@@ -25,23 +25,20 @@ export function TasksPage() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Task | null>(null)
   const [showAdd, setShowAdd] = useState(false)
-  const [undoTask, setUndoTask] = useState<{ id: string } | null>(null)
+  const [undoTask, setUndoTask] = useState<{ id: string; prevStatus: TaskStatus } | null>(null)
   const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const isDesktop = useBreakpoint()
   const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
-  const handleToggle = useCallback(async (id: string, done: boolean) => {
-    await toggleTask(id, done)
-    if (done) {
-      const openAfter = useStore.getState().tasks
-        .filter((t) => !t.done)
+  const handleStatusChange = useCallback(async (id: string, status: TaskStatus) => {
+    await updateTask(id, { status })
+    if (status === 'done') {
+      const openAfter = useStore.getState().tasks.filter((t) => t.status !== 'done')
       if (openAfter.length === 0) {
         if (undoTimer) clearTimeout(undoTimer)
-        setUndoTask({ id })
-        const timer = setTimeout(() => {
-          setUndoTask(null)
-          setUndoTimer(null)
-        }, 4000)
+        const prev = tasks.find((t) => t.id === id)
+        setUndoTask({ id, prevStatus: prev?.status ?? 'open' })
+        const timer = setTimeout(() => { setUndoTask(null); setUndoTimer(null) }, 4000)
         setUndoTimer(timer)
       }
     } else if (undoTask?.id === id) {
@@ -49,7 +46,7 @@ export function TasksPage() {
       setUndoTask(null)
       setUndoTimer(null)
     }
-  }, [toggleTask, undoTask, undoTimer])
+  }, [updateTask, undoTask, undoTimer, tasks])
 
   if (!isGuest && member && !member.household_id) {
     return <Navigate to="/household" replace />
@@ -258,7 +255,7 @@ export function TasksPage() {
               >Reset filters</button>
             </div>
           ) : visible.map((task) => (
-            <TaskCard key={task.id} task={task} onToggle={handleToggle} onOpen={setSelected} />
+            <TaskCard key={task.id} task={task} onStatusChange={handleStatusChange} onOpen={setSelected} />
           ))}
         </div>
 
@@ -312,7 +309,7 @@ export function TasksPage() {
           <button
             onClick={async () => {
               if (undoTimer) clearTimeout(undoTimer)
-              await toggleTask(undoTask.id, false)
+              await updateTask(undoTask.id, { status: undoTask.prevStatus })
               setUndoTask(null)
               setUndoTimer(null)
             }}
