@@ -91,7 +91,7 @@ export function AccountMenu() {
   const handleSignOut = () => {
     setOpen(false)
     clearAuth()
-    navigate('/auth')
+    navigate('/onboarding', { replace: true })
   }
 
   return (

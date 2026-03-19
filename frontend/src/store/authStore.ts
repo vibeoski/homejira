@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthStore>(() => ({
   clearAuth: () => {
     localStorage.removeItem('hj_token')
     localStorage.removeItem('hj_member')
+    localStorage.removeItem('hj_pending_join')
     useAuthStore.setState({ token: null, member: null, isAuthenticated: false })
   },
 }))
