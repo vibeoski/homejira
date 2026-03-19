@@ -3,6 +3,7 @@ import { CATEGORIES, PRIORITIES, type Category, type Priority, type Member, type
 import { useStore } from '../../store'
 import { useAuthStore } from '../../store/authStore'
 
+
 interface Props {
   members: Member[]
   onClose: () => void
@@ -66,16 +67,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defaultCategory }: Props) {
   const { createTask } = useStore()
-  const { member, isGuest } = useAuthStore()
+  const { member } = useAuthStore()
 
   const defaultAssignee = members[0]?.id ?? ''
   const initialCategory: Category = defaultCategory ?? (hiddenCategories?.includes('chore') ? (Object.keys(CATEGORY_CONFIG) as Category[]).find(c => !hiddenCategories.includes(c))! : 'chore')
-  
+
   const [form, setForm] = useState<CreateTaskPayload>({
     title: '', notes: '', category: initialCategory,
     priority: CATEGORY_CONFIG[initialCategory].defaultPriority,
     assignee_id: defaultAssignee,
-    household_id: isGuest ? 'guest' : member?.household_id ?? '',
+    household_id: member?.household_id ?? '',
   })
   const [saving, setSaving] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)

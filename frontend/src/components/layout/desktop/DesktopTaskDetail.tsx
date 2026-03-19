@@ -28,7 +28,7 @@ export function DesktopTaskDetail({ task, members, onClose, onUpdated, onDeleted
   const [deleting, setDeleting] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
   const { addComment, deleteTask, updateTask } = useStore()
-  const { member: authMember, isGuest } = useAuthStore()
+  const { member: authMember } = useAuthStore()
   const me = members.find((m) => m.id === authMember?.id) ?? members[0]
 
   useEffect(() => {
@@ -39,12 +39,11 @@ export function DesktopTaskDetail({ task, members, onClose, onUpdated, onDeleted
   }, [task.id])
 
   const fetchActivities = useCallback(async () => {
-    if (isGuest) { setActivities([]); return }
     try {
       const data = await tasksApi.getActivity(current.id)
       setActivities(data)
     } catch {}
-  }, [current.id, isGuest])
+  }, [current.id])
 
   useEffect(() => { fetchActivities() }, [fetchActivities])
 

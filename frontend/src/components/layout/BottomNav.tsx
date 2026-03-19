@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
 
 function TasksIcon({ color }: { color: string }) {
   return (
@@ -52,8 +51,7 @@ const MUTED = '#a8a29e'
 export function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isGuest } = useAuthStore()
-  const navItems = isGuest ? NAV.filter((item) => item.id === '/' || item.id === '/stats') : NAV
+  const navItems = NAV
 
   return (
     <div style={{

@@ -17,7 +17,7 @@ const FEATURES = [
 
 export function AuthPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { setAuth, setGuest } = useAuthStore()
+  const { setAuth } = useAuthStore()
   const requestedMode = searchParams.get('mode')
   const mode: Mode = requestedMode === 'login' || requestedMode === 'register' ? requestedMode : 'landing'
 
@@ -154,24 +154,6 @@ export function AuthPage() {
           }}
         >
           Sign in
-        </button>
-        <button
-          type="button"
-          onClick={setGuest}
-          style={{
-            width: '100%',
-            padding: '13px 0',
-            borderRadius: 14,
-            border: '1px dashed #c7d2fe',
-            background: '#eef2ff',
-            color: ACCENT,
-            fontSize: 14,
-            fontWeight: 700,
-            letterSpacing: -0.1,
-            cursor: 'pointer',
-          }}
-        >
-          Try as guest
         </button>
       </div>
 

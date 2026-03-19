@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { SideNav } from './SideNav'
 import { AccountMenu } from '../AccountMenu'
-import { GuestBanner } from '../GuestBanner'
 import { AppLogo } from '../../ui/AppLogo'
 import { useAuthStore } from '../../../store/authStore'
 import { authApi } from '../../../api/auth'
@@ -10,7 +9,7 @@ import { useStore } from '../../../store'
 import { TOP_BAR_HEIGHT } from '../../../constants/layout'
 
 export function DesktopLayout() {
-  const { isAuthenticated, isGuest, token, setAuth } = useAuthStore()
+  const { isAuthenticated, token, setAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, bumpSse } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
@@ -77,7 +76,6 @@ export function DesktopLayout() {
       <div style={{ display: 'flex', flex: 1 }}>
         <SideNav />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          {isGuest && <GuestBanner />}
           <Outlet />
         </div>
       </div>

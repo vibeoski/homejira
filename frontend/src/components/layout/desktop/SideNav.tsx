@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../../store/authStore'
 import { SIDE_NAV_WIDTH, TOP_BAR_HEIGHT } from '../../../constants/layout'
 
 const ACCENT = '#6366f1'
@@ -53,8 +52,7 @@ const NAV = [
 export function SideNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isGuest } = useAuthStore()
-  const navItems = isGuest ? NAV.filter((item) => item.id === '/' || item.id === '/stats') : NAV
+  const navItems = NAV
 
   return (
     <div style={{

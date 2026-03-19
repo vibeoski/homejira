@@ -8,10 +8,10 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 
 export function StatsPage() {
   const { tasks, members } = useStore()
-  const { member, isGuest } = useAuthStore()
+  const { member } = useAuthStore()
   const isDesktop = useBreakpoint()
 
-  if (!isGuest && member && !member.household_id) {
+  if (member && !member.household_id) {
     return <Navigate to="/household" replace />
   }
 
