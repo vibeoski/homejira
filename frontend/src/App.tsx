@@ -13,6 +13,7 @@ import { AuthPage } from './pages/AuthPage'
 import { JoinPage } from './pages/JoinPage'
 import { ReferralPage } from './pages/ReferralPage'
 import { GroceryPage } from './pages/GroceryPage'
+import { PreviewPage } from './pages/PreviewPage'
 
 export function App() {
   const { fetchTasks, fetchMembers } = useStore()
@@ -42,7 +43,7 @@ export function App() {
 
         <Route
           path="/"
-          element={isAuthenticated ? <Layout /> : <Navigate to="/auth" replace />}
+          element={isAuthenticated ? <Layout /> : <Navigate to="/preview" replace />}
         >
           <Route index element={<TasksPage />} />
           <Route path="grocery" element={<GroceryPage />} />
@@ -50,10 +51,12 @@ export function App() {
           <Route path="household" element={<MembersPage />} />
         </Route>
 
+        <Route path="/preview" element={<PreviewPage />} />
+
         <Route path="/join/:token" element={<JoinPage />} />
         <Route path="/refer/:token" element={<ReferralPage />} />
 
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/auth'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/preview'} replace />} />
       </Routes>
     </BrowserRouter>
   )

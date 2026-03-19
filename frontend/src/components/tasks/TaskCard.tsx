@@ -183,9 +183,9 @@ export function TaskCard({ task, onStatusChange, onOpen }: Props) {
               <span style={{
                 fontSize: 11, fontWeight: 500,
                 color: overdue ? '#ef4444' : dueSoon ? '#d97706' : '#78716c',
-                background: dueSoon && !overdue ? '#fffbeb' : 'transparent',
-                borderRadius: dueSoon && !overdue ? 4 : 0,
-                padding: dueSoon && !overdue ? '1px 5px' : '0',
+                background: overdue ? '#fef2f2' : dueSoon ? '#fffbeb' : 'transparent',
+                borderRadius: (overdue || dueSoon) ? 4 : 0,
+                padding: (overdue || dueSoon) ? '1px 5px' : '0',
               }}>
                 {formatDate(task.due_at)}
               </span>
