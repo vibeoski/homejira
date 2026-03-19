@@ -35,11 +35,11 @@ function HouseholdIcon() {
 function HouseIllustration() {
   return (
     <div style={{
-      width: 64, height: 64, borderRadius: '50%',
+      width: 148, height: 148, borderRadius: '50%',
       background: '#eef2ff',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
         <polyline points="9,22 9,12 15,12 15,22" />
       </svg>
@@ -50,11 +50,11 @@ function HouseIllustration() {
 function CheckIllustration() {
   return (
     <div style={{
-      width: 64, height: 64, borderRadius: '50%',
+      width: 148, height: 148, borderRadius: '50%',
       background: '#f0fdf4',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
         <polyline points="22,4 12,14.01 9,11.01" />
       </svg>
@@ -96,7 +96,7 @@ function WelcomeBackScreen() {
         margin: '0 0 36px',
         textAlign: 'center',
       }}>
-        Sign in to continue.
+        Good to see you again.
       </p>
 
       <button
@@ -151,7 +151,7 @@ const CAROUSEL_SCREENS = [
           lineHeight: 1.2,
           margin: '24px 0 16px',
         }}>
-          Your home,{'\n'}finally in sync.
+          Everyone knows what needs doing.
         </h1>
         <p style={{
           fontSize: 15,
@@ -159,10 +159,10 @@ const CAROUSEL_SCREENS = [
           lineHeight: 1.6,
           margin: 0,
         }}>
-          No more "did you buy milk?" texts.
+          Stop the "did you do it yet?" texts.
           One place for every task, chore,
           and grocery run — shared with
-          everyone in your home.
+          everyone at home.
         </p>
       </div>
     ),
@@ -230,7 +230,7 @@ const CAROUSEL_SCREENS = [
           lineHeight: 1.2,
           margin: '24px 0 16px',
         }}>
-          Ready in 60 seconds.
+          You'll be set up before your coffee's ready.
         </h1>
         <p style={{
           fontSize: 15,
@@ -238,11 +238,11 @@ const CAROUSEL_SCREENS = [
           lineHeight: 1.7,
           margin: 0,
         }}>
-          No email. No password.
-          Just a username and a
-          4-digit PIN. Invite your
-          partner, kids, or roommates
-          — it's free.
+          Just pick a name and a 4-digit PIN.
+          That's your account — no email,
+          no password to forget. Invite your
+          partner, kids, or roommates.
+          It's free.
         </p>
       </div>
     ),
@@ -263,10 +263,22 @@ function NewUserCarousel() {
     }}>
       <div style={{
         display: 'flex',
-        justifyContent: 'center',
-        padding: 24,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '20px 24px 8px',
       }}>
         <AppLogo size={36} />
+        <button
+          type="button"
+          onClick={() => navigate('/auth?mode=login')}
+          style={{
+            background: 'none', border: 'none',
+            fontSize: 13, color: '#a8a29e',
+            cursor: 'pointer', padding: '4px 0',
+          }}
+        >
+          Sign in
+        </button>
       </div>
 
       <div style={{
@@ -285,7 +297,7 @@ function NewUserCarousel() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
-          margin: '32px auto 0',
+          margin: '28px auto 0',
         }}>
           {CAROUSEL_SCREENS.map((s, i) => (
             <button
@@ -305,6 +317,27 @@ function NewUserCarousel() {
             />
           ))}
         </div>
+
+        {screen < CAROUSEL_SCREENS.length - 1 && (
+          <button
+            type="button"
+            onClick={() => setScreen(screen + 1)}
+            style={{
+              marginTop: 16,
+              background: 'none',
+              border: 'none',
+              fontSize: 14,
+              fontWeight: 600,
+              color: ACCENT,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Next <span style={{ fontSize: 16 }}>→</span>
+          </button>
+        )}
       </div>
 
       <div style={{
@@ -332,7 +365,7 @@ function NewUserCarousel() {
             cursor: 'pointer',
           }}
         >
-          Get started →
+          Create my account →
         </button>
         <button
           type="button"
