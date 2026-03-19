@@ -70,7 +70,7 @@ function WelcomeBackScreen() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse 80% 50% at 50% 20%, rgba(99,102,241,0.09) 0%, transparent 70%), #faf7f2',
+      background: 'radial-gradient(ellipse 90% 55% at 50% 15%, rgba(99,102,241,0.15) 0%, transparent 70%), #faf7f2',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -255,7 +255,7 @@ function NewUserCarousel() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse 80% 50% at 50% 20%, rgba(99,102,241,0.09) 0%, transparent 70%), #faf7f2',
+      background: 'radial-gradient(ellipse 90% 55% at 50% 15%, rgba(99,102,241,0.15) 0%, transparent 70%), #faf7f2',
       display: 'flex',
       flexDirection: 'column',
     }}>
