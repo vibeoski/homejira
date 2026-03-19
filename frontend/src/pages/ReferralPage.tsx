@@ -23,7 +23,7 @@ export function ReferralPage() {
 
   const handleGetStarted = () => {
     if (token) localStorage.setItem('hj_pending_referral', token)
-    navigate('/auth', { replace: true })
+    navigate('/onboarding', { replace: true })
   }
 
   if (loading) {
