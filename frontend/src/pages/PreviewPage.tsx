@@ -93,8 +93,7 @@ function RegisterSheet({ onClose }: RegisterSheetProps) {
       <div
         className="slide-up"
         style={{
-          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: 520,
+          position: 'fixed', bottom: 0, left: 0, right: 0,
           background: 'white',
           borderRadius: '20px 20px 0 0',
           padding: '12px 24px 40px',
@@ -210,8 +209,8 @@ function PreviewBottomNav({ onSheetOpen }: PreviewNavProps) {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: 520, background: 'white',
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      background: 'white',
       borderTop: '1px solid #ede8e1', display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
       zIndex: 40,
