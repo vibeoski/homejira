@@ -285,8 +285,7 @@ function NewUserCarousel() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 28px',
-        paddingBottom: 160,
+        padding: '0 28px 32px',
       }}>
         {current.render()}
 
@@ -339,13 +338,9 @@ function NewUserCarousel() {
       </div>
 
       <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
         background: '#faf7f2',
         padding: '16px 24px',
-        paddingBottom: 'env(safe-area-inset-bottom, 16px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
         borderTop: '1px solid #ede8e1',
       }}>
         <button
