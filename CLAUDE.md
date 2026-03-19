@@ -13,12 +13,9 @@ main (production)
 
 1. Branch off `main`: `git checkout main && git pull && git checkout -b feature/my-thing`
 2. Verify locally (`make up`) before opening a PR
-3. PR targets `main` — CI must pass
-4. Merge on approval
+3. PR targets `main` — CI must pass; merge with `gh pr merge --merge`
 
-**Merge strategy:** regular merge (`gh pr merge --merge`)
-
-**Rules:** Never commit directly to `main`. All feature/fix PRs target `main`.
+**Rules:** Never commit directly to `main`.
 
 ---
 
@@ -26,13 +23,13 @@ main (production)
 
 HomeJira — household task management ("Jira for home"). Go backend + TypeScript frontend.
 Members belong to a **Household**. Tasks are scoped to a household.
-Auth: phone + 4-digit mPIN → JWT (7-day TTL). Guest mode: localStorage only, no API calls.
+Auth: username + 4-digit mPIN → JWT (7-day TTL). Guest mode: localStorage only, no API calls.
 
 **Service URLs**
 | Env | Frontend | API |
 |-----|----------|-----|
 | Dev | http://localhost:3000 | http://localhost:8080/api/v1 |
-| Staging | https://homejira-git-staging-vibeoskis-projects.vercel.app | https://homejira-staging.up.railway.app/api/v1 |
+| Staging | — | https://homejira-staging.up.railway.app/api/v1 |
 | Production | https://homejira.app | https://homejira.up.railway.app/api/v1 |
 
 **Dev commands:** `make up` · `make down` · `make seed` · `make clean` · `make shell-db` · `make logs-api`
@@ -52,12 +49,14 @@ homejira/
 │       ├── repository/             # pgx SQL implementations
 │       ├── service/                # business logic
 │       ├── handler/                # HTTP handlers + respond helpers
-│       ├── middleware/             # auth JWT, logger
+│       ├── middleware/             # auth JWT, logger, rate limiter
+│       ├── sse/hub.go              # SSE pub/sub hub
 │       ├── server/server.go        # DI wiring + chi router
-│       └── db/migrations/          # numbered SQL migration files
+│       └── db/migrations/          # 000001–000018 SQL migration files
 └── frontend/src/
-    ├── api/                        # axios wrappers (client.ts, tasks.ts, members.ts, households.ts, auth.ts)
-    ├── store/                      # index.ts (app), authStore.ts (auth), guest.ts
+    ├── api/                        # client.ts, tasks.ts, members.ts, households.ts, auth.ts, coins.ts, groceries.ts
+    ├── store/                      # index.ts (app), authStore.ts (auth), configStore.ts (feature flags), guest.ts
+    ├── hooks/                      # useBreakpoint.ts + others
     ├── components/                 # ui/, layout/, tasks/, members/, stats/, auth/
     ├── pages/                      # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
     ├── types/index.ts              # all TS interfaces and enum-like const maps
@@ -95,18 +94,21 @@ domain  <-- repository  <-- service  <-- handler
 
 ```go
 type Category string
-const ( CategoryGrocery Category = "grocery" ... )
+const ( CategoryChore Category = "chore" ... ) // grocery is NOT a task category
+
+type TaskStatus = "open" | "in_progress" | "on_hold" | "done"
 
 type Task struct {
-    ID       uuid.UUID `json:"id"`
-    Assignee *Member   `json:"assignee,omitempty"` // populated from JOIN
+    ID       uuid.UUID  `json:"id"`
+    Status   string     `json:"status"`
+    Assignee *Member    `json:"assignee,omitempty"` // populated from JOIN
 }
 
 type UpdateTaskInput struct {
     Title *string `json:"title,omitempty"` // all update fields are pointers
 }
 
-type TaskFilter struct { HouseholdID *uuid.UUID; Category *Category; Done *bool; Search string }
+type TaskFilter struct { HouseholdID *uuid.UUID; Category *Category; Status *string; Done *bool; Search string }
 
 type TaskRepository interface {
     FindAll(filter TaskFilter) ([]Task, error)
@@ -156,7 +158,7 @@ respond(w, http.StatusNoContent, nil)  // 204 for deletes
 ### Middleware / Auth
 
 - `middleware.RequireAuth(authSvc)` — validates Bearer JWT, injects `*domain.Claims` into context.
-- Claims: `MemberID`, `Phone`, `Name`, `Avatar`, `Color`, `HouseholdID` (empty string if none).
+- Claims: `MemberID`, `Username`, `Name`, `Avatar`, `Color`, `HouseholdID` (empty string if none).
 - All routes except `/auth/*` are inside the `RequireAuth` group.
 - JWT TTL 7 days. `household_id` embedded in token.
 
@@ -165,12 +167,19 @@ respond(w, http.StatusNoContent, nil)  // 204 for deletes
 - All config from env via `config.Load()`. Fields: `DatabaseURL`, `Port`, `Env`, `CORSOrigins`, `JWTSecret`.
 - Never `os.Getenv` outside `config/config.go`.
 
+### SSE
+
+- `internal/sse/hub.go` — pub/sub hub; household + member-level channels.
+- SSE middleware wrappers must implement `http.Flusher` — otherwise returns 500.
+- Server `WriteTimeout=0` for SSE endpoints.
+
 ---
 
 ## Database Migrations
 
 **Naming:** `NNNNNN_short_description.up.sql` / `.down.sql` (zero-padded 6-digit, lowercase underscores).
 Every `.up.sql` has a paired `.down.sql`. Migrations embedded at compile time via `//go:embed`.
+Latest migration: **000018** (`add_task_status`).
 
 **SQL Style:**
 - Identifiers: `snake_case`. PKs: `UUID DEFAULT gen_random_uuid()`. Strings: `TEXT`. Timestamps: `TIMESTAMPTZ NOT NULL DEFAULT NOW()`.
@@ -180,6 +189,68 @@ Every `.up.sql` has a paired `.down.sql`. Migrations embedded at compile time vi
 - Always use `IF NOT EXISTS` / `IF EXISTS` guards.
 
 **Rules:** Never modify existing migrations. One concern per migration. Add comment at top.
+
+### Current Schema (key tables)
+
+- `members`: id, name, avatar, color, **username** (nullable TEXT → COALESCE), mpin_hash, household_id (FK nullable), role, created_at
+- `tasks`: id, title, notes, category (`chore|errand|repair`), priority (`urgent|high|normal`), **status** (`open|in_progress|on_hold|done`), assignee_id (FK nullable), household_id (FK), done, done_at, due_at, quantity (nullable TEXT), created_at, updated_at
+- `groceries`: id, title, quantity (nullable TEXT), notes, done, done_at, household_id (FK), assignee_id (FK nullable), created_at, updated_at
+- `comments`: id, task_id (FK), author_id (FK), body, created_at
+- `task_activities`: id, task_id (FK), actor_id (FK nullable), kind, meta (JSONB), created_at
+- `households`: id, name, kind (`home|group`), join_code, created_at
+- `coin_transactions`: id, member_id (FK), amount, reason, meta (JSONB), created_at
+- `referral_links`: id, member_id (FK), token, created_at
+- `feature_flags`: key, enabled, created_at
+
+---
+
+## API Routes
+
+```
+GET    /health                                    (public)
+GET    /api/v1/config                             (public — feature flags)
+GET    /api/v1/events?token=<jwt>                 (SSE stream)
+GET    /api/v1/households/link/{token}            (public)
+GET    /api/v1/referral/{token}                   (public)
+
+POST   /api/v1/auth/check-phone
+POST   /api/v1/auth/login
+POST   /api/v1/auth/register
+POST   /api/v1/auth/refresh                       (protected)
+PATCH  /api/v1/auth/mpin                          (protected)
+
+GET    /api/v1/members/                           (protected)
+GET    /api/v1/members/{id}                       (protected)
+PATCH  /api/v1/members/me                         (protected)
+GET    /api/v1/members/me/coins                   (protected)
+GET    /api/v1/members/me/referral-link           (protected)
+
+GET/POST       /api/v1/tasks/                     (protected)
+GET/PATCH/DEL  /api/v1/tasks/{id}                 (protected)
+POST           /api/v1/tasks/{id}/comments        (protected)
+GET            /api/v1/tasks/{id}/activity        (protected)
+
+GET/POST       /api/v1/groceries/                 (protected)
+GET/PATCH/DEL  /api/v1/groceries/{id}             (protected)
+
+GET    /api/v1/households/me                      (protected)
+POST   /api/v1/households/                        (protected — kind: "home"|"group")
+POST   /api/v1/households/join-by-code            (protected)
+POST   /api/v1/households/invite-link             (protected admin)
+POST   /api/v1/households/link/{token}/join       (protected)
+POST   /api/v1/households/leave                   (protected)
+DELETE /api/v1/households/                        (protected admin)
+POST   /api/v1/households/members/{id}/remove     (protected admin)
+POST   /api/v1/households/members/{id}/promote    (protected admin)
+GET    /api/v1/households/requests                (protected admin)
+GET    /api/v1/households/requests/mine           (protected)
+POST   /api/v1/households/requests/{id}/approve|reject|cancel
+POST   /api/v1/households/invites                 (protected admin)
+GET    /api/v1/households/invites/me              (protected)
+POST   /api/v1/households/invites/{id}/accept|reject
+```
+
+**Note:** `POST /api/v1/members` does NOT exist. Member creation is via `POST /auth/register` only.
 
 ---
 
@@ -191,6 +262,7 @@ Every `.up.sql` has a paired `.down.sql`. Migrations embedded at compile time vi
 |-------|------|----------------|
 | `useAuthStore` | `store/authStore.ts` | JWT token, member profile, guest mode, localStorage |
 | `useStore` | `store/index.ts` | tasks, members, filters, loading/error state |
+| `useConfigStore` | `store/configStore.ts` | feature flags from `/api/v1/config` |
 
 - Auth store initialized from `localStorage` at module load (prevents auth flash).
 - localStorage keys: `hj_token`, `hj_member`, `hj_guest`, `hj_guest_tasks`.
@@ -207,6 +279,13 @@ Every `.up.sql` has a paired `.down.sql`. Migrations embedded at compile time vi
 ### Types
 
 All shared TS types in `src/types/index.ts`. Household-specific types (`Household`, `JoinRequest`, `HouseholdInvite`) live in `api/households.ts`.
+
+Key types:
+```ts
+type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
+// STATUSES map: { label, color } for each status
+// Task categories: 'chore' | 'errand' | 'repair'  (NOT grocery — groceries are separate)
+```
 
 ### Component Conventions
 
@@ -245,18 +324,22 @@ All shared TS types in `src/types/index.ts`. Household-specific types (`Househol
 
 ## Security Rules
 
-- `MpinHash` tagged `json:"-"` — never serialized. `phone` tagged `json:"phone,omitempty"`.
+- `MpinHash` tagged `json:"-"` — never serialized. `username` tagged `json:"username,omitempty"`.
 - mPINs hashed with `bcrypt.DefaultCost`. Never log raw PINs.
 - All SQL uses parameterized queries. Never concatenate user input.
-- JWT secret from env (`cfg.JWTSecret`). Override `CHANGE_ME_IN_PRODUCTION_32_CHARS!` in production.
+- JWT secret from env (`cfg.JWTSecret`).
 - Household authorization (role, membership) enforced in service layer — never trust client-supplied household IDs.
 - Tasks filtered by `household_id` from JWT claims, not query params.
 
 ---
 
-## Backend Notes
+## Critical Bugs (do not re-introduce)
 
-- SSE endpoints: ensure middleware wrappers implement `http.Flusher` — otherwise returns 500 (can't flush response).
+- `COALESCE(username, '')` required in ALL member SELECT/RETURNING — legacy members may have username=NULL, causes pgx scan panic on non-pointer string.
+- `POST /members` is removed — member creation is auth-only via `/auth/register`.
+- Firebase/OTP phone verification was trialled and fully removed — do not re-introduce.
+- `phone` column was renamed to `username` in migration 000016 — never reference `phone` in new queries.
+- Groceries are a **separate table/resource** (migration 000017) — NOT a task category. Task categories = `chore|errand|repair` only.
 
 ---
 

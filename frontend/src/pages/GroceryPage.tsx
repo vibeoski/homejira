@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAuthStore } from '../store/authStore'
 import { useStore } from '../store'
 import { Spinner } from '../components/ui/Spinner'
-import { GuestOnlyNotice } from '../components/ui/GuestOnlyNotice'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import type { Grocery } from '../types'
@@ -10,7 +8,6 @@ import type { Grocery } from '../types'
 const ACCENT = '#6366f1'
 
 export function GroceryPage() {
-  const { isGuest } = useAuthStore()
   const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
   const isDesktop = useBreakpoint()
 
@@ -30,11 +27,11 @@ export function GroceryPage() {
   }, [fetchGroceries])
 
   useEffect(() => {
-    if (!isGuest) load()
-  }, [isGuest, load])
+    load()
+  }, [load])
   useEffect(() => {
-    if (!isGuest && sseVersion > 0) load()
-  }, [isGuest, load, sseVersion])
+    if (sseVersion > 0) load()
+  }, [load, sseVersion])
 
   const active = groceries.filter(g => !g.done)
   const done = groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -46,25 +43,6 @@ export function GroceryPage() {
   }
 
   const handleClearDone = () => setShowDone(false)
-
-  if (isGuest) {
-    return (
-      <>
-        <div style={{
-          background: 'white', padding: '10px 16px',
-          borderBottom: '1px solid #ede8e1',
-          position: 'sticky', top: 57, zIndex: 49,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
-        </div>
-        <GuestOnlyNotice
-          title="Grocery lists unlock with an account"
-          description="Guest mode is a lightweight task preview. Create an account to share groceries, sync across devices, and collaborate with your household."
-        />
-      </>
-    )
-  }
 
   if (loading) return <Spinner />
 

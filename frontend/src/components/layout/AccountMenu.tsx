@@ -32,14 +32,14 @@ export function AccountMenu() {
   const [coinInfo, setCoinInfo] = useState<CoinInfo | null>(null)
 
   const navigate = useNavigate()
-  const { member, clearAuth, clearGuest, isGuest, updateMember } = useAuthStore()
+  const { member, clearAuth, updateMember } = useAuthStore()
 
   useEffect(() => {
-    if (member && !isGuest) {
+    if (member) {
       coinsApi.getMyCoins().then(setCoinInfo).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [member?.id, isGuest])
+  }, [member?.id])
 
   const openProfile = () => {
     if (!member) return
@@ -88,19 +88,8 @@ export function AccountMenu() {
     }
   }
 
-  const leaveGuestMode = (mode: 'login' | 'register') => {
-    setOpen(false)
-    clearGuest()
-    navigate(`/auth?mode=${mode}`)
-  }
-
   const handleSignOut = () => {
     setOpen(false)
-    if (isGuest) {
-      clearGuest()
-      navigate('/auth')
-      return
-    }
     clearAuth()
     navigate('/auth')
   }
@@ -152,13 +141,13 @@ export function AccountMenu() {
                   {member?.name ?? ''}
                 </p>
                 <p style={{ fontSize: 12, color: '#a8a29e', margin: '2px 0 0' }}>
-                  {isGuest ? 'Preview mode' : `@${member?.username}`}
+                  {`@${member?.username}`}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                  {!isGuest && member?.role === 'admin' && (
+                  {member?.role === 'admin' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>Admin</span>
                   )}
-                  {!isGuest && coinInfo != null && (
+                  {coinInfo != null && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setOpen(false); setSheet('coins') }}
@@ -172,25 +161,11 @@ export function AccountMenu() {
             <div style={{ height: 1, background: '#faf7f2' }} />
 
             <div style={{ padding: '6px 0' }}>
-              {isGuest ? (
-                <>
-                  <div style={{ padding: '10px 20px 6px', fontSize: 12, lineHeight: 1.6, color: '#78716c' }}>
-                    Guest tasks are saved only on this device. Create an account when you're ready to keep everything synced.
-                  </div>
-                  <MenuItem label="Create account" onClick={() => leaveGuestMode('register')} />
-                  <MenuItem label="Sign in" onClick={() => leaveGuestMode('login')} />
-                  <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
-                  <MenuItem label="Exit guest mode" onClick={handleSignOut} danger />
-                </>
-              ) : (
-                <>
-                  <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
-                  <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
-                  <MenuItem label={`${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
-                  <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
-                  <MenuItem label="Sign out" onClick={handleSignOut} danger />
-                </>
-              )}
+              <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
+              <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
+              <MenuItem label={`${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
+              <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
+              <MenuItem label="Sign out" onClick={handleSignOut} danger />
             </div>
           </div>
         </div>

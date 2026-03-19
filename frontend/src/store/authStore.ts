@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import type { Member } from '../types'
-import { GUEST_MEMBER, GUEST_STORAGE_KEY } from './guest'
+
+// Clean up any legacy guest mode data
+localStorage.removeItem('hj_guest')
+localStorage.removeItem('hj_guest_tasks')
 
 // Initialize from localStorage at module load (before first React render — no auth flash)
 const initialToken = localStorage.getItem('hj_token')
@@ -12,67 +15,40 @@ const storedMember: Member | null = (() => {
     return null
   }
 })()
-const initialIsGuest = !initialToken && localStorage.getItem(GUEST_STORAGE_KEY) === 'true'
-const initialMember = initialIsGuest ? GUEST_MEMBER : storedMember
 
 interface AuthStore {
   token: string | null
   member: Member | null
   isAuthenticated: boolean
-  isGuest: boolean
 
   setAuth: (token: string, member: Member) => void
-  setGuest: () => void
   updateMember: (member: Member) => void
   clearAuth: () => void
-  clearGuest: () => void
 }
 
 export const useAuthStore = create<AuthStore>(() => ({
   token: initialToken,
-  member: initialMember,
-  isAuthenticated: !!(initialToken && initialMember && !initialIsGuest),
-  isGuest: initialIsGuest,
+  member: storedMember,
+  isAuthenticated: !!(initialToken && storedMember),
 
   setAuth: (token, member) => {
-    localStorage.removeItem(GUEST_STORAGE_KEY)
     localStorage.setItem('hj_token', token)
     localStorage.setItem('hj_member', JSON.stringify(member))
-    useAuthStore.setState({ token, member, isAuthenticated: true, isGuest: false })
-  },
-
-  setGuest: () => {
-    localStorage.removeItem('hj_token')
-    localStorage.removeItem('hj_member')
-    localStorage.setItem(GUEST_STORAGE_KEY, 'true')
-    useAuthStore.setState({
-      token: null,
-      member: GUEST_MEMBER,
-      isAuthenticated: false,
-      isGuest: true,
-    })
+    useAuthStore.setState({ token, member, isAuthenticated: true })
   },
 
   updateMember: (member) => {
+    localStorage.setItem('hj_member', JSON.stringify(member))
     useAuthStore.setState((state) => ({
       token: state.token,
       member,
-      isAuthenticated: !!(state.token && member) && !state.isGuest,
-      isGuest: state.isGuest,
+      isAuthenticated: !!(state.token && member),
     }))
-    if (!useAuthStore.getState().isGuest) {
-      localStorage.setItem('hj_member', JSON.stringify(member))
-    }
   },
 
   clearAuth: () => {
     localStorage.removeItem('hj_token')
     localStorage.removeItem('hj_member')
-    useAuthStore.setState({ token: null, member: null, isAuthenticated: false, isGuest: false })
-  },
-
-  clearGuest: () => {
-    localStorage.removeItem(GUEST_STORAGE_KEY)
-    useAuthStore.setState({ token: null, member: null, isAuthenticated: false, isGuest: false })
+    useAuthStore.setState({ token: null, member: null, isAuthenticated: false })
   },
 }))

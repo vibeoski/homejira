@@ -2,14 +2,13 @@ import { useEffect, useRef } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { AccountMenu } from './AccountMenu'
-import { GuestBanner } from './GuestBanner'
 import { AppLogo } from '../ui/AppLogo'
 import { useAuthStore } from '../../store/authStore'
 import { authApi } from '../../api/auth'
 import { useStore } from '../../store'
 
 export function AppLayout() {
-  const { isAuthenticated, isGuest, token, setAuth } = useAuthStore()
+  const { isAuthenticated, token, setAuth } = useAuthStore()
   const { fetchTasks, fetchMembers, bumpSse } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
@@ -69,7 +68,6 @@ export function AppLayout() {
         </div>
         <AccountMenu />
       </div>
-      {isGuest && <GuestBanner />}
       <Outlet />
       <BottomNav />
     </div>

@@ -3,19 +3,6 @@ import type { Task, Member, TaskFilter, CreateTaskPayload, Grocery, CreateGrocer
 import { tasksApi } from '../api/tasks'
 import { membersApi } from '../api/members'
 import { groceriesApi } from '../api/groceries'
-import { useAuthStore } from './authStore'
-import { GUEST_MEMBER, loadGuestTasks, makeGuestComment, saveGuestTasks } from './guest'
-
-function hydrateGuestTask(task: Task): Task {
-  return {
-    ...task,
-    assignee: task.assignee_id === GUEST_MEMBER.id ? GUEST_MEMBER : undefined,
-  }
-}
-
-function hydrateGuestTasks(tasks: Task[]): Task[] {
-  return tasks.map(hydrateGuestTask)
-}
 
 function applyTaskPatch(task: Task, payload: UpdateTaskPayload, members: Member[]): Task {
   const now = new Date().toISOString()
@@ -89,16 +76,6 @@ export const useStore = create<AppStore>((set, get) => ({
   bumpSse: () => set((s) => ({ sseVersion: s.sseVersion + 1 })),
 
   fetchTasks: async () => {
-    if (useAuthStore.getState().isGuest) {
-      set({
-        tasks: hydrateGuestTasks(loadGuestTasks()),
-        members: [GUEST_MEMBER],
-        loading: false,
-        error: null,
-      })
-      return
-    }
-
     const isInitial = get().tasks.length === 0
     if (isInitial) set({ loading: true, error: null })
     try {
@@ -114,11 +91,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   fetchGroceries: async () => {
-    if (useAuthStore.getState().isGuest) {
-      set({ groceries: [] })
-      return
-    }
-
     try {
       const groceries = await groceriesApi.list()
       if (JSON.stringify(groceries) !== JSON.stringify(get().groceries)) {
@@ -130,11 +102,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   fetchMembers: async () => {
-    if (useAuthStore.getState().isGuest) {
-      set({ members: [GUEST_MEMBER] })
-      return
-    }
-
     try {
       const members = await membersApi.list()
       if (JSON.stringify(members) !== JSON.stringify(get().members)) {
@@ -146,29 +113,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   createTask: async (payload) => {
-    if (useAuthStore.getState().isGuest) {
-      const now = new Date().toISOString()
-      const task = hydrateGuestTask({
-        id: crypto.randomUUID(),
-        title: payload.title.trim(),
-        notes: payload.notes.trim(),
-        category: payload.category,
-        priority: payload.priority,
-        assignee_id: payload.assignee_id || GUEST_MEMBER.id,
-        status: 'open',
-        done: false,
-        due_at: payload.due_at,
-        quantity: payload.quantity,
-        created_at: now,
-        updated_at: now,
-        comments: [],
-      })
-      const tasks = [task, ...get().tasks]
-      saveGuestTasks(tasks)
-      set({ tasks, members: [GUEST_MEMBER] })
-      return
-    }
-
     const task = await tasksApi.create(payload)
     set((s) => ({ tasks: [task, ...s.tasks] }))
   },
@@ -177,25 +121,14 @@ export const useStore = create<AppStore>((set, get) => ({
     const previous = get().tasks.find((t) => t.id === id)
     if (!previous) throw new Error('Task not found')
 
-    const members = get().members.length > 0 ? get().members : [GUEST_MEMBER]
-    const optimistic = applyTaskPatch(previous, payload, members)
-
-    if (useAuthStore.getState().isGuest) {
-      const tasks = get().tasks.map((task) => task.id === id ? optimistic : task)
-      saveGuestTasks(tasks)
-      set({ tasks, members: [GUEST_MEMBER] })
-      return optimistic
-    }
-
+    const optimistic = applyTaskPatch(previous, payload, get().members)
     set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? optimistic : task) }))
     try {
       const updated = await tasksApi.update(id, payload)
       set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? updated : task) }))
       return updated
     } catch {
-      if (previous) {
-        set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? previous : task) }))
-      }
+      set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? previous : task) }))
       throw new Error('Failed to update task')
     }
   },
@@ -206,14 +139,6 @@ export const useStore = create<AppStore>((set, get) => ({
 
   deleteTask: async (id) => {
     const previous = get().tasks.find((t) => t.id === id)
-
-    if (useAuthStore.getState().isGuest) {
-      const tasks = get().tasks.filter((task) => task.id !== id)
-      saveGuestTasks(tasks)
-      set({ tasks })
-      return
-    }
-
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
     try {
       await tasksApi.remove(id)
@@ -224,18 +149,6 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   addComment: async (taskId, body) => {
-    if (useAuthStore.getState().isGuest) {
-      const comment = makeGuestComment(taskId, body)
-      const tasks = get().tasks.map((task) =>
-        task.id === taskId
-          ? { ...task, comments: [...(task.comments ?? []), comment], updated_at: comment.created_at }
-          : task
-      )
-      saveGuestTasks(tasks)
-      set({ tasks })
-      return
-    }
-
     const comment = await tasksApi.addComment(taskId, body)
     set((s) => ({
       tasks: s.tasks.map((t) =>
@@ -245,19 +158,11 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   createGrocery: async (payload) => {
-    if (useAuthStore.getState().isGuest) {
-      throw new Error('Grocery list is unavailable in guest mode')
-    }
-
     const g = await groceriesApi.create(payload)
     set((s) => ({ groceries: [g, ...s.groceries] }))
   },
 
   toggleGrocery: async (id, done) => {
-    if (useAuthStore.getState().isGuest) {
-      throw new Error('Grocery list is unavailable in guest mode')
-    }
-
     const previous = get().groceries.find((g) => g.id === id)
     set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g) }))
     try {
@@ -271,19 +176,11 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   updateGrocery: async (id, payload) => {
-    if (useAuthStore.getState().isGuest) {
-      throw new Error('Grocery list is unavailable in guest mode')
-    }
-
     const updated = await groceriesApi.update(id, payload)
     set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
   },
 
   deleteGrocery: async (id) => {
-    if (useAuthStore.getState().isGuest) {
-      throw new Error('Grocery list is unavailable in guest mode')
-    }
-
     const previous = get().groceries.find((g) => g.id === id)
     set((s) => ({ groceries: s.groceries.filter((g) => g.id !== id) }))
     try {
