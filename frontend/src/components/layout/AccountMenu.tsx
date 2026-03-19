@@ -5,6 +5,7 @@ import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
 import { timeAgo } from '../../utils'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 const COLORS = ['#6366f1', '#0ea5e9', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#ec4899', '#14b8a6']
 
@@ -33,6 +34,7 @@ export function AccountMenu() {
 
   const navigate = useNavigate()
   const { member, clearAuth, updateMember } = useAuthStore()
+  const isDesktop = useBreakpoint()
 
   useEffect(() => {
     if (member) {
@@ -117,14 +119,20 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={() => setOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 200, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
         >
           <div
-            className="slide-up"
+            className={isDesktop ? 'fade-in' : 'slide-up'}
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', paddingBottom: 36, overflow: 'hidden' }}
+            style={{
+              background: 'white', width: '100%', maxWidth: isDesktop ? 380 : 520,
+              borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+              paddingBottom: isDesktop ? 20 : 36,
+              overflow: 'hidden',
+              boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : 'none',
+            }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 16px' }}>
               <div style={{
@@ -176,14 +184,20 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
         >
           <div
-            className="slide-up"
+            className={isDesktop ? 'fade-in' : 'slide-up'}
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '88vh', overflowY: 'auto' }}
+            style={{
+              background: 'white', width: '100%', maxWidth: 520,
+              borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+              padding: isDesktop ? '24px 0 28px' : '0 0 44px',
+              boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : 'none',
+              maxHeight: '92vh', overflowY: 'auto',
+            }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 16px' }}>
               <div style={{
@@ -253,14 +267,20 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
         >
           <div
-            className="slide-up"
+            className={isDesktop ? 'fade-in' : 'slide-up'}
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 0 44px', maxHeight: '80vh', overflowY: 'auto' }}
+            style={{
+              background: 'white', width: '100%', maxWidth: 520,
+              borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+              padding: isDesktop ? '0 0 28px' : '0 0 44px',
+              boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : 'none',
+              maxHeight: '80vh', overflowY: 'auto',
+            }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />
+            {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 0' }} />}
             <div style={{ padding: '18px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', margin: 0 }}>My Coins</p>
               <div style={{ fontSize: 24, fontWeight: 800, color: '#854d0e', background: '#fef9c3', borderRadius: 12, padding: '6px 16px' }}>
@@ -317,14 +337,19 @@ export function AccountMenu() {
         <div
           className="fade-in"
           onClick={closeSheet}
-          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 201, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
         >
           <div
-            className="slide-up"
+            className={isDesktop ? 'fade-in' : 'slide-up'}
             onClick={(e) => e.stopPropagation()}
-            style={{ background: 'white', width: '100%', maxWidth: 520, borderRadius: '18px 18px 0 0', padding: '0 20px 44px' }}
+            style={{
+              background: 'white', width: '100%', maxWidth: 520,
+              borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+              padding: isDesktop ? '24px 20px 28px' : '0 20px 44px',
+              boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : 'none',
+            }}
           >
-            <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 20px' }} />
+            {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 20px' }} />}
             <p style={{ fontSize: 17, fontWeight: 700, color: '#1c1917', marginBottom: 20 }}>Change PIN</p>
 
             {pinSuccess ? (

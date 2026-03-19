@@ -17,10 +17,7 @@ export function StatsPage() {
 
   return (
     <>
-      <div style={{
-        background: 'white', padding: '12px 16px',
-        borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49,
-      }}>
+      <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49 }}>
         <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Stats</h2>
       </div>
       {isDesktop
@@ -31,12 +28,60 @@ export function StatsPage() {
   )
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x }
+
+function last7Days() {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return startOfDay(d)
+  })
+}
+
+function dayLabel(d: Date) {
+  return d.toLocaleDateString('en-US', { weekday: 'short' })
+}
+
+function completionsOnDay(tasks: Task[], day: Date) {
+  const next = new Date(day); next.setDate(next.getDate() + 1)
+  return tasks.filter(t => {
+    if (!t.done_at) return false
+    const d = new Date(t.done_at)
+    return d >= day && d < next
+  }).length
+}
+
+// ── Desktop layout ────────────────────────────────────────────────────────────
+
 function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) {
-  const done = tasks.filter((x) => x.done).length
+  const now = new Date()
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7)
+  const in3Days = new Date(now); in3Days.setDate(in3Days.getDate() + 3)
+
+  const open = tasks.filter(t => !t.done)
+  const done = tasks.filter(t => t.done)
   const total = tasks.length
-  const pct = total ? Math.round((done / total) * 100) : 0
-  const overdueCount = tasks.filter((x) => !x.done && x.due_at && new Date(x.due_at) < new Date()).length
-  const urgentCount = tasks.filter((x) => !x.done && x.priority === 'urgent').length
+  const doneCount = done.length
+  const pct = total ? Math.round((doneCount / total) * 100) : 0
+
+  const completedThisWeek = done.filter(t => t.done_at && new Date(t.done_at) >= weekAgo).length
+  const dueSoon = open.filter(t => t.due_at && new Date(t.due_at) <= in3Days && new Date(t.due_at) >= now).length
+  const inProgress = open.filter(t => t.status === 'in_progress').length
+  const unassigned = open.filter(t => !t.assignee_id).length
+  const overdueCount = open.filter(t => t.due_at && new Date(t.due_at) < now).length
+  const urgentCount = open.filter(t => t.priority === 'urgent').length
+
+  const days = last7Days()
+  const completionsByDay = days.map(d => completionsOnDay(tasks, d))
+  const maxCompletions = Math.max(...completionsByDay, 1)
+
+  const urgentOpen = open.filter(t => t.priority === 'urgent').length
+  const highOpen = open.filter(t => t.priority === 'high').length
+  const normalOpen = open.filter(t => t.priority === 'normal').length
+  const priorityTotal = urgentOpen + highOpen + normalOpen || 1
+
   const r = 42, circ = 2 * Math.PI * r
 
   if (tasks.length === 0) {
@@ -55,9 +100,10 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
-      {/* Left column — summary */}
+    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+      {/* ── Left column ──────────────────────────────────────── */}
       <div style={{ width: 300, flexShrink: 0, padding: '20px 16px 40px 20px', borderRight: '1px solid #ede8e1' }}>
+
         {/* Overall ring */}
         <div style={{ background: 'white', borderRadius: 14, padding: '24px 20px', border: '1px solid #ede8e1', marginBottom: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <svg width="96" height="96" style={{ marginBottom: 14 }}>
@@ -67,11 +113,19 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
               strokeLinecap="round" transform="rotate(-90 48 48)" style={{ transition: 'stroke-dashoffset .5s' }} />
             <text x={48} y={54} textAnchor="middle" fontSize={16} fontWeight={700} fill="#1c1917">{pct}%</text>
           </svg>
-          <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 4px' }}>{done} of {total} done</p>
-          <p style={{ fontSize: 13, color: '#78716c', margin: 0 }}>{total - done} remaining</p>
+          <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 4px' }}>{doneCount} of {total} done</p>
+          <p style={{ fontSize: 13, color: '#78716c', margin: 0 }}>{total - doneCount} remaining</p>
         </div>
 
-        {/* Urgency */}
+        {/* Quick stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+          <DesktopTile value={completedThisWeek} label="Done this week" color="#22c55e" />
+          <DesktopTile value={inProgress} label="In progress" color="#6366f1" />
+          <DesktopTile value={dueSoon} label="Due in 3 days" color="#d97706" />
+          <DesktopTile value={unassigned} label="Unassigned" color="#a8a29e" />
+        </div>
+
+        {/* Urgency alerts */}
         {overdueCount > 0 && (
           <div style={{ background: '#fef2f2', borderRadius: 10, padding: '12px 14px', border: '1px solid #fecaca', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>⚠</span>
@@ -92,13 +146,60 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
         )}
       </div>
 
-      {/* Right column — breakdown */}
+      {/* ── Right column ─────────────────────────────────────── */}
       <div style={{ flex: 1, padding: '20px 20px 40px', minWidth: 0 }}>
+
+        {/* 7-day chart */}
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 10px 2px' }}>Completions — last 7 days</p>
+        <div style={{ background: 'white', borderRadius: 12, padding: '16px 18px 12px', border: '1px solid #ede8e1', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 64 }}>
+            {completionsByDay.map((count, i) => {
+              const isToday = i === 6
+              const barH = Math.max(count ? Math.round((count / maxCompletions) * 52) : 3, count ? 8 : 3)
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                  {count > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? '#6366f1' : '#78716c' }}>{count}</span>
+                  )}
+                  <div style={{
+                    width: '100%', height: barH, borderRadius: 5,
+                    background: count === 0 ? '#f5f5f4' : isToday ? '#6366f1' : '#a5b4fc',
+                    transition: 'height .4s',
+                  }} />
+                  <span style={{ fontSize: 10, color: isToday ? '#6366f1' : '#a8a29e', fontWeight: isToday ? 700 : 400 }}>
+                    {dayLabel(days[i])}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Priority breakdown */}
+        {open.length > 0 && (
+          <>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 10px 2px' }}>Open tasks by priority</p>
+            <div style={{ background: 'white', borderRadius: 12, padding: '14px 16px', border: '1px solid #ede8e1', marginBottom: 20 }}>
+              <div style={{ display: 'flex', height: 10, borderRadius: 99, overflow: 'hidden', marginBottom: 12 }}>
+                {urgentOpen > 0 && <div style={{ flex: urgentOpen, background: '#ef4444', transition: 'flex .4s' }} />}
+                {highOpen > 0 && <div style={{ flex: highOpen, background: '#f97316', transition: 'flex .4s' }} />}
+                {normalOpen > 0 && <div style={{ flex: normalOpen, background: '#d4d4d8', transition: 'flex .4s' }} />}
+              </div>
+              <div style={{ display: 'flex', gap: 20 }}>
+                <PriorityLegendD color="#ef4444" label="Urgent" count={urgentOpen} total={priorityTotal} />
+                <PriorityLegendD color="#f97316" label="High" count={highOpen} total={priorityTotal} />
+                <PriorityLegendD color="#d4d4d8" label="Normal" count={normalOpen} total={priorityTotal} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* By category */}
         <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 10px 2px' }}>By category</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
           {(Object.entries(CATEGORIES) as [string, { label: string; color: string }][]).map(([k, v]) => {
-            const catTasks = tasks.filter((x) => x.category === k)
-            const catDone = catTasks.filter((x) => x.done).length
+            const catTasks = tasks.filter(x => x.category === k)
+            const catDone = catTasks.filter(x => x.done).length
             const p = catTasks.length ? (catDone / catTasks.length) * 100 : 0
             return (
               <div key={k} style={{ background: 'white', borderRadius: 12, padding: '14px 16px', border: '1px solid #ede8e1' }}>
@@ -113,29 +214,37 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
           })}
         </div>
 
+        {/* By member */}
         {members.length > 0 && (
           <>
             <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 10px 2px' }}>By member</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {members.map((m) => {
-                const mine = tasks.filter((x) => x.assignee_id === m.id)
-                const myDone = mine.filter((x) => x.done).length
-                const hasNone = mine.length === 0
+              {members.map(m => {
+                const assigned = tasks.filter(t => t.assignee_id === m.id)
+                const memberDone = assigned.filter(t => t.done).length
+                const memberOpen = assigned.filter(t => !t.done).length
+                const memberInProgress = assigned.filter(t => !t.done && t.status === 'in_progress').length
+                const completePct = assigned.length ? Math.round((memberDone / assigned.length) * 100) : 0
+                const hasNone = assigned.length === 0
                 return (
-                  <div key={m.id} style={{ background: 'white', borderRadius: 10, padding: '12px 16px', border: '1px solid #ede8e1', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Avatar member={m} size={34} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#1c1917', margin: '0 0 4px' }}>{m.name}</p>
-                      {hasNone ? (
-                        <p style={{ fontSize: 11, color: '#a8a29e', margin: 0 }}>No tasks assigned</p>
-                      ) : (
-                        <div style={{ height: 4, background: '#faf7f2', borderRadius: 99 }}>
-                          <div style={{ height: 4, background: m.color, borderRadius: 99, width: `${(myDone / mine.length) * 100}%`, transition: 'width .4s' }} />
-                        </div>
+                  <div key={m.id} style={{ background: 'white', borderRadius: 10, padding: '12px 16px', border: '1px solid #ede8e1' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: hasNone ? 0 : 10 }}>
+                      <Avatar member={m} size={34} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#1c1917', margin: '0 0 2px' }}>{m.name}</p>
+                        <p style={{ fontSize: 11, color: '#a8a29e', margin: 0 }}>
+                          {hasNone ? 'No tasks assigned' : `${memberDone} done · ${memberOpen} open`}
+                          {memberInProgress > 0 && ` · ${memberInProgress} in progress`}
+                        </p>
+                      </div>
+                      {!hasNone && (
+                        <span style={{ fontSize: 14, fontWeight: 700, color: completePct === 100 ? '#22c55e' : '#1c1917', flexShrink: 0 }}>{completePct}%</span>
                       )}
                     </div>
                     {!hasNone && (
-                      <span style={{ fontSize: 12, color: '#78716c', fontWeight: 600, flexShrink: 0 }}>{myDone}/{mine.length}</span>
+                      <div style={{ height: 4, background: '#faf7f2', borderRadius: 99 }}>
+                        <div style={{ height: 4, background: m.color, borderRadius: 99, width: `${completePct}%`, transition: 'width .4s' }} />
+                      </div>
                     )}
                   </div>
                 )
@@ -144,6 +253,28 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function DesktopTile({ value, label, color }: { value: number; label: string; color: string }) {
+  return (
+    <div style={{ background: 'white', borderRadius: 10, padding: '10px 14px', border: '1px solid #ede8e1' }}>
+      <p style={{ fontSize: 20, fontWeight: 700, color, margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 10, color: '#a8a29e', margin: '4px 0 0', lineHeight: 1.3 }}>{label}</p>
+    </div>
+  )
+}
+
+function PriorityLegendD({ color, label, count, total }: { color: string; label: string; count: number; total: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 10, height: 10, borderRadius: 99, background: color, flexShrink: 0 }} />
+      <span style={{ fontSize: 12, color: '#78716c' }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#1c1917' }}>{count}</span>
+      <span style={{ fontSize: 11, color: '#a8a29e' }}>({Math.round((count / total) * 100)}%)</span>
     </div>
   )
 }

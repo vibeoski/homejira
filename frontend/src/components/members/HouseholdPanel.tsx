@@ -312,7 +312,20 @@ export function HouseholdPanel() {
   // No household: setup screen
   if (!hasHousehold && !household) {
     return (
-      <div style={{ padding: '28px 16px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ padding: '28px 16px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 114px)' }}>
+        <div style={{
+          position: 'absolute', top: -200, left: '50%', transform: 'translateX(-50%)',
+          width: '160vw', height: 480, borderRadius: '50%',
+          background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+          filter: 'blur(32px)', opacity: 0.7, zIndex: 0,
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -160, right: '-10%',
+          width: '100vw', height: 380, borderRadius: '50%',
+          background: 'conic-gradient(from 20deg at 50% 50%, #fde68a 0deg, #fbcfe8 100deg, #c7d2fe 200deg, #fde68a 360deg)',
+          filter: 'blur(40px)', opacity: 0.5, zIndex: 0,
+        }} />
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
         {/* Step indicator — static: step 1 active, step 2 upcoming */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, width: '100%', maxWidth: 280 }}>
@@ -416,6 +429,7 @@ export function HouseholdPanel() {
               )}
             </div>
           </>
+        </div>
       </div>
     )
   }
@@ -426,29 +440,39 @@ export function HouseholdPanel() {
   return (
     <div style={{ padding: '12px 12px 0' }}>
       <div style={{ background: 'white', borderRadius: 12, border: '1px solid #ede8e1', overflow: 'hidden', marginBottom: 12 }}>
-        {/* Name + role */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #faf7f2' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                <polyline points="9,22 9,12 15,12 15,22" />
-              </svg>
+        {/* Hero header */}
+        <div style={{
+          position: 'relative', overflow: 'hidden',
+          padding: '20px 16px 18px',
+          background: '#eef2ff',
+        }}>
+          <div style={{
+            position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)',
+            width: '200%', height: 200, borderRadius: '50%',
+            background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+            filter: 'blur(28px)', opacity: 0.35,
+          }} />
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  <polyline points="9,22 9,12 15,12 15,22" />
+                </svg>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#1c1917', lineHeight: 1.2 }}>
+                  {loadingHousehold ? 'Loading…' : (household?.name ?? 'Your household')}
+                </p>
+                {isAdmin && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', letterSpacing: 0.4 }}>ADMIN</span>
+                )}
+              </div>
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#1c1917' }}>
-              {loadingHousehold ? 'Loading…' : (household?.name ?? 'Your household')}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {isAdmin && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#eef2ff', color: ACCENT }}>
-                Admin
-              </span>
-            )}
             <button
               type="button"
               onClick={() => setShowMore(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 6, color: '#a8a29e', fontSize: 16, lineHeight: 1 }}
+              style={{ background: 'rgba(99,102,241,0.1)', border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 8, color: '#6366f1', fontSize: 16, lineHeight: 1 }}
             >···</button>
           </div>
         </div>

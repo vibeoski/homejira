@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { Spinner } from '../components/ui/Spinner'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import type { Grocery } from '../types'
+import type { Grocery, Member, UpdateGroceryPayload } from '../types'
 
 const ACCENT = '#6366f1'
 
@@ -17,44 +17,36 @@ export function GroceryPage() {
   const todayKey = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() })()
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
   const [showAdd, setShowAdd] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<Grocery | null>(null)
 
   const load = useCallback(async () => {
-    try {
-      await fetchGroceries()
-    } finally {
-      setLoading(false)
-    }
+    try { await fetchGroceries() } finally { setLoading(false) }
   }, [fetchGroceries])
 
+  useEffect(() => { load() }, [load])
+  useEffect(() => { if (sseVersion > 0) load() }, [load, sseVersion])
+
+  // Keep selectedItem in sync with store (SSE updates)
   useEffect(() => {
-    load()
-  }, [load])
-  useEffect(() => {
-    if (sseVersion > 0) load()
-  }, [load, sseVersion])
+    if (!selectedItem) return
+    const updated = groceries.find(g => g.id === selectedItem.id)
+    if (!updated) setSelectedItem(null) // deleted elsewhere
+  }, [groceries, selectedItem])
 
   const active = groceries.filter(g => !g.done)
   const done = groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
   const handleCheckAll = async () => {
-    const toCheck = [...active]
-    await Promise.allSettled(toCheck.map((g) => toggleGrocery(g.id, true)))
+    await Promise.allSettled(active.map(g => toggleGrocery(g.id, true)))
     setShowDone(true)
   }
-
-  const handleClearDone = () => setShowDone(false)
 
   if (loading) return <Spinner />
 
   if (historyMode) {
     return (
       <div style={{ paddingBottom: 80 }}>
-        <div style={{
-          background: 'white', padding: '16px 16px 14px',
-          borderBottom: '1px solid #ede8e1',
-          position: 'sticky', top: 0, zIndex: 50,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
+        <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => setHistoryMode(false)}
             style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
@@ -76,7 +68,7 @@ export function GroceryPage() {
           <div style={{ padding: '0 12px' }}>
             {groupByDay(done).map(({ key, label, items }) => {
               const open = expandedDays.has(key)
-              const toggle = () => setExpandedDays((prev) => {
+              const toggle = () => setExpandedDays(prev => {
                 const next = new Set(prev)
                 if (open) next.delete(key); else next.add(key)
                 return next
@@ -85,55 +77,47 @@ export function GroceryPage() {
                 <div key={key} style={{ marginBottom: 8 }}>
                   <button
                     onClick={toggle}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      padding: '8px 4px', marginBottom: open ? 4 : 0,
-                    }}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 4px', marginBottom: open ? 4 : 0 }}
                   >
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-                      {label}
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {!open && (
-                        <span style={{ fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                      )}
-                      <svg
-                        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a29e"
-                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                        style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}
-                      >
+                      {!open && <span style={{ fontSize: 11, color: '#a8a29e', fontWeight: 600 }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>
                         <polyline points="9,18 15,12 9,6" />
                       </svg>
                     </div>
                   </button>
-                  {open && items.map((item) => (
-                    <HistoryRow key={item.id} item={item} onDelete={deleteGrocery} />
+                  {open && items.map(item => (
+                    <HistoryRow key={item.id} item={item} onDelete={deleteGrocery} onSelect={setSelectedItem} />
                   ))}
                 </div>
               )
             })}
           </div>
         )}
+
+        {selectedItem && (
+          <GroceryDetailSheet
+            item={selectedItem} members={members}
+            onClose={() => setSelectedItem(null)}
+            onToggle={(checked) => toggleGrocery(selectedItem.id, checked)}
+            onUpdate={(payload) => updateGrocery(selectedItem.id, payload)}
+            onDelete={() => { deleteGrocery(selectedItem.id); setSelectedItem(null) }}
+          />
+        )}
       </div>
     )
   }
 
   const subHeader = (
-    <div style={{
-      background: 'white', padding: '10px 16px',
-      borderBottom: '1px solid #ede8e1',
-      position: 'sticky', top: 57, zIndex: 49,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    }}>
+    <div style={{ background: 'white', padding: '10px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
       <button
         onClick={() => setHistoryMode(true)}
         style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12,6 12,12 16,14" />
+          <circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" />
         </svg>
         History {done.length > 0 && `(${done.length})`}
       </button>
@@ -145,8 +129,7 @@ export function GroceryPage() {
       <div style={{ width: 60, height: 60, borderRadius: 18, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 01-8 0" />
+          <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
         </svg>
       </div>
       <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
@@ -159,19 +142,13 @@ export function GroceryPage() {
       {subHeader}
 
       {isDesktop ? (
-        /* Desktop: two-column layout */
         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-          {/* Left: active items */}
+          {/* Left: active */}
           <div style={{ flex: 1, padding: '0 16px', borderRight: '1px solid #ede8e1', minWidth: 0 }}>
             {active.length > 1 && (
               <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={handleCheckAll}
-                  style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20,6 9,17 4,12" />
-                  </svg>
+                <button onClick={handleCheckAll} style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
                   Check all
                 </button>
               </div>
@@ -184,13 +161,13 @@ export function GroceryPage() {
               </div>
             )}
             <div style={{ padding: '12px 0' }}>
-              {active.map((item) => (
-                <GroceryRow key={item.id} item={item} onToggle={(checked) => toggleGrocery(item.id, checked)} onEdit={(updates) => updateGrocery(item.id, updates)} onDelete={() => deleteGrocery(item.id)} />
+              {active.map(item => (
+                <GroceryRow key={item.id} item={item} onToggle={checked => toggleGrocery(item.id, checked)} onSelect={() => setSelectedItem(item)} />
               ))}
             </div>
           </div>
 
-          {/* Right: done items */}
+          {/* Right: done */}
           <div style={{ width: 340, flexShrink: 0, padding: '0 16px' }}>
             {done.length === 0 ? (
               <div style={{ padding: '48px 0', textAlign: 'center' }}>
@@ -198,12 +175,12 @@ export function GroceryPage() {
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 4px' }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: 0 }}>Done ({done.length})</p>
                 </div>
                 <div>
-                  {done.map((item) => (
-                    <GroceryRow key={item.id} item={item} done onToggle={(checked) => toggleGrocery(item.id, checked)} />
+                  {done.map(item => (
+                    <GroceryRow key={item.id} item={item} done onToggle={checked => toggleGrocery(item.id, checked)} onSelect={() => setSelectedItem(item)} />
                   ))}
                 </div>
               </>
@@ -211,17 +188,11 @@ export function GroceryPage() {
           </div>
         </div>
       ) : (
-        /* Mobile: single column */
         <div style={{ padding: '0 12px 0' }}>
           {active.length > 1 && (
             <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={handleCheckAll}
-                style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20,6 9,17 4,12" />
-                </svg>
+              <button onClick={handleCheckAll} style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
                 Check all
               </button>
             </div>
@@ -231,8 +202,8 @@ export function GroceryPage() {
 
           {active.length > 0 && (
             <div style={{ padding: '12px 0' }}>
-              {active.map((item) => (
-                <GroceryRow key={item.id} item={item} onToggle={(checked) => toggleGrocery(item.id, checked)} onEdit={(updates) => updateGrocery(item.id, updates)} onDelete={() => deleteGrocery(item.id)} />
+              {active.map(item => (
+                <GroceryRow key={item.id} item={item} onToggle={checked => toggleGrocery(item.id, checked)} onSelect={() => setSelectedItem(item)} />
               ))}
             </div>
           )}
@@ -240,23 +211,20 @@ export function GroceryPage() {
           {done.length > 0 && (
             <div style={{ padding: '8px 0 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px' }}>
-                <button
-                  onClick={() => setShowDone((v) => !v)}
-                  style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
-                >
+                <button onClick={() => setShowDone(v => !v)} style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showDone ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>
                     <polyline points="9,18 15,12 9,6" />
                   </svg>
                   Done ({done.length})
                 </button>
                 {showDone && (
-                  <button onClick={handleClearDone} style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Hide</button>
+                  <button onClick={() => setShowDone(false)} style={{ background: 'none', border: 'none', color: '#a8a29e', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Hide</button>
                 )}
               </div>
               {showDone && (
                 <div style={{ padding: '8px 0' }}>
-                  {done.map((item) => (
-                    <GroceryRow key={item.id} item={item} done onToggle={(checked) => toggleGrocery(item.id, checked)} />
+                  {done.map(item => (
+                    <GroceryRow key={item.id} item={item} done onToggle={checked => toggleGrocery(item.id, checked)} onSelect={() => setSelectedItem(item)} />
                   ))}
                 </div>
               )}
@@ -271,19 +239,30 @@ export function GroceryPage() {
           position: 'fixed', bottom: isDesktop ? 24 : 72, right: 20, width: 56, height: 56,
           borderRadius: 16, background: ACCENT, color: 'white', border: 'none',
           fontSize: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 8px 24px ${ACCENT}40`, zIndex: 40, cursor: 'pointer',
-          transition: 'transform .1s',
+          boxShadow: `0 8px 24px ${ACCENT}40`, zIndex: 40, cursor: 'pointer', transition: 'transform .1s',
         }}
-        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(.94)')}
-        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onMouseDown={e => (e.currentTarget.style.transform = 'scale(.94)')}
+        onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
       >+</button>
 
       {showAdd && (
-        <AddGrocerySheet members={members} onClose={() => setShowAdd(false)} onAdded={() => { setShowAdd(false); }} />
+        <AddGrocerySheet members={members} onClose={() => setShowAdd(false)} onAdded={() => setShowAdd(false)} />
+      )}
+
+      {selectedItem && (
+        <GroceryDetailSheet
+          item={selectedItem} members={members}
+          onClose={() => setSelectedItem(null)}
+          onToggle={checked => toggleGrocery(selectedItem.id, checked)}
+          onUpdate={payload => updateGrocery(selectedItem.id, payload)}
+          onDelete={() => { deleteGrocery(selectedItem.id); setSelectedItem(null) }}
+        />
       )}
     </div>
   )
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function groupByDay(items: Grocery[]): { key: string; label: string; items: Grocery[] }[] {
   const now = new Date()
@@ -310,167 +289,287 @@ function groupByDay(items: Grocery[]): { key: string; label: string; items: Groc
     })
 }
 
+// ── GroceryRow ────────────────────────────────────────────────────────────────
+
 interface RowProps {
   item: Grocery
   done?: boolean
   onToggle: (checked: boolean) => void
-  onEdit?: (updates: { title?: string; quantity?: string; notes?: string }) => void
-  onDelete?: () => void
+  onSelect: () => void
 }
 
-function GroceryRow({ item, done = false, onToggle, onEdit, onDelete }: RowProps) {
-  const [editing, setEditing] = useState(false)
-  const [editVal, setEditVal] = useState(item.title)
-  const [editQty, setEditQty] = useState(item.quantity ?? '')
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [showNotes, setShowNotes] = useState(false)
-
-  const startEdit = () => {
-    if (done) return
-    setEditVal(item.title)
-    setEditQty(item.quantity ?? '')
-    setEditing(true)
-  }
-
-  const commitEdit = () => {
-    setEditing(false)
-    if (editVal.trim() === item.title && editQty.trim() === (item.quantity ?? '')) return
-    onEdit?.({ title: editVal.trim(), quantity: editQty.trim() || undefined })
-  }
-
+function GroceryRow({ item, done = false, onToggle, onSelect }: RowProps) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 12,
-      padding: '12px 14px', marginBottom: 6,
-      background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
-      opacity: done ? 0.6 : 1, transition: 'opacity 0.15s',
-    }}>
+    <div
+      onClick={onSelect}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '11px 14px', marginBottom: 6,
+        background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
+        opacity: done ? 0.55 : 1, transition: 'opacity 0.15s', cursor: 'pointer',
+      }}
+    >
+      {/* Circular tick button */}
       <button
-        onClick={() => onToggle(!done)}
+        onClick={e => { e.stopPropagation(); onToggle(!done) }}
         style={{
-          width: 22, height: 22, borderRadius: 7, border: `2px solid ${done ? ACCENT : '#d4d4d8'}`,
-          background: done ? ACCENT : 'white', flexShrink: 0, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.15s', marginTop: 1,
+          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+          border: `1.5px solid ${done ? '#22c55e' : '#d4d4d8'}`,
+          background: done ? '#22c55e' : 'transparent',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.15s',
         }}
       >
-        {done && (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        {done ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20,6 9,17 4,12" />
+          </svg>
+        ) : (
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20,6 9,17 4,12" />
           </svg>
         )}
       </button>
 
-      {editing ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <input
-            autoFocus
-            value={editVal}
-            onChange={(e) => setEditVal(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
-            style={{ fontSize: 14, border: 'none', outline: 'none', borderBottom: `2px solid ${ACCENT}`, color: '#1c1917', background: 'transparent' }}
-          />
-          <input
-            value={editQty}
-            onChange={(e) => setEditQty(e.target.value)}
-            onBlur={commitEdit}
-            placeholder="Quantity…"
-            style={{ fontSize: 12, border: 'none', outline: 'none', borderBottom: `1px solid #d4d4d8`, color: '#78716c', background: 'transparent' }}
-          />
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, textDecoration: done ? 'line-through' : 'none', color: done ? '#a8a29e' : '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.title}
         </div>
-      ) : (
-        <div style={{ flex: 1 }} onClick={startEdit}>
-          <div style={{ fontSize: 14, textDecoration: done ? 'line-through' : 'none', color: done ? '#a8a29e' : '#1c1917', fontWeight: 500 }}>
-            {item.title}
+        {(item.quantity || item.notes) && (
+          <div style={{ fontSize: 11, color: '#a8a29e', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {[item.quantity, item.notes].filter(Boolean).join(' · ')}
           </div>
-          {(item.quantity || item.notes) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-              {item.quantity && <span style={{ fontSize: 12, color: '#78716c' }}>{item.quantity}</span>}
-              {item.notes && !done && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowNotes(!showNotes) }}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ACCENT, fontSize: 11, fontWeight: 600 }}
-                >
-                  {showNotes ? 'Hide notes' : 'View notes'}
-                </button>
-              )}
-            </div>
-          )}
-          {showNotes && item.notes && !done && (
-            <div style={{ fontSize: 12, color: '#78716c', marginTop: 6, background: '#faf7f2', padding: '6px 10px', borderRadius: 8 }}>
-              {item.notes}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
-      {item.assignee && !confirmDelete && (
+      {/* Assignee avatar */}
+      {item.assignee && (
         <span style={{
-          width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
           background: item.assignee.color ?? ACCENT,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: 'white',
+          fontSize: 10, fontWeight: 700, color: 'white',
         }}>
           {item.assignee.name?.charAt(0).toUpperCase()}
         </span>
       )}
 
-      {onDelete && !editing && (
-        confirmDelete ? (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => onDelete()} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
-            <button onClick={() => setConfirmDelete(false)} style={{ border: 'none', background: '#fafafa', color: '#78716c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-          </div>
-        ) : (
-          <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" /><path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
-            </svg>
-          </button>
-        )
-      )}
+      {/* Chevron hint */}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9,18 15,12 9,6" />
+      </svg>
     </div>
   )
 }
 
-function HistoryRow({ item, onDelete }: { item: Grocery; onDelete: (id: string) => void }) {
+// ── GroceryDetailSheet ────────────────────────────────────────────────────────
+
+interface DetailSheetProps {
+  item: Grocery
+  members: Member[]
+  onClose: () => void
+  onToggle: (checked: boolean) => void
+  onUpdate: (payload: UpdateGroceryPayload) => Promise<void>
+  onDelete: () => void
+}
+
+function GroceryDetailSheet({ item, members, onClose, onToggle, onUpdate, onDelete }: DetailSheetProps) {
+  const isDesktop = useBreakpoint()
+  const [title, setTitle] = useState(item.title)
+  const [quantity, setQuantity] = useState(item.quantity ?? '')
+  const [notes, setNotes] = useState(item.notes ?? '')
+  const [assigneeId, setAssigneeId] = useState(item.assignee?.id ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+
+  // Debounced field updates — batch pending changes
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingRef = useRef<UpdateGroceryPayload>({})
+
+  const scheduleUpdate = (patch: UpdateGroceryPayload) => {
+    pendingRef.current = { ...pendingRef.current, ...patch }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      const payload = pendingRef.current
+      pendingRef.current = {}
+      setSyncing(true)
+      try { await onUpdate(payload) } finally { setSyncing(false) }
+    }, 600)
+  }
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
+
+  const handleTitle = (v: string) => { setTitle(v); scheduleUpdate({ title: v }) }
+  const handleQuantity = (v: string) => { setQuantity(v); scheduleUpdate({ quantity: v || undefined }) }
+  const handleNotes = (v: string) => { setNotes(v); scheduleUpdate({ notes: v }) }
+  const handleAssignee = (id: string) => {
+    setAssigneeId(id)
+    onUpdate({ assignee_id: id }) // immediate, no debounce
+  }
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: 12,
-      padding: '12px 14px', marginBottom: 6,
-      background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
-    }}>
+    <div
+      className="fade-in"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 100, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
+    >
+      <div
+        className={isDesktop ? 'fade-in' : 'slide-up'}
+        style={{
+          background: 'white', width: '100%', maxWidth: 520,
+          borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+          padding: isDesktop ? '24px 24px 28px' : '0 20px 44px',
+          boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : '0 -4px 24px rgba(0,0,0,0.10)',
+          maxHeight: '92vh', overflowY: 'auto',
+        }}
+      >
+        {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '14px auto 18px' }} />}
+        {isDesktop && <div style={{ height: 4 }} />}
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          {/* Done toggle */}
+          <button
+            onClick={() => onToggle(!item.done)}
+            style={{
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              border: `1.5px solid ${item.done ? '#22c55e' : '#d4d4d8'}`,
+              background: item.done ? '#22c55e' : 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            {item.done ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
+            )}
+          </button>
+          <span style={{ fontSize: 12, color: item.done ? '#22c55e' : '#a8a29e', fontWeight: 600 }}>
+            {item.done ? 'Done — tap to reopen' : 'Mark as done'}
+          </span>
+          <div style={{ flex: 1 }} />
+          {syncing && <span style={{ fontSize: 11, color: '#a8a29e' }}>Saving…</span>}
+          <button onClick={onClose} style={{ background: '#faf7f2', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 13, color: '#78716c', cursor: 'pointer' }}>Done</button>
+        </div>
+
+        {/* Title */}
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 6px' }}>Item</p>
+        <input
+          value={title}
+          onChange={e => handleTitle(e.target.value)}
+          placeholder="Item name"
+          style={{
+            width: '100%', fontSize: 15, fontWeight: 600,
+            border: '1px solid #ede8e1', borderRadius: 8, padding: '10px 12px',
+            outline: 'none', color: '#1c1917', background: '#fafafa',
+            boxSizing: 'border-box', marginBottom: 10,
+            textDecoration: item.done ? 'line-through' : 'none',
+          }}
+        />
+
+        {/* Quantity + Notes */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 6px' }}>Qty</p>
+            <input
+              value={quantity}
+              onChange={e => handleQuantity(e.target.value)}
+              placeholder="e.g. 2, 500g"
+              style={{ width: '100%', fontSize: 13, border: '1px solid #ede8e1', borderRadius: 8, padding: '9px 12px', outline: 'none', color: '#1c1917', background: '#fafafa', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ flex: 2 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 6px' }}>Notes</p>
+            <input
+              value={notes}
+              onChange={e => handleNotes(e.target.value)}
+              placeholder="Optional notes…"
+              style={{ width: '100%', fontSize: 13, border: '1px solid #ede8e1', borderRadius: 8, padding: '9px 12px', outline: 'none', color: '#1c1917', background: '#fafafa', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+
+        {/* Assignee */}
+        {members.length > 0 && (
+          <>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 8px' }}>Assign to</p>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleAssignee('')}
+                style={{
+                  padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                  borderColor: assigneeId === '' ? '#a8a29e' : '#ede8e1',
+                  background: assigneeId === '' ? '#f5f5f4' : 'white',
+                  color: assigneeId === '' ? '#78716c' : '#a8a29e',
+                }}
+              >Unassigned</button>
+              {members.map(m => (
+                <button key={m.id} onClick={() => handleAssignee(m.id)} style={{
+                  padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                  borderColor: assigneeId === m.id ? m.color : '#ede8e1',
+                  background: assigneeId === m.id ? m.color + '14' : 'white',
+                  color: assigneeId === m.id ? m.color : '#78716c',
+                }}>{m.name}</button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Delete */}
+        <div style={{ borderTop: '1px solid #faf7f2', paddingTop: 16 }}>
+          {confirmDelete ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={onDelete}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >Delete item</button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{ flex: 1, padding: '11px 0', borderRadius: 8, border: '1px solid #ede8e1', background: 'white', color: '#78716c', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{ width: '100%', padding: '11px 0', borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >Delete item</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── HistoryRow ────────────────────────────────────────────────────────────────
+
+function HistoryRow({ item, onDelete, onSelect }: { item: Grocery; onDelete: (id: string) => void; onSelect: (item: Grocery) => void }) {
+  return (
+    <div
+      onClick={() => onSelect(item)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '11px 14px', marginBottom: 6,
+        background: 'white', borderRadius: 12, border: '1px solid #ede8e1',
+        opacity: 0.6, cursor: 'pointer',
+      }}
+    >
       <span style={{
-        width: 22, height: 22, borderRadius: 7, background: ACCENT,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1,
+        width: 26, height: 26, borderRadius: '50%', background: '#22c55e',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20,6 9,17 4,12" />
         </svg>
       </span>
-
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, color: '#a8a29e', textDecoration: 'line-through' }}>
-          {item.title}
-        </div>
-        {item.quantity && <div style={{ fontSize: 12, color: '#a8a29e', marginTop: 2 }}>{item.quantity}</div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, color: '#a8a29e', textDecoration: 'line-through', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+        {item.quantity && <div style={{ fontSize: 11, color: '#a8a29e', marginTop: 1 }}>{item.quantity}</div>}
       </div>
-
-      {!confirmDelete ? (
-        <button onClick={() => setConfirmDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#d4d4d8' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6" /><path d="M10,11v6" /><path d="M14,11v6" /><path d="M9,6V4h6v2" />
-          </svg>
-        </button>
-      ) : (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={() => onDelete(item.id)} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
-          <button onClick={() => setConfirmDelete(false)} style={{ border: 'none', background: '#fafafa', color: '#78716c', borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-        </div>
-      )}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9,18 15,12 9,6" />
+      </svg>
     </div>
   )
 }

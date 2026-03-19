@@ -67,13 +67,40 @@ export function AuthPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #f5f3ef 0%, #eef0fb 100%)',
+      background: '#faf7f2',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '32px 20px 40px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: -240,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '160vw',
+        height: 540,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+        filter: 'blur(32px)',
+        opacity: 0.85,
+        zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: -180,
+        right: '-10%',
+        width: '100vw',
+        height: 400,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 20deg at 50% 50%, #fde68a 0deg, #fbcfe8 100deg, #c7d2fe 200deg, #fde68a 360deg)',
+        filter: 'blur(40px)',
+        opacity: 0.6,
+        zIndex: 0,
+      }} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes hj-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
@@ -90,6 +117,7 @@ export function AuthPage() {
         .hj-feature-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #0001; }
       `}</style>
 
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       {/* Logo */}
       <div className="hj-logo-float hj-fade-up" style={{ marginBottom: 20 }}>
         <AppLogo size={72} />
@@ -157,9 +185,7 @@ export function AuthPage() {
         </button>
       </div>
 
-      <p style={{ marginTop: 24, fontSize: 12, color: '#c4bfba', textAlign: 'center' }}>
-        Join your household. No email required.
-      </p>
+      </div>
     </div>
   )
 }
@@ -168,15 +194,44 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #f5f3ef 0%, #eef0fb 100%)',
+      background: '#faf7f2',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: '20px 16px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: -240,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '160vw',
+        height: 540,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+        filter: 'blur(32px)',
+        opacity: 0.85,
+        zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: -180,
+        right: '-10%',
+        width: '100vw',
+        height: 400,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 20deg at 50% 50%, #fde68a 0deg, #fbcfe8 100deg, #c7d2fe 200deg, #fde68a 360deg)',
+        filter: 'blur(40px)',
+        opacity: 0.6,
+        zIndex: 0,
+      }} />
       <style>{`
         @keyframes hj-fade-up { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         .hj-auth-card { animation: hj-fade-up 0.35s cubic-bezier(.16,1,.3,1) both; }
       `}</style>
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {children}
+      </div>
     </div>
   )
 }
