@@ -56,10 +56,11 @@ export function BottomNav() {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-      width: '100%', maxWidth: 520, background: 'white',
+      width: '100%', maxWidth: 520,
       borderTop: '1px solid #ede8e1', display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-      zIndex: 40,
+      zIndex: 40, overflow: 'hidden',
+      background: 'white',
     }}>
       {navItems.map(({ id, label, Icon }) => {
         const isActive = location.pathname === id
@@ -71,7 +72,7 @@ export function BottomNav() {
             style={{
               flex: 1, background: 'none', border: 'none',
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: '10px 0 10px', gap: 4, cursor: 'pointer', position: 'relative',
+              padding: '10px 0 10px', gap: 4, cursor: 'pointer', position: 'relative', zIndex: 1,
             }}
           >
             <span style={{

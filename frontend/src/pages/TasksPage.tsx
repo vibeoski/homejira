@@ -148,6 +148,7 @@ export function TasksPage() {
         borderBottom: '1px solid #ede8e1',
         position: 'sticky', top: 57, zIndex: 49,
       }}>
+        <div style={{ display: 'contents' }}>
         {/* Title + stats */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
@@ -236,6 +237,7 @@ export function TasksPage() {
               </button>
             )
           })}
+        </div>
         </div>
       </div>
 

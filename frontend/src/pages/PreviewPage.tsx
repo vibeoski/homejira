@@ -70,13 +70,41 @@ function WelcomeBackScreen() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse 90% 55% at 50% 15%, rgba(99,102,241,0.15) 0%, transparent 70%), #faf7f2',
+      background: '#faf7f2',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '40px 28px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: -240,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '160vw',
+        height: 540,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+        filter: 'blur(32px)',
+        opacity: 0.85,
+        zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: -180,
+        right: '-10%',
+        width: '100vw',
+        height: 400,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 20deg at 50% 50%, #fde68a 0deg, #fbcfe8 100deg, #c7d2fe 200deg, #fde68a 360deg)',
+        filter: 'blur(40px)',
+        opacity: 0.6,
+        zIndex: 0,
+      }} />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       <AppLogo size={56} />
 
       <h1 style={{
@@ -133,6 +161,7 @@ function WelcomeBackScreen() {
       >
         New here? Create an account
       </button>
+      </div>
     </div>
   )
 }
@@ -255,15 +284,45 @@ function NewUserCarousel() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(ellipse 90% 55% at 50% 15%, rgba(99,102,241,0.15) 0%, transparent 70%), #faf7f2',
+      background: '#faf7f2',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: -240,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '160vw',
+        height: 540,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 200deg at 50% 50%, #c7d2fe 0deg, #fde68a 110deg, #a7f3d0 220deg, #c7d2fe 360deg)',
+        filter: 'blur(32px)',
+        opacity: 0.85,
+        zIndex: 0,
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: -180,
+        right: '-10%',
+        width: '100vw',
+        height: 400,
+        borderRadius: '50%',
+        background: 'conic-gradient(from 20deg at 50% 50%, #fde68a 0deg, #fbcfe8 100deg, #c7d2fe 200deg, #fde68a 360deg)',
+        filter: 'blur(40px)',
+        opacity: 0.6,
+        zIndex: 0,
+      }} />
+
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '20px 24px 8px',
+        position: 'relative',
+        zIndex: 1,
       }}>
         <AppLogo size={36} />
         <button
@@ -286,6 +345,8 @@ function NewUserCarousel() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 28px 32px',
+        position: 'relative',
+        zIndex: 1,
       }}>
         {current.render()}
 
@@ -342,6 +403,8 @@ function NewUserCarousel() {
         padding: '16px 24px',
         paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
         borderTop: '1px solid #ede8e1',
+        position: 'relative',
+        zIndex: 1,
       }}>
         <button
           type="button"

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CATEGORIES, PRIORITIES, type Category, type Priority, type Member, type CreateTaskPayload } from '../../types'
 import { useStore } from '../../store'
 import { useAuthStore } from '../../store/authStore'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 
 interface Props {
@@ -68,6 +69,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defaultCategory }: Props) {
   const { createTask } = useStore()
   const { member } = useAuthStore()
+  const isDesktop = useBreakpoint()
 
   const defaultAssignee = members[0]?.id ?? ''
   const initialCategory: Category = defaultCategory ?? (hiddenCategories?.includes('chore') ? (Object.keys(CATEGORY_CONFIG) as Category[]).find(c => !hiddenCategories.includes(c))! : 'chore')
@@ -114,14 +116,16 @@ export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defa
     <div
       className="fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-      style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: '#00000040', zIndex: 100, display: 'flex', alignItems: isDesktop ? 'center' : 'flex-end', justifyContent: 'center' }}
     >
-      <div className="slide-up" style={{
+      <div className={isDesktop ? 'fade-in' : 'slide-up'} style={{
         background: 'white', width: '100%', maxWidth: 520,
-        borderRadius: '18px 18px 0 0', padding: '20px 20px 44px',
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.10)', maxHeight: '92vh', overflowY: 'auto',
+        borderRadius: isDesktop ? 16 : '18px 18px 0 0',
+        padding: isDesktop ? '24px 24px 28px' : '20px 20px 44px',
+        boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : '0 -4px 24px rgba(0,0,0,0.10)',
+        maxHeight: '92vh', overflowY: 'auto',
       }}>
-        <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '0 auto 20px' }} />
+        {!isDesktop && <div style={{ width: 36, height: 3, background: '#d4d4d8', borderRadius: 99, margin: '0 auto 20px' }} />}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917' }}>

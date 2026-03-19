@@ -54,13 +54,13 @@ export function AppLayout() {
   }, [isAuthenticated, token])
 
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', background: '#faf7f2', position: 'relative' }}>
+    <div style={{ maxWidth: 520, margin: '0 auto', minHeight: '100vh', position: 'relative', background: 'radial-gradient(ellipse 140% 45% at 60% 0%, rgba(199,210,254,0.65) 0%, transparent 65%), radial-gradient(ellipse 100% 35% at 5% 100%, rgba(167,243,208,0.45) 0%, transparent 65%), radial-gradient(ellipse 80% 30% at 100% 55%, rgba(253,230,138,0.4) 0%, transparent 65%), #faf7f2' }}>
       {/* Persistent top bar — visible on every screen */}
       <div style={{
-        background: 'white', borderBottom: '1px solid #ede8e1',
         position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', height: 57, flexShrink: 0,
+        background: 'white', borderBottom: '1px solid #ede8e1',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <AppLogo size={30} />
