@@ -238,11 +238,9 @@ const CAROUSEL_SCREENS = [
           lineHeight: 1.7,
           margin: 0,
         }}>
-          Just pick a name and a 4-digit PIN.
-          That's your account — no email,
-          no password to forget. Invite your
-          partner, kids, or roommates.
-          It's free.
+          Create your account in seconds.
+          Invite your partner, kids,
+          or roommates — it's free.
         </p>
       </div>
     ),
