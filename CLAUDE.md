@@ -55,10 +55,12 @@ homejira/
 │       └── db/migrations/          # 000001–000018 SQL migration files
 └── frontend/src/
     ├── api/                        # client.ts, tasks.ts, members.ts, households.ts, auth.ts, coins.ts, groceries.ts
-    ├── store/                      # index.ts (app), authStore.ts (auth), configStore.ts (feature flags), guest.ts
+    ├── store/                      # index.ts (app), authStore.ts (auth), configStore.ts (feature flags)
     ├── hooks/                      # useBreakpoint.ts + others
-    ├── components/                 # ui/, layout/, tasks/, members/, stats/, auth/
-    ├── pages/                      # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage
+    ├── components/                 # ui/, layout/ (+ desktop/), tasks/, members/, stats/, auth/
+    ├── pages/                      # TasksPage, StatsPage, MembersPage, GroceryPage, AuthPage, ReferralPage, JoinPage, PreviewPage (OnboardingPage)
+    ├── data/                       # previewData.ts (onboarding preview content)
+    ├── constants/                  # layout.ts (breakpoint/layout constants)
     ├── types/index.ts              # all TS interfaces and enum-like const maps
     └── utils/index.ts              # pure utility functions
 ```
@@ -120,7 +122,7 @@ type TaskRepository interface {
 }
 ```
 
-**Sentinel errors** (`domain/errors.go`): `ErrNotFound`, `ErrInvalidInput`, `ErrAlreadyExists`, `ErrUnauthorized`, `ErrWrongMpin`.
+**Sentinel errors**: `ErrNotFound`, `ErrInvalidInput`, `ErrAlreadyExists` live in `domain/errors.go`; `ErrUnauthorized`, `ErrWrongMpin` live in `domain/auth.go`. New errors should go in `domain/errors.go` unless auth-specific.
 Wrap with: `fmt.Errorf("%w: detail", domain.ErrXxx)`.
 
 ### Repository Conventions
@@ -213,7 +215,7 @@ GET    /api/v1/events?token=<jwt>                 (SSE stream)
 GET    /api/v1/households/link/{token}            (public)
 GET    /api/v1/referral/{token}                   (public)
 
-POST   /api/v1/auth/check-phone
+POST   /api/v1/auth/check-username
 POST   /api/v1/auth/login
 POST   /api/v1/auth/register
 POST   /api/v1/auth/refresh                       (protected)
@@ -302,9 +304,15 @@ type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 ### Routing
 
 ```
-/auth → AuthPage (public)   / → TasksPage   /stats → StatsPage   /household → MembersPage
+/onboarding → PreviewPage (public, default unauthenticated redirect)
+/auth        → AuthPage (public)
+/            → TasksPage
+/stats       → StatsPage
+/household   → MembersPage
+/join/:token → JoinPage (public, household invite link)
+/referral/*  → ReferralPage (public)
 ```
-`canAccessApp = isAuthenticated || isGuest`. `AppLayout`: max-width 520px, `BottomNav`, optional `GuestBanner`.
+`canAccessApp = isAuthenticated`. Unauthenticated users redirect to `/onboarding`. `AppLayout`: max-width 520px, `BottomNav`, optional `GuestBanner`.
 
 ### Guest Mode
 
@@ -347,7 +355,7 @@ type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 
 1. **Never bypass layer boundary.** Handlers → service only. No repo calls from handlers. No handler calls from services.
 
-2. **New domain errors in `domain/errors.go`.** Wrap: `fmt.Errorf("%w: detail", domain.ErrXxx)`. No ad-hoc `errors.New(...)` elsewhere.
+2. **New domain errors in `domain/errors.go`** (or `domain/auth.go` for auth-specific errors). Wrap: `fmt.Errorf("%w: detail", domain.ErrXxx)`. No ad-hoc `errors.New(...)` elsewhere.
 
 3. **New routes in `server.go` only.** Inside `r.Route("/api/v1", ...)`. Protected routes inside `RequireAuth` group.
 

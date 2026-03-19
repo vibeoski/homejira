@@ -47,7 +47,7 @@ export function JoinPage() {
 
   const handleSignUpAndJoin = () => {
     localStorage.setItem('hj_pending_join', token!)
-    navigate('/auth', { replace: true })
+    navigate('/onboarding', { replace: true })
   }
 
   const handleSignInAndJoin = () => {

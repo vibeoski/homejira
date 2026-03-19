@@ -35,3 +35,6 @@ Thumbs.db
 firebase-service-account.json
 .aider*
 TEST_ACCOUNTS.md
+
+# Local admin panel (never push)
+admin/
