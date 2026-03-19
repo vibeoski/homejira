@@ -45,9 +45,13 @@ interface AppStore {
   loading: boolean
   error: string | null
   sseVersion: number
+  groceryPending: number
+  toast: { message: string } | null
 
   setFilter: (f: Partial<TaskFilter>) => void
   bumpSse: () => void
+  showToast: (message: string) => void
+  dismissToast: () => void
   fetchTasks: () => Promise<void>
   fetchGroceries: () => Promise<void>
   fetchMembers: () => Promise<void>
@@ -71,9 +75,13 @@ export const useStore = create<AppStore>((set, get) => ({
   loading: false,
   error: null,
   sseVersion: 0,
+  groceryPending: 0,
+  toast: null,
 
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
   bumpSse: () => set((s) => ({ sseVersion: s.sseVersion + 1 })),
+  showToast: (message) => set({ toast: { message } }),
+  dismissToast: () => set({ toast: null }),
 
   fetchTasks: async () => {
     const isInitial = get().tasks.length === 0
@@ -91,8 +99,11 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   fetchGroceries: async () => {
+    // Skip SSE-triggered refresh while optimistic grocery updates are in-flight
+    if (get().groceryPending > 0) return
     try {
       const groceries = await groceriesApi.list()
+      if (get().groceryPending > 0) return // re-check after await
       if (JSON.stringify(groceries) !== JSON.stringify(get().groceries)) {
         set({ groceries })
       }
@@ -164,14 +175,22 @@ export const useStore = create<AppStore>((set, get) => ({
 
   toggleGrocery: async (id, done) => {
     const previous = get().groceries.find((g) => g.id === id)
-    set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g) }))
+    set((s) => ({
+      groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g),
+      groceryPending: s.groceryPending + 1,
+    }))
     try {
       const updated = await groceriesApi.update(id, { done })
-      set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
+      set((s) => ({
+        groceries: s.groceries.map((g) => g.id === id ? updated : g),
+        groceryPending: Math.max(0, s.groceryPending - 1),
+      }))
     } catch {
       if (previous) {
         set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? previous : g) }))
       }
+      set((s) => ({ groceryPending: Math.max(0, s.groceryPending - 1) }))
+      get().showToast('Could not update item — please try again.')
     }
   },
 

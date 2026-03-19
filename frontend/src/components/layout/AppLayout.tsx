@@ -9,9 +9,15 @@ import { useStore } from '../../store'
 
 export function AppLayout() {
   const { isAuthenticated, token, setAuth } = useAuthStore()
-  const { fetchTasks, fetchMembers, bumpSse } = useStore()
+  const { fetchTasks, fetchMembers, bumpSse, toast, dismissToast } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(dismissToast, 3500)
+    return () => clearTimeout(t)
+  }, [toast, dismissToast])
 
   // SSE: subscribe to live updates for authenticated users.
   // EventSource reconnects automatically on drop; we close and recreate when token changes.
@@ -70,6 +76,20 @@ export function AppLayout() {
       </div>
       <Outlet />
       <BottomNav />
+      {toast && (
+        <div
+          onClick={dismissToast}
+          style={{
+            position: 'fixed', bottom: 88, left: '50%', transform: 'translateX(-50%)',
+            background: '#1c1917', color: 'white', borderRadius: 10, padding: '10px 18px',
+            fontSize: 13, fontWeight: 600, zIndex: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            maxWidth: 320, textAlign: 'center', cursor: 'pointer', whiteSpace: 'nowrap',
+            animation: 'fadeIn 0.15s ease',
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }
