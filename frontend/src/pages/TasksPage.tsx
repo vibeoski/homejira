@@ -11,11 +11,10 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { STATUSES, type Task, type TaskStatus } from '../types'
 import { isOverdue } from '../utils'
 
-type Tab = 'active' | 'urgent' | 'done'
+type Tab = 'active' | 'done'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'active', label: 'Active' },
-  { id: 'urgent', label: 'Urgent' },
   { id: 'done',   label: 'Done'   },
 ]
 
@@ -113,7 +112,6 @@ export function TasksPage() {
   const tabFiltered = byMember.filter((t) => {
     switch (tab) {
       case 'active': return !t.done
-      case 'urgent': return !t.done && (t.priority === 'urgent' || isOverdue(t.due_at, t.done))
       case 'done':   return t.done
     }
   })
@@ -130,14 +128,17 @@ export function TasksPage() {
     return priorityOrder[a.priority] - priorityOrder[b.priority]
   })
 
-  // For Active/Urgent: group by status
-  const grouped = (tab === 'active' || tab === 'urgent')
-    ? STATUS_GROUPS.map((g) => ({ ...g, tasks: sorted.filter((t) => t.status === g.status) }))
+  const overdueTasks = tab === 'active' ? sorted.filter((t) => isOverdue(t.due_at, t.done)) : []
+
+  const grouped = tab === 'active'
+    ? [
+        ...(overdueTasks.length > 0 ? [{ status: 'open' as TaskStatus, label: 'Overdue', tasks: overdueTasks }] : []),
+        ...STATUS_GROUPS.map((g) => ({ ...g, tasks: sorted.filter((t) => t.status === g.status && !isOverdue(t.due_at, t.done)) }))
+      ]
     : null
 
   const activeCount  = tasks.filter((t) => !t.done).length
-  const urgentCount  = tasks.filter((t) => !t.done && (t.priority === 'urgent' || isOverdue(t.due_at, t.done))).length
-  const tabCount     = tab === 'active' ? activeCount : tab === 'urgent' ? urgentCount : tasks.filter((t) => t.done).length
+  const tabCount     = tab === 'active' ? activeCount : tasks.filter((t) => t.done).length
 
   return (
     <>
@@ -153,7 +154,6 @@ export function TasksPage() {
             <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: '0 0 2px', letterSpacing: 0.2 }}>Tasks</h2>
             <p style={{ fontSize: 12, color: '#a8a29e', margin: 0 }}>
               {activeCount} active
-              {urgentCount > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}> · {urgentCount} urgent</span>}
             </p>
           </div>
 
@@ -210,7 +210,7 @@ export function TasksPage() {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: -1 }}>
           {TABS.map(({ id, label }) => {
-            const count = id === 'active' ? activeCount : id === 'urgent' ? urgentCount : tasks.filter((t) => t.done).length
+            const count = id === 'active' ? activeCount : tasks.filter((t) => t.done).length
             const active = tab === id
             return (
               <button
@@ -266,12 +266,6 @@ export function TasksPage() {
                   <p style={{ fontSize: 32, margin: '0 0 8px' }}>🎉</p>
                   <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>Nothing done yet</p>
                   <p style={{ fontSize: 13, color: '#a8a29e', margin: 0 }}>Completed tasks will appear here.</p>
-                </>
-              ) : tab === 'urgent' ? (
-                <>
-                  <p style={{ fontSize: 32, margin: '0 0 8px' }}>✓</p>
-                  <p style={{ fontSize: 18, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>All clear</p>
-                  <p style={{ fontSize: 13, color: '#a8a29e', margin: 0 }}>No urgent or overdue tasks.</p>
                 </>
               ) : (
                 <>

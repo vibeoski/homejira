@@ -1,0 +1,123 @@
+import type { Member, Task } from '../types'
+
+// Today is 2026-03-19
+const TODAY = '2026-03-19T12:00:00.000Z'
+const YESTERDAY = '2026-03-18T12:00:00.000Z'
+const TOMORROW = '2026-03-20T12:00:00.000Z'
+
+export const PREVIEW_MEMBERS: Member[] = [
+  {
+    id: 'preview-member-1',
+    name: 'Alice',
+    avatar: 'A',
+    color: '#6366f1',
+    role: 'admin',
+    created_at: TODAY,
+    household_id: 'preview-household-1',
+  },
+  {
+    id: 'preview-member-2',
+    name: 'Bob',
+    avatar: 'B',
+    color: '#0ea5e9',
+    role: 'member',
+    created_at: TODAY,
+    household_id: 'preview-household-1',
+  },
+  {
+    id: 'preview-member-3',
+    name: 'Carol',
+    avatar: 'C',
+    color: '#f59e0b',
+    role: 'member',
+    created_at: TODAY,
+    household_id: 'preview-household-1',
+  },
+]
+
+const [alice, bob, carol] = PREVIEW_MEMBERS
+
+export const PREVIEW_TASKS: Task[] = [
+  {
+    id: 'preview-task-1',
+    title: 'Fix leaky faucet',
+    notes: 'Kitchen sink dripping constantly',
+    category: 'repair',
+    priority: 'urgent',
+    status: 'in_progress',
+    assignee_id: alice.id,
+    assignee: alice,
+    done: false,
+    due_at: YESTERDAY,
+    created_at: TODAY,
+    updated_at: TODAY,
+  },
+  {
+    id: 'preview-task-2',
+    title: 'Buy groceries',
+    notes: 'Milk, eggs, bread, vegetables',
+    category: 'errand',
+    priority: 'normal',
+    status: 'open',
+    assignee_id: bob.id,
+    assignee: bob,
+    done: false,
+    due_at: TOMORROW,
+    created_at: TODAY,
+    updated_at: TODAY,
+  },
+  {
+    id: 'preview-task-3',
+    title: 'Vacuum living room',
+    notes: '',
+    category: 'chore',
+    priority: 'normal',
+    status: 'open',
+    assignee_id: '',
+    assignee: undefined,
+    done: false,
+    created_at: TODAY,
+    updated_at: TODAY,
+  },
+  {
+    id: 'preview-task-4',
+    title: 'Schedule dentist',
+    notes: 'Check insurance coverage first',
+    category: 'errand',
+    priority: 'high',
+    status: 'on_hold',
+    assignee_id: carol.id,
+    assignee: carol,
+    done: false,
+    created_at: TODAY,
+    updated_at: TODAY,
+  },
+  {
+    id: 'preview-task-5',
+    title: 'Replace light bulbs',
+    notes: 'Hallway and bathroom',
+    category: 'repair',
+    priority: 'normal',
+    status: 'done',
+    assignee_id: alice.id,
+    assignee: alice,
+    done: true,
+    done_at: YESTERDAY,
+    created_at: TODAY,
+    updated_at: YESTERDAY,
+  },
+  {
+    id: 'preview-task-6',
+    title: 'Plan dinner for Sunday',
+    notes: 'Check who can join',
+    category: 'errand',
+    priority: 'normal',
+    status: 'done',
+    assignee_id: bob.id,
+    assignee: bob,
+    done: true,
+    done_at: YESTERDAY,
+    created_at: TODAY,
+    updated_at: YESTERDAY,
+  },
+]

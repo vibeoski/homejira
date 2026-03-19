@@ -50,6 +50,11 @@ export function JoinPage() {
     navigate('/auth', { replace: true })
   }
 
+  const handleSignInAndJoin = () => {
+    localStorage.setItem('hj_pending_join', token!)
+    navigate('/auth?mode=login', { replace: true })
+  }
+
   if (loading || joining) {
     return (
       <div style={{ ...pageStyle, flexDirection: 'column', gap: 12 }}>
@@ -100,7 +105,7 @@ export function JoinPage() {
         </button>
 
         <button
-          onClick={handleSignUpAndJoin}
+          onClick={handleSignInAndJoin}
           style={{
             marginTop: 10, width: '100%', padding: '12px 0', borderRadius: 10,
             border: '1px solid #ede8e1', background: 'white',
