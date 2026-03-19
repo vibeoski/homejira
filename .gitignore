@@ -34,3 +34,4 @@ qa/reports/
 Thumbs.db
 firebase-service-account.json
 .aider*
+TEST_ACCOUNTS.md
