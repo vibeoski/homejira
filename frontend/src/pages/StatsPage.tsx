@@ -30,29 +30,6 @@ export function StatsPage() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x }
-
-function last7Days() {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    return startOfDay(d)
-  })
-}
-
-function dayLabel(d: Date) {
-  return d.toLocaleDateString('en-US', { weekday: 'short' })
-}
-
-function completionsOnDay(tasks: Task[], day: Date) {
-  const next = new Date(day); next.setDate(next.getDate() + 1)
-  return tasks.filter(t => {
-    if (!t.done_at) return false
-    const d = new Date(t.done_at)
-    return d >= day && d < next
-  }).length
-}
-
 // ── Desktop layout ────────────────────────────────────────────────────────────
 
 function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) {
@@ -72,10 +49,6 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
   const unassigned = open.filter(t => !t.assignee_id).length
   const overdueCount = open.filter(t => t.due_at && new Date(t.due_at) < now).length
   const urgentCount = open.filter(t => t.priority === 'urgent').length
-
-  const days = last7Days()
-  const completionsByDay = days.map(d => completionsOnDay(tasks, d))
-  const maxCompletions = Math.max(...completionsByDay, 1)
 
   const urgentOpen = open.filter(t => t.priority === 'urgent').length
   const highOpen = open.filter(t => t.priority === 'high').length
@@ -148,32 +121,6 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
 
       {/* ── Right column ─────────────────────────────────────── */}
       <div style={{ flex: 1, padding: '20px 20px 40px', minWidth: 0 }}>
-
-        {/* 7-day chart */}
-        <p style={{ fontSize: 10, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.8, textTransform: 'uppercase', margin: '0 0 10px 2px' }}>Completions — last 7 days</p>
-        <div style={{ background: 'white', borderRadius: 12, padding: '16px 18px 12px', border: '1px solid #ede8e1', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 64 }}>
-            {completionsByDay.map((count, i) => {
-              const isToday = i === 6
-              const barH = Math.max(count ? Math.round((count / maxCompletions) * 52) : 3, count ? 8 : 3)
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                  {count > 0 && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? '#6366f1' : '#78716c' }}>{count}</span>
-                  )}
-                  <div style={{
-                    width: '100%', height: barH, borderRadius: 5,
-                    background: count === 0 ? '#f5f5f4' : isToday ? '#6366f1' : '#a5b4fc',
-                    transition: 'height .4s',
-                  }} />
-                  <span style={{ fontSize: 10, color: isToday ? '#6366f1' : '#a8a29e', fontWeight: isToday ? 700 : 400 }}>
-                    {dayLabel(days[i])}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
 
         {/* Priority breakdown */}
         {open.length > 0 && (
