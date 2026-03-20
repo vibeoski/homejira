@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useStore } from '../store'
+import { useAuthStore } from '../store/authStore'
 import { Spinner } from '../components/ui/Spinner'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
 import { useBreakpoint } from '../hooks/useBreakpoint'
@@ -9,6 +11,7 @@ const ACCENT = '#6366f1'
 
 export function GroceryPage() {
   const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
+  const { member } = useAuthStore()
   const isDesktop = useBreakpoint()
 
   const [loading, setLoading] = useState(groceries.length === 0)
@@ -40,6 +43,8 @@ export function GroceryPage() {
     await Promise.allSettled(active.map(g => toggleGrocery(g.id, true)))
     setShowDone(true)
   }
+
+  if (!member?.household_id) return <Navigate to="/household" replace />
 
   if (loading) return <Spinner />
 
