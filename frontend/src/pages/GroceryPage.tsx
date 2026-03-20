@@ -14,8 +14,6 @@ export function GroceryPage() {
   const { member } = useAuthStore()
   const isDesktop = useBreakpoint()
 
-  if (!member?.household_id) return <Navigate to="/household" replace />
-
   const [loading, setLoading] = useState(groceries.length === 0)
   const [showDone, setShowDone] = useState(true)
   const [historyMode, setHistoryMode] = useState(false)
@@ -45,6 +43,8 @@ export function GroceryPage() {
     await Promise.allSettled(active.map(g => toggleGrocery(g.id, true)))
     setShowDone(true)
   }
+
+  if (!member?.household_id) return <Navigate to="/household" replace />
 
   if (loading) return <Spinner />
 
