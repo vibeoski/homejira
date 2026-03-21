@@ -23,7 +23,7 @@ main (production)
 
 HomeJira — household task management ("Jira for home"). Go backend + TypeScript frontend.
 Members belong to a **Household**. Tasks are scoped to a household.
-Auth: username + 4-digit mPIN → JWT (7-day TTL). Guest mode: localStorage only, no API calls.
+Auth: username + 4-digit mPIN → JWT (7-day TTL).
 
 **Service URLs**
 | Env | Frontend | API |
@@ -262,12 +262,12 @@ POST   /api/v1/households/invites/{id}/accept|reject
 
 | Store | File | Responsibility |
 |-------|------|----------------|
-| `useAuthStore` | `store/authStore.ts` | JWT token, member profile, guest mode, localStorage |
+| `useAuthStore` | `store/authStore.ts` | JWT token, member profile, localStorage |
 | `useStore` | `store/index.ts` | tasks, members, filters, loading/error state |
 | `useConfigStore` | `store/configStore.ts` | feature flags from `/api/v1/config` |
 
 - Auth store initialized from `localStorage` at module load (prevents auth flash).
-- localStorage keys: `hj_token`, `hj_member`, `hj_guest`, `hj_guest_tasks`.
+- localStorage keys: `hj_token`, `hj_member`.
 - Optimistic updates: apply immediately, revert on error.
 
 ### API Layer
@@ -312,11 +312,7 @@ type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 /join/:token → JoinPage (public, household invite link)
 /referral/*  → ReferralPage (public)
 ```
-`canAccessApp = isAuthenticated`. Unauthenticated users redirect to `/onboarding`. `AppLayout`: max-width 520px, `BottomNav`, optional `GuestBanner`.
-
-### Guest Mode
-
-`isGuest` skips login. Every store action checks `useAuthStore.getState().isGuest` and branches to localStorage or skips. `GUEST_MEMBER` is the synthetic assignee.
+`canAccessApp = isAuthenticated`. Unauthenticated users redirect to `/onboarding`. `AppLayout`: max-width 520px, `BottomNav`.
 
 ---
 
@@ -377,7 +373,7 @@ type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 
 12. **Frontend: shared types in `src/types/index.ts`.** API-only shapes may live in the api file.
 
-13. **Frontend: every store action handles guest mode.** Check `useAuthStore.getState().isGuest` — localStorage or skip.
+13. **Frontend: all app actions require authentication.** Guest mode has been removed — every store action assumes a logged-in user with a valid JWT.
 
 14. **Frontend: inline styles only.** No CSS files, CSS-in-JS, or utility frameworks.
 
