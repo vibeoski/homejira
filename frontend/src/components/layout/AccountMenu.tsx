@@ -176,7 +176,7 @@ export function AccountMenu() {
             <div style={{ padding: '6px 0' }}>
               <MenuItem label="Edit profile" onClick={() => { setOpen(false); openProfile() }} />
               <MenuItem label="Change PIN" onClick={() => { setOpen(false); openPin() }} />
-              <MenuItem label={`${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />
+              {coinsEnabled && <MenuItem label={`${coinInfo?.balance ?? 0} coins`} onClick={() => { setOpen(false); setSheet('coins') }} />}
               <div style={{ height: 1, background: '#faf7f2', margin: '4px 0' }} />
               <MenuItem label="Sign out" onClick={handleSignOut} danger />
             </div>
@@ -207,9 +207,11 @@ export function AccountMenu() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 16px' }}>
               <div style={{
                 width: 72, height: 72, borderRadius: '50%',
-                background: editColor + '20', border: `2.5px solid ${editColor}`,
+                background: editColor,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 34, marginBottom: 8, transition: 'border-color 0.15s',
+                fontSize: 34, fontWeight: 700, color: 'white',
+                fontFamily: 'system-ui, sans-serif',
+                marginBottom: 8, transition: 'background 0.15s',
               }}>{editName?.charAt(0).toUpperCase() || '?'}</div>
               <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917' }}>{editName || 'Your name'}</p>
             </div>
@@ -268,7 +270,7 @@ export function AccountMenu() {
       )}
 
       {/* Coins sheet */}
-      {sheet === 'coins' && (
+      {sheet === 'coins' && coinsEnabled && (
         <div
           className="fade-in"
           onClick={closeSheet}
