@@ -91,11 +91,11 @@ export function StatsScreen({ tasks, members }: Props) {
             </div>
           )}
           {urgentCount > 0 && (
-            <div style={{ flex: 1, background: '#fff7ed', borderRadius: 10, padding: '10px 14px', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, background: '#fffbeb', borderRadius: 10, padding: '10px 14px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16 }}>!</span>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#ea580c', margin: 0 }}>{urgentCount} urgent</p>
-                <p style={{ fontSize: 11, color: '#f97316', margin: 0 }}>Needs attention</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#d97706', margin: 0 }}>{urgentCount} urgent</p>
+                <p style={{ fontSize: 11, color: '#d97706', margin: 0 }}>Needs attention</p>
               </div>
             </div>
           )}

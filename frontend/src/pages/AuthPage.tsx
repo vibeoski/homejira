@@ -12,8 +12,8 @@ type Mode = 'landing' | 'login' | 'register'
 const ACCENT = '#6366f1'
 const FEATURES = [
   { icon: 'T', label: 'Task management', sub: 'Assign, track & complete household tasks', color: '#6366f1' },
-  { icon: 'G', label: 'Shared grocery list', sub: 'Shop together, check off items live', color: '#22c55e' },
-  { icon: 'H', label: 'Household hub', sub: 'Invite members, earn coins, stay in sync', color: '#f97316' },
+  { icon: 'G', label: 'Shared grocery list', sub: 'Shop together, check off items live', color: '#6366f1' },
+  { icon: 'H', label: 'Household hub', sub: 'Invite members, earn coins, stay in sync', color: '#78716c' },
 ]
 
 export function AuthPage() {
@@ -129,7 +129,7 @@ export function AuthPage() {
 
       {/* Wordmark */}
       <div className="hj-fade-up" style={{ textAlign: 'center', marginBottom: 8 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#1c1917', letterSpacing: -1.2, margin: 0, lineHeight: 1 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#1c1917', letterSpacing: -1.2, margin: 0, lineHeight: 1, fontFamily: 'Fraunces, serif' }}>
           HomeJira
         </h1>
         <p style={{ fontSize: 16, color: '#78716c', marginTop: 8, fontWeight: 500 }}>

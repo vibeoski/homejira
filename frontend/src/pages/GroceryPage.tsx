@@ -22,12 +22,18 @@ export function GroceryPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Grocery | null>(null)
 
+  // Initial load — shows spinner while data is absent
   const load = useCallback(async () => {
     try { await fetchGroceries() } finally { setLoading(false) }
   }, [fetchGroceries])
 
+  // Silent background refresh for SSE updates — never resets loading state
+  const refresh = useCallback(async () => {
+    try { await fetchGroceries() } catch { /* ignore */ }
+  }, [fetchGroceries])
+
   useEffect(() => { load() }, [load])
-  useEffect(() => { if (sseVersion > 0) load() }, [load, sseVersion])
+  useEffect(() => { if (sseVersion > 0) refresh() }, [refresh, sseVersion])
 
   // Keep selectedItem in sync with store (SSE updates)
   useEffect(() => {
