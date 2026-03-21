@@ -23,7 +23,7 @@ export function HouseholdPanel() {
   const [household, setHousehold] = useState<HouseholdData>(_cache?.household ?? null)
   const [loadingHousehold, setLoadingHousehold] = useState(_cache === null)
 
-  const [createKind] = useState<'home' | 'group'>('home')
+  const [createKind, setCreateKind] = useState<'home' | 'group'>('home')
   const [createName, setCreateName] = useState('')
   const [createBusy, setCreateBusy] = useState(false)
 
@@ -148,7 +148,7 @@ export function HouseholdPanel() {
         <p style={{ fontSize: 13, color: '#78716c', lineHeight: 1.6, maxWidth: 260, margin: '0 0 36px' }}>
           You've requested to join{waitingRequest.householdName
             ? <> <strong style={{ color: ACCENT }}>{waitingRequest.householdName}</strong></>
-            : ' a household'}. The admin will review your request shortly — this page updates in real time.
+            : ' your household'}. The admin will review your request shortly — this page updates in real time.
         </p>
 
         {error && (
@@ -373,6 +373,23 @@ export function HouseholdPanel() {
                   }}
                 />
 
+                <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderRadius: 8, overflow: 'hidden', border: '1px solid #ede8e1' }}>
+                  {(['home', 'group'] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setCreateKind(k)}
+                      style={{
+                        flex: 1, padding: '8px 0', border: 'none', cursor: 'pointer',
+                        background: createKind === k ? ACCENT : '#f9f9f9',
+                        color: createKind === k ? 'white' : '#78716c',
+                        fontSize: 12, fontWeight: 700, transition: 'all .15s',
+                        textTransform: 'capitalize',
+                      }}
+                    >{k === 'home' ? 'Home' : 'Group'}</button>
+                  ))}
+                </div>
+
                 <button
                   type="button"
                   onClick={handleCreate}
@@ -413,7 +430,7 @@ export function HouseholdPanel() {
                     disabled={joinBusy || !code.trim()}
                     style={{
                       padding: '0 18px', borderRadius: 8, border: 'none',
-                      background: joinBusy || !code.trim() ? '#ede8e1' : '#1c1917',
+                      background: joinBusy || !code.trim() ? '#ede8e1' : ACCENT,
                       color: joinBusy || !code.trim() ? '#a8a29e' : 'white',
                       fontSize: 13, fontWeight: 700, cursor: joinBusy || !code.trim() ? 'not-allowed' : 'pointer',
                       whiteSpace: 'nowrap',
@@ -472,7 +489,7 @@ export function HouseholdPanel() {
             <button
               type="button"
               onClick={() => setShowMore(true)}
-              style={{ background: 'rgba(99,102,241,0.1)', border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 8, color: '#6366f1', fontSize: 16, lineHeight: 1 }}
+              style={{ background: 'rgba(99,102,241,0.1)', border: 'none', cursor: 'pointer', padding: '10px 14px', borderRadius: 8, color: '#6366f1', fontSize: 16, lineHeight: 1, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >···</button>
           </div>
         </div>
