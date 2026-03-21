@@ -43,6 +43,7 @@ interface AppStore {
   members: Member[]
   filter: TaskFilter
   loading: boolean
+  refreshing: boolean
   error: string | null
   sseVersion: number
   groceryPending: number
@@ -73,6 +74,7 @@ export const useStore = create<AppStore>((set, get) => ({
   members: [],
   filter: {},
   loading: false,
+  refreshing: false,
   error: null,
   sseVersion: 0,
   groceryPending: 0,
@@ -86,15 +88,19 @@ export const useStore = create<AppStore>((set, get) => ({
   fetchTasks: async () => {
     const isInitial = get().tasks.length === 0
     if (isInitial) set({ loading: true, error: null })
+    else set({ refreshing: true })
     try {
       const tasks = await tasksApi.list(get().filter)
       if (JSON.stringify(tasks) !== JSON.stringify(get().tasks)) {
-        set({ tasks, loading: false })
+        set({ tasks, loading: false, refreshing: false })
       } else if (isInitial) {
-        set({ loading: false })
+        set({ loading: false, refreshing: false })
+      } else {
+        set({ refreshing: false })
       }
     } catch (e: unknown) {
-      if (isInitial) set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false })
+      if (isInitial) set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false, refreshing: false })
+      else set({ refreshing: false })
     }
   },
 

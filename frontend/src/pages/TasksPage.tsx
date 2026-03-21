@@ -74,7 +74,7 @@ function TaskGroup({ label, status, tasks, onStatusChange, onOpen, defaultOpen =
 }
 
 export function TasksPage() {
-  const { tasks, members, loading, fetchTasks, updateTask, deleteTask } = useStore()
+  const { tasks, members, loading, refreshing, fetchTasks, updateTask, deleteTask } = useStore()
   const { member } = useAuthStore()
   const [tab, setTab] = useState<Tab>('active')
   const [memberFilter, setMemberFilter] = useState<string | null>(null)
@@ -226,6 +226,19 @@ export function TasksPage() {
           </div>
         )}
       </div>
+
+      {/* SSE refresh indicator — only shows during background refreshes, not initial load */}
+      {refreshing && (
+        <div style={{ height: 2, background: '#eef2ff', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, height: '100%',
+            background: '#6366f1', borderRadius: 99,
+            animation: 'sse-slide 1.2s ease-in-out infinite',
+            width: '40%',
+          }} />
+          <style>{`@keyframes sse-slide{0%{left:-40%}100%{left:100%}}`}</style>
+        </div>
+      )}
 
       {/* Content */}
       <div style={{ display: 'flex', flex: 1 }}>
