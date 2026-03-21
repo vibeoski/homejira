@@ -94,8 +94,11 @@ export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defa
     }))
   }
 
+  const hasHousehold = !!member?.household_id
+
   const submit = async () => {
     if (!form.title.trim()) return
+    if (!hasHousehold) return
     setSaving(true)
     setSubmitError(null)
     try {
@@ -202,6 +205,12 @@ export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defa
           ))}
         </div>
 
+        {!hasHousehold && (
+          <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fffbeb', color: '#d97706', fontSize: 12, border: '1px solid #fde68a', marginBottom: 10 }}>
+            You need to join a household before adding tasks.
+          </div>
+        )}
+
         {submitError && (
           <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
             {submitError}
@@ -210,12 +219,12 @@ export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defa
 
         <button
           onClick={submit}
-          disabled={saving || !form.title.trim()}
+          disabled={saving || !form.title.trim() || !hasHousehold}
           style={{
             width: '100%', border: 'none', borderRadius: 10, padding: 14,
-            fontSize: 15, fontWeight: 700, cursor: saving || !form.title.trim() ? 'not-allowed' : 'pointer',
-            background: saving || !form.title.trim() ? '#ede8e1' : '#6366f1',
-            color: saving || !form.title.trim() ? '#a8a29e' : 'white',
+            fontSize: 15, fontWeight: 700, cursor: saving || !form.title.trim() || !hasHousehold ? 'not-allowed' : 'pointer',
+            background: saving || !form.title.trim() || !hasHousehold ? '#ede8e1' : '#6366f1',
+            color: saving || !form.title.trim() || !hasHousehold ? '#a8a29e' : 'white',
             transition: 'background 0.15s',
           }}
         >{saving ? 'Adding…' : cfg.submitLabel}</button>
