@@ -7,7 +7,7 @@ import { CATEGORIES, type Task, type Member } from '../types'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 export function StatsPage() {
-  const { tasks, members } = useStore()
+  const { tasks, members, refreshing } = useStore()
   const { member } = useAuthStore()
   const isDesktop = useBreakpoint()
 
@@ -20,6 +20,20 @@ export function StatsPage() {
       <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49 }}>
         <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Stats</h2>
       </div>
+
+      {/* SSE refresh indicator — only shows during background refreshes, not initial load */}
+      {refreshing && (
+        <div style={{ height: 2, background: '#eef2ff', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, height: '100%',
+            background: '#6366f1', borderRadius: 99,
+            animation: 'sse-slide 1.2s ease-in-out infinite',
+            width: '40%',
+          }} />
+          <style>{`@keyframes sse-slide{0%{left:-40%}100%{left:100%}}`}</style>
+        </div>
+      )}
+
       {isDesktop
         ? <DesktopStats tasks={tasks} members={members} />
         : <StatsScreen tasks={tasks} members={members} />
@@ -109,11 +123,11 @@ function DesktopStats({ tasks, members }: { tasks: Task[]; members: Member[] }) 
           </div>
         )}
         {urgentCount > 0 && (
-          <div style={{ background: '#fff7ed', borderRadius: 10, padding: '12px 14px', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ background: '#fffbeb', borderRadius: 10, padding: '12px 14px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>!</span>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#ea580c', margin: 0 }}>{urgentCount} urgent</p>
-              <p style={{ fontSize: 12, color: '#f97316', margin: 0 }}>Needs attention</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#d97706', margin: 0 }}>{urgentCount} urgent</p>
+              <p style={{ fontSize: 12, color: '#d97706', margin: 0 }}>Needs attention</p>
             </div>
           </div>
         )}
