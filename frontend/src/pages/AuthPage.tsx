@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { householdsApi } from '../api/households'
+import { authApi } from '../api/auth'
 import { AppLogo } from '../components/ui/AppLogo'
 import { LoginFlow } from '../components/auth/LoginFlow'
 import { RegisterFlow } from '../components/auth/RegisterFlow'
@@ -33,10 +34,13 @@ export function AuthPage() {
     const pendingJoin = localStorage.getItem('hj_pending_join')
     if (pendingJoin) {
       localStorage.removeItem('hj_pending_join')
+      // Temporarily persist the new auth token so the join request is authenticated
       localStorage.setItem('hj_token', token)
       try {
-        const { member: updated } = await householdsApi.joinByInviteToken(pendingJoin)
-        setAuth(token, updated)
+        await householdsApi.joinByInviteToken(pendingJoin)
+        // Refresh to get a new JWT with the updated household_id embedded
+        const { token: refreshedToken, member: refreshedMember } = await authApi.refresh()
+        setAuth(refreshedToken, refreshedMember)
         return
       } catch {}
     }
