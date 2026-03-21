@@ -86,16 +86,13 @@ export function TasksPage() {
   const refresh = useCallback(() => fetchTasks(), [fetchTasks])
 
   const handleStatusChange = useCallback(async (id: string, status: TaskStatus) => {
+    const prev = tasks.find((t) => t.id === id)
     await updateTask(id, { status })
     if (status === 'done') {
-      const remaining = useStore.getState().tasks.filter((t) => t.status !== 'done')
-      if (remaining.length === 0) {
-        if (undoTimer) clearTimeout(undoTimer)
-        const prev = tasks.find((t) => t.id === id)
-        setUndoTask({ id, prevStatus: prev?.status ?? 'open' })
-        const timer = setTimeout(() => { setUndoTask(null); setUndoTimer(null) }, 4000)
-        setUndoTimer(timer)
-      }
+      if (undoTimer) clearTimeout(undoTimer)
+      setUndoTask({ id, prevStatus: prev?.status ?? 'open' })
+      const timer = setTimeout(() => { setUndoTask(null); setUndoTimer(null) }, 4000)
+      setUndoTimer(timer)
     } else if (undoTask?.id === id) {
       if (undoTimer) clearTimeout(undoTimer)
       setUndoTask(null); setUndoTimer(null)
@@ -137,79 +134,20 @@ export function TasksPage() {
       ]
     : null
 
-  const activeCount  = tasks.filter((t) => !t.done).length
-  const tabCount     = tab === 'active' ? activeCount : tasks.filter((t) => t.done).length
+  const activeCount = tasks.filter((t) => !t.done).length
 
   return (
     <>
-      {/* Sticky header */}
+      {/* Sticky sub-header — tabs + member filter in a single 44px row */}
       <div style={{
-        background: 'white', padding: '12px 16px 0',
+        background: 'white',
         borderBottom: '1px solid #ede8e1',
         position: 'sticky', top: 57, zIndex: 49,
+        display: 'flex', alignItems: 'center',
+        padding: '0 8px 0 4px', height: 44,
       }}>
-        <div style={{ display: 'contents' }}>
-        {/* Title + stats */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: '0 0 2px', letterSpacing: 0.2 }}>Tasks</h2>
-            <p style={{ fontSize: 12, color: '#a8a29e', margin: 0 }}>
-              {activeCount} active
-            </p>
-          </div>
-
-          {/* Member avatar strip — tap to filter */}
-          {members.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              {members.slice(0, 5).map((m, i) => {
-                const active = memberFilter === m.id
-                return (
-                  <button
-                    key={m.id}
-                    title={`${active ? 'Clear filter' : 'Filter by'} ${m.name}`}
-                    onClick={() => setMemberFilter(active ? null : m.id)}
-                    style={{
-                      marginLeft: i === 0 ? 0 : -6,
-                      zIndex: active ? 10 : members.length - i,
-                      width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                      background: m.color, color: 'white', border: `2.5px solid ${active ? '#6366f1' : 'white'}`,
-                      fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'system-ui, sans-serif',
-                      outline: active ? `2px solid #6366f1` : 'none', outlineOffset: 1,
-                      transition: 'outline .1s, border-color .1s',
-                    }}
-                  >{m.name?.charAt(0).toUpperCase() || '?'}</button>
-                )
-              })}
-              {members.length > 5 && (
-                <span style={{
-                  marginLeft: -6, zIndex: 0,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 30, height: 30, borderRadius: '50%', fontSize: 10, fontWeight: 700,
-                  background: '#faf7f2', color: '#78716c', border: '2.5px solid white',
-                }}>+{members.length - 5}</span>
-              )}
-              {memberFilter && (
-                <button
-                  onClick={() => setMemberFilter(null)}
-                  style={{
-                    marginLeft: 6, background: 'none', border: 'none', padding: 0,
-                    cursor: 'pointer', color: '#a8a29e', display: 'flex', alignItems: 'center',
-                  }}
-                  title="Clear member filter"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: -1 }}>
+        <div style={{ display: 'flex', gap: 0, flex: 1, alignSelf: 'stretch', marginBottom: -1 }}>
           {TABS.map(({ id, label }) => {
             const count = id === 'active' ? activeCount : tasks.filter((t) => t.done).length
             const active = tab === id
@@ -218,7 +156,7 @@ export function TasksPage() {
                 key={id}
                 onClick={() => setTab(id)}
                 style={{
-                  padding: '8px 14px', border: 'none', background: 'none',
+                  padding: '0 12px', border: 'none', background: 'none',
                   borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
                   color: active ? ACCENT : '#78716c',
                   fontWeight: active ? 700 : 500, fontSize: 13,
@@ -238,7 +176,55 @@ export function TasksPage() {
             )
           })}
         </div>
-        </div>
+
+        {/* Member avatar strip — tap to filter */}
+        {members.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+            {members.slice(0, 5).map((m, i) => {
+              const active = memberFilter === m.id
+              return (
+                <button
+                  key={m.id}
+                  title={`${active ? 'Clear filter' : 'Filter by'} ${m.name}`}
+                  onClick={() => setMemberFilter(active ? null : m.id)}
+                  style={{
+                    marginLeft: i === 0 ? 0 : -6,
+                    zIndex: active ? 10 : members.length - i,
+                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    background: m.color, color: 'white', border: `2px solid ${active ? '#6366f1' : 'white'}`,
+                    fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'system-ui, sans-serif',
+                    outline: active ? `2px solid #6366f1` : 'none', outlineOffset: 1,
+                    transition: 'outline .1s, border-color .1s',
+                  }}
+                >{m.name?.charAt(0).toUpperCase() || '?'}</button>
+              )
+            })}
+            {members.length > 5 && (
+              <span style={{
+                marginLeft: -6, zIndex: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 26, height: 26, borderRadius: '50%', fontSize: 9, fontWeight: 700,
+                background: '#faf7f2', color: '#78716c', border: '2px solid white',
+              }}>+{members.length - 5}</span>
+            )}
+            {memberFilter && (
+              <button
+                onClick={() => setMemberFilter(null)}
+                style={{
+                  marginLeft: 4, background: 'none', border: 'none', padding: 0,
+                  cursor: 'pointer', color: '#a8a29e', display: 'flex', alignItems: 'center',
+                }}
+                title="Clear member filter"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* SSE refresh indicator — only shows during background refreshes, not initial load */}
@@ -357,14 +343,14 @@ export function TasksPage() {
           display: 'flex', alignItems: 'center', gap: 12,
           boxShadow: '0 4px 16px rgba(0,0,0,0.20)', zIndex: 200, whiteSpace: 'nowrap',
         }}>
-          All tasks done!
+          Task marked done
           <button
             onClick={async () => {
               if (undoTimer) clearTimeout(undoTimer)
               await updateTask(undoTask.id, { status: undoTask.prevStatus })
               setUndoTask(null); setUndoTimer(null)
             }}
-            style={{ background: 'none', border: 'none', color: '#f97316', fontWeight: 700, fontSize: 13, cursor: 'pointer', padding: 0 }}
+            style={{ background: 'none', border: 'none', color: ACCENT, fontWeight: 700, fontSize: 13, cursor: 'pointer', padding: 0 }}
           >Undo</button>
         </div>
       )}
