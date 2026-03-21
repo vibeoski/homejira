@@ -151,7 +151,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
       {/* ── Step 1: Username ── */}
       {step === 1 && (
         <>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5, fontFamily: 'Fraunces, serif' }}>
             Choose a username
           </h2>
           <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 20px' }}>
@@ -175,7 +175,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
                 width: '100%', padding: '11px 40px 11px 28px', borderRadius: 10, fontSize: 14,
                 border: `1.5px solid ${
                   usernameStatus === 'taken' ? '#ef4444' :
-                  usernameStatus === 'ok' ? '#22c55e' :
+                  usernameStatus === 'ok' ? ACCENT :
                   error ? '#ef4444' : '#ede8e1'
                 }`,
                 outline: 'none', background: '#f9f9f9', color: '#1c1917',
@@ -186,7 +186,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
             <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 700 }}>
               {usernameStatus === 'checking' && <span style={{ color: '#a8a29e' }}>...</span>}
               {usernameStatus === 'taken' && <span style={{ color: '#ef4444' }}>Taken</span>}
-              {usernameStatus === 'ok' && <span style={{ color: '#22c55e' }}>OK</span>}
+              {usernameStatus === 'ok' && <span style={{ color: ACCENT }}>OK</span>}
             </span>
           </div>
           <p style={{ fontSize: 11, color: '#a8a29e', marginTop: 6 }}>3–30 chars · letters, numbers, underscores</p>
@@ -209,7 +209,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
       {/* ── Step 2: Name & Avatar ── */}
       {step === 2 && (
         <>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5, fontFamily: 'Fraunces, serif' }}>
             Tell us about you
           </h2>
           <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 20px' }}>
@@ -252,7 +252,7 @@ export function RegisterFlow({ onSuccess, onBack }: Props) {
       {/* ── Step 3: PIN ── */}
       {step === 3 && (
         <>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1c1917', margin: '0 0 4px', letterSpacing: -0.5, fontFamily: 'Fraunces, serif' }}>
             Set your PIN
           </h2>
           <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 22px' }}>
