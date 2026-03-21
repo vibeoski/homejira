@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { useConfigStore, isFeatureEnabled } from '../../store/configStore'
 import { membersApi } from '../../api/members'
 import { authApi } from '../../api/auth'
 import { coinsApi, type CoinInfo } from '../../api/coins'
@@ -34,14 +35,16 @@ export function AccountMenu() {
 
   const navigate = useNavigate()
   const { member, clearAuth, updateMember } = useAuthStore()
+  const { flags } = useConfigStore()
+  const coinsEnabled = isFeatureEnabled(flags, 'coins')
   const isDesktop = useBreakpoint()
 
   useEffect(() => {
-    if (member) {
+    if (member && coinsEnabled) {
       coinsApi.getMyCoins().then(setCoinInfo).catch(() => {})
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [member?.id])
+  }, [member?.id, coinsEnabled])
 
   const openProfile = () => {
     if (!member) return
@@ -105,10 +108,12 @@ export function AccountMenu() {
         style={{
           width: 32, height: 32, borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15, cursor: 'pointer',
-          border: `2px solid ${member ? member.color : '#d4d4d8'}`,
-          background: member ? member.color + '20' : '#faf7f2',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          border: 'none',
+          background: member ? member.color : '#d4d4d8',
+          color: 'white',
           outline: 'none',
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
         {member?.name?.charAt(0).toUpperCase() || '?'}
@@ -137,10 +142,10 @@ export function AccountMenu() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 16px' }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
-                background: member ? member.color + '20' : '#faf7f2',
-                border: `2px solid ${member ? member.color : '#d4d4d8'}`,
+                background: member ? member.color : '#d4d4d8',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
+                fontSize: 20, fontWeight: 700, color: 'white',
+                fontFamily: 'system-ui, sans-serif', flexShrink: 0,
               }}>
                 {member?.name?.charAt(0).toUpperCase() || '?'}
               </div>
