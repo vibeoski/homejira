@@ -121,13 +121,21 @@ func (s *AuthService) ValidateToken(tokenStr string) (*domain.Claims, error) {
 		claims.HouseholdID = hh
 	}
 
-	// Make sure the user actually exists in the DB (prevents 404s from deleted test users)
+	// Fetch latest member data from DB to ensure household_id is up to date
 	memberUUID, err := uuid.Parse(claims.MemberID)
 	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
-	if _, err := s.members.FindByID(memberUUID); err != nil {
+	dbMember, err := s.members.FindByID(memberUUID)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
+	}
+
+	// Override household_id with the truth from DB
+	if dbMember.HouseholdID != nil {
+		claims.HouseholdID = dbMember.HouseholdID.String()
+	} else {
+		claims.HouseholdID = ""
 	}
 
 	return claims, nil
