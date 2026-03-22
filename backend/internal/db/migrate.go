@@ -4,7 +4,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -29,6 +29,6 @@ func RunMigrations(dbURL string) error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	log.Println("✓ Migrations applied successfully")
+	slog.Info("migrations applied successfully")
 	return nil
 }

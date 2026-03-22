@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 )
 
@@ -17,7 +17,8 @@ type Config struct {
 func Load() Config {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET env var is required")
+		slog.Error("JWT_SECRET env var is required")
+		os.Exit(1)
 	}
 
 	cfg := Config{
@@ -28,7 +29,7 @@ func Load() Config {
 		JWTSecret:   jwtSecret,
 		AppBaseURL:  getEnv("APP_BASE_URL", "http://localhost:3000"),
 	}
-	log.Printf("Config loaded: env=%s port=%s", cfg.Env, cfg.Port)
+	slog.Info("config loaded", "env", cfg.Env, "port", cfg.Port)
 	return cfg
 }
 

@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,7 +31,7 @@ func Connect(url string) (*pgxpool.Pool, error) {
 				return pool, nil
 			}
 		}
-		log.Printf("DB not ready, retrying in 2s... (%d/10)", i+1)
+		slog.Warn("DB not ready, retrying", "attempt", i+1, "max", 10)
 		time.Sleep(2 * time.Second)
 	}
 	return nil, fmt.Errorf("could not connect to database after retries")
