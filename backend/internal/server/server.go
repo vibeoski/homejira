@@ -69,6 +69,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	// Global middleware
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
+	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.Logger)
 	rawOrigins := strings.Split(cfg.CORSOrigins, ",")
 	allowedOrigins := make([]string, 0, len(rawOrigins))

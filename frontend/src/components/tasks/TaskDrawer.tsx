@@ -223,6 +223,12 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
                 {m.name}
               </PillBtn>
             ))}
+            {current.assignee_id && (
+              <button
+                onClick={() => { setCurrent({ ...current, assignee_id: '' }); patch({ clear_assignee_id: true }) }}
+                style={{ padding: '5px 10px', borderRadius: 99, border: '1px solid #ede8e1', background: 'white', color: '#a8a29e', fontSize: 12, cursor: 'pointer', transition: 'all 0.12s' }}
+              >Unassign</button>
+            )}
           </div>
 
           <div style={{ height: 1, background: '#faf7f2', marginBottom: 14 }} />

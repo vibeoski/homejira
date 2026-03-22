@@ -82,16 +82,17 @@ type CreateTaskInput struct {
 
 // UpdateTaskInput holds fields that may be mutated.
 type UpdateTaskInput struct {
-	Title      *string    `json:"title,omitempty"`
-	Notes      *string    `json:"notes,omitempty"`
-	Category   *Category  `json:"category,omitempty"`
-	Priority   *Priority  `json:"priority,omitempty"`
-	AssigneeID *uuid.UUID `json:"assignee_id,omitempty"`
-	Status     *TaskStatus `json:"status,omitempty"`
-	Done       *bool       `json:"done,omitempty"`
-	DueAt      *time.Time  `json:"due_at,omitempty"`
-	ClearDueAt bool        `json:"clear_due_at,omitempty"`
-	Quantity   *string     `json:"quantity,omitempty"`
+	Title           *string     `json:"title,omitempty"`
+	Notes           *string     `json:"notes,omitempty"`
+	Category        *Category   `json:"category,omitempty"`
+	Priority        *Priority   `json:"priority,omitempty"`
+	AssigneeID      *uuid.UUID  `json:"assignee_id,omitempty"`
+	ClearAssigneeID bool        `json:"clear_assignee_id,omitempty"`
+	Status          *TaskStatus `json:"status,omitempty"`
+	Done            *bool       `json:"done,omitempty"`
+	DueAt           *time.Time  `json:"due_at,omitempty"`
+	ClearDueAt      bool        `json:"clear_due_at,omitempty"`
+	Quantity        *string     `json:"quantity,omitempty"`
 }
 
 // TaskFilter contains optional query filters.
