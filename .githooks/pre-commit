@@ -1,2 +1,22 @@
 #!/usr/bin/env bash
+# Pre-commit hook — runs on every commit
+# Install: make hooks (sets core.hooksPath to .githooks)
+
+set -e
+
+# ── Secret scanning ────────────────────────────────────────────────────────────
+if command -v gitleaks &>/dev/null; then
+  gitleaks protect --staged --no-banner -q
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "✖ gitleaks: secret detected in staged files. Commit blocked."
+    echo "  Review the output above, remove the secret, and try again."
+    echo "  To allow a false positive, add it to .gitleaks.toml."
+    exit 1
+  fi
+else
+  echo "⚠ gitleaks not installed — secret scan skipped."
+  echo "  Install: https://github.com/gitleaks/gitleaks#installing"
+fi
+
 exit 0
