@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to Railway staging
@@ -45,61 +49,7 @@ jobs:
       - name: Run smoke tests
         id: smoke
         run: |
-          BASE="https://homejira-staging.up.railway.app/api/v1"
-
-          fail() { echo "FAIL: $1"; exit 1; }
-          check_status() {
-            local STATUS="$1" EXPECTED="$2" NAME="$3"
-            if [ "$STATUS" != "$EXPECTED" ]; then
-              fail "$NAME returned HTTP $STATUS (expected $EXPECTED)"
-            fi
-            echo "  OK: $NAME"
-          }
-
-          # 1. Health check
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://homejira-staging.up.railway.app/health")
-          check_status "$STATUS" "200" "GET /health"
-
-          # 2. Config endpoint (public)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/config")
-          check_status "$STATUS" "200" "GET /api/v1/config"
-
-          # 3. Login
-          RESP=$(curl -sf -X POST "$BASE/auth/login" \
-            -H "Content-Type: application/json" \
-            -d '{"username":"testuser","mpin":"1234"}') || fail "POST /auth/login failed"
-          TOKEN=$(echo "$RESP" | jq -r '.token')
-          [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ] && fail "No token in login response"
-          echo "  OK: POST /auth/login"
-
-          # 4. List members
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" "$BASE/members/")
-          check_status "$STATUS" "200" "GET /members/"
-
-          # 5. List tasks
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" "$BASE/tasks/")
-          check_status "$STATUS" "200" "GET /tasks/"
-
-          # 6. List groceries
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" "$BASE/groceries/")
-          check_status "$STATUS" "200" "GET /groceries/"
-
-          # 7. My household
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" "$BASE/households/me")
-          [ "$STATUS" = "200" ] || [ "$STATUS" = "404" ] || fail "GET /households/me returned HTTP $STATUS"
-          echo "  OK: GET /households/me"
-
-          # 8. Auth refresh
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST -H "Authorization: Bearer $TOKEN" "$BASE/auth/refresh")
-          check_status "$STATUS" "200" "POST /auth/refresh"
-
-          echo ""
-          echo "All smoke tests passed."
+          bash qa/test-auth-tasks.sh
 
       - name: Open issue on smoke test failure
         if: failure() && steps.smoke.outcome == 'failure'
