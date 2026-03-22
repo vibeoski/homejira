@@ -11,8 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Trigger Railway staging deploy
-        run: curl -sf -X POST "${{ secrets.RAILWAY_DEPLOY_WEBHOOK }}"
+      - name: Trigger Railway staging redeploy
+        run: |
+          curl -sf -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+            --data-raw '{"query":"mutation { serviceInstanceRedeploy(environmentId: \"69042cbe-48cf-4e8f-8dda-8d85d489b16f\", serviceId: \"35dfbdfb-5364-427f-92a8-edc7cf1850af\") }"}'
 
       - name: Wait for staging to serve new commit
         run: |
