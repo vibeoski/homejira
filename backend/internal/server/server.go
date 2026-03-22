@@ -80,7 +80,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 		}
 	}
 	// Always allow mobile capacitor origins
-	allowedOrigins = append(allowedOrigins, "capacitor://localhost", "http://localhost")
+	allowedOrigins = append(allowedOrigins, "capacitor://localhost", "http://localhost", "https://localhost")
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
