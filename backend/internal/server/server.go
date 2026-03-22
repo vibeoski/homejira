@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -24,8 +24,9 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
-	cfg    *config.Config
+	router  *chi.Mux
+	cfg     *config.Config
+	httpSrv *http.Server
 }
 
 func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
@@ -97,6 +98,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 		if commit == "" {
 			commit = "dev"
 		}
+		stat := db.Stat()
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"status":     "ok",
@@ -105,6 +107,11 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 			"built_at":   buildTime,
 			"uptime_sec": int(time.Since(startTime).Seconds()),
 			"db":         dbStatus,
+			"db_pool": map[string]int32{
+				"total":    stat.TotalConns(),
+				"acquired": stat.AcquiredConns(),
+				"idle":     stat.IdleConns(),
+			},
 		})
 	})
 
@@ -200,19 +207,10 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 		})
 	})
 
-	return &Server{
-		router: r,
-		cfg:    cfg,
-	}
-}
-
-func (s *Server) Start() error {
-	addr := fmt.Sprintf(":%s", s.cfg.Port)
-	log.Printf("✓ HomeJira API listening on %s", addr)
-
-	srv := &http.Server{
-		Addr:        addr,
-		Handler:     s.router,
+	addr := fmt.Sprintf(":%s", cfg.Port)
+	httpSrv := &http.Server{
+		Addr:    addr,
+		Handler: r,
 		ReadTimeout: 10 * time.Second,
 		// WriteTimeout is 0 (disabled) to allow long-lived SSE connections.
 		// Individual handlers enforce their own timeouts via request context.
@@ -220,5 +218,21 @@ func (s *Server) Start() error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	return srv.ListenAndServe()
+	return &Server{
+		router:  r,
+		cfg:     cfg,
+		httpSrv: httpSrv,
+	}
+}
+
+// ListenAndServe starts accepting connections. It returns http.ErrServerClosed
+// on graceful shutdown, which callers should treat as a non-error.
+func (s *Server) ListenAndServe() error {
+	slog.Info("HomeJira API listening", "addr", s.httpSrv.Addr)
+	return s.httpSrv.ListenAndServe()
+}
+
+// Shutdown gracefully drains active connections within the given context deadline.
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpSrv.Shutdown(ctx)
 }
