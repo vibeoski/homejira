@@ -28,8 +28,8 @@ export function AppLayout() {
     fetchTasks()
     fetchMembers()
 
-    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
-    const es = new EventSource(`${apiBase}/events?token=${encodeURIComponent(token)}`)
+    const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
+    const es = new EventSource(`${BASE}/events?token=${encodeURIComponent(token)}`)
     esRef.current = es
 
     es.onmessage = async () => {
@@ -65,7 +65,9 @@ export function AppLayout() {
       <div style={{
         position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 16px', height: 57, flexShrink: 0,
+        padding: 'env(safe-area-inset-top, 0px) 16px 0', 
+        height: 'calc(57px + env(safe-area-inset-top, 0px))', 
+        flexShrink: 0,
         background: 'white', borderBottom: '1px solid #ede8e1',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>

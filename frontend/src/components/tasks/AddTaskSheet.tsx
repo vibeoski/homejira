@@ -124,7 +124,7 @@ export function AddTaskSheet({ members, onClose, onAdded, hiddenCategories, defa
       <div className={isDesktop ? 'fade-in' : 'slide-up'} style={{
         background: 'white', width: '100%', maxWidth: 520,
         borderRadius: isDesktop ? 16 : '18px 18px 0 0',
-        padding: isDesktop ? '24px 24px 28px' : '20px 20px 44px',
+        padding: isDesktop ? '24px 24px 28px' : '20px 20px calc(24px + env(safe-area-inset-bottom, 20px))',
         boxShadow: isDesktop ? '0 8px 40px rgba(0,0,0,0.18)' : '0 -4px 24px rgba(0,0,0,0.10)',
         maxHeight: '92vh', overflowY: 'auto',
       }}>

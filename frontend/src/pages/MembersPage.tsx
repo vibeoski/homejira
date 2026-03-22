@@ -11,7 +11,7 @@ export function MembersPage() {
 
   return (
     <>
-      <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49 }}>
+      <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 49 }}>
         <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Household</h2>
       </div>
       {isDesktop ? (

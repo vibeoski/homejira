@@ -300,6 +300,16 @@ type TaskStatus = 'open' | 'in_progress' | 'on_hold' | 'done'
 - Border radius: `8–10px` small · `12–14px` cards/inputs · `20–24px` panels · `99px` pills.
 - Font: `Fraunces, serif` headings, system sans-serif body. Transitions: `all .15s`.
 - `slide-up` is the only CSS animation class.
+- **Safe Areas:** Support modern mobile screens using `env(safe-area-inset-*)`.
+
+### Capacitor (Native Mobile)
+
+- **Sync:** After building web assets (`npm run build`), sync to native platforms with `npm run cap:sync`.
+- **Open:** Use `npm run ios:open` or `npm run android:open` to open native projects in Xcode/Android Studio.
+- **Safe Areas:** Handled in `AppLayout.tsx` (top) and `BottomNav.tsx` (bottom) using CSS `env()` constants.
+- **Config:** `capacitor.config.ts` in `frontend/` root. Bundle ID: `app.homejira.vibeoski`.
+- **CORS:** Backend must allow `capacitor://localhost` (iOS) and `http://localhost` (Android). These are hardcoded in `server.go` to ensure mobile compatibility.
+- **Production:** Set `VITE_API_URL` in `frontend/.env.production` before building for native devices.
 
 ### Routing
 

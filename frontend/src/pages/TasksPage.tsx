@@ -142,7 +142,7 @@ export function TasksPage() {
       <div style={{
         background: 'white',
         borderBottom: '1px solid #ede8e1',
-        position: 'sticky', top: 57, zIndex: 49,
+        position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 49,
         display: 'flex', alignItems: 'center',
         padding: '0 8px 0 4px', height: 44,
       }}>

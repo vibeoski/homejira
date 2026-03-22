@@ -73,12 +73,15 @@ func New(cfg *config.Config, db *pgxpool.Pool, buildTime string) *Server {
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.Logger)
 	rawOrigins := strings.Split(cfg.CORSOrigins, ",")
-	allowedOrigins := make([]string, 0, len(rawOrigins))
+	allowedOrigins := make([]string, 0, len(rawOrigins)+2)
 	for _, o := range rawOrigins {
 		if trimmed := strings.TrimSpace(o); trimmed != "" {
 			allowedOrigins = append(allowedOrigins, trimmed)
 		}
 	}
+	// Always allow mobile capacitor origins
+	allowedOrigins = append(allowedOrigins, "capacitor://localhost", "http://localhost")
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},

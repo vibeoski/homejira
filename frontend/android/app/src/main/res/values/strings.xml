@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HomeJira</string>
+    <string name="title_activity_main">HomeJira</string>
+    <string name="package_name">app.homejira.vibeoski</string>
+    <string name="custom_url_scheme">app.homejira.vibeoski</string>
+</resources>
