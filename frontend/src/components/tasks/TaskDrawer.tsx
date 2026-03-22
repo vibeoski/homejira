@@ -314,7 +314,7 @@ export function TaskDrawer({ task, members, onClose, onUpdated, onDeleted }: Pro
         </div>
 
         {/* Danger zone */}
-        <div style={{ margin: '0 10px 36px' }}>
+        <div style={{ margin: '0 10px calc(24px + env(safe-area-inset-bottom, 20px))' }}>
           {saveError && (
             <div style={{ padding: '8px 12px', borderRadius: 8, background: '#fef2f2', color: '#ef4444', fontSize: 12, border: '1px solid #fecaca', marginBottom: 10 }}>
               {saveError}

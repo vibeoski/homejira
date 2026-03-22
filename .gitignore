@@ -18,9 +18,10 @@ backend/tmp/
 # Docker volumes / DB data
 postgres-data/
 
-# Claude session data
+# Claude / Gemini session data
 .claude/
 .continue/
+.gemini/
 
 # Dev/test scratch files
 payload.json

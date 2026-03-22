@@ -57,7 +57,7 @@ export function GroceryPage() {
   if (historyMode) {
     return (
       <div style={{ paddingBottom: 80 }}>
-        <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => setHistoryMode(false)}
             style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
@@ -121,7 +121,7 @@ export function GroceryPage() {
   }
 
   const subHeader = (
-    <div style={{ background: 'white', padding: '10px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 57, zIndex: 49, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ background: 'white', padding: '10px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 49, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
       <button
         onClick={() => setHistoryMode(true)}
