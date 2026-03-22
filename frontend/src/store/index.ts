@@ -6,7 +6,7 @@ import { groceriesApi } from '../api/groceries'
 
 function applyTaskPatch(task: Task, payload: UpdateTaskPayload, members: Member[]): Task {
   const now = new Date().toISOString()
-  const nextAssigneeID = payload.assignee_id !== undefined ? payload.assignee_id : task.assignee_id
+  const nextAssigneeID = payload.clear_assignee_id ? undefined : payload.assignee_id !== undefined ? payload.assignee_id : task.assignee_id
   const nextDueAt = payload.clear_due_at ? undefined : payload.due_at !== undefined ? payload.due_at : task.due_at
   const nextQuantity = payload.quantity !== undefined ? payload.quantity : task.quantity
 
@@ -26,8 +26,8 @@ function applyTaskPatch(task: Task, payload: UpdateTaskPayload, members: Member[
     notes: payload.notes ?? task.notes,
     category: payload.category ?? task.category,
     priority: payload.priority ?? task.priority,
-    assignee_id: nextAssigneeID,
-    assignee: members.find((member) => member.id === nextAssigneeID) ?? task.assignee,
+    assignee_id: nextAssigneeID ?? '',
+    assignee: nextAssigneeID ? (members.find((member) => member.id === nextAssigneeID) ?? task.assignee) : undefined,
     due_at: nextDueAt,
     quantity: nextQuantity,
     status: nextStatus,

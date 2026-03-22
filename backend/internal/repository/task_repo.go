@@ -241,6 +241,10 @@ func (r *taskRepo) Update(id uuid.UUID, input domain.UpdateTaskInput) (*domain.T
 		setClauses = append(setClauses, fmt.Sprintf("assignee_id = $%d", i))
 		args = append(args, *input.AssigneeID)
 		i++
+	} else if input.ClearAssigneeID {
+		setClauses = append(setClauses, fmt.Sprintf("assignee_id = $%d", i))
+		args = append(args, nil)
+		i++
 	}
 	if input.Status != nil {
 		// Status is the source of truth; keep done/done_at in sync.

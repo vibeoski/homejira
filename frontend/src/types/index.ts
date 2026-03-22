@@ -37,7 +37,7 @@ export interface CreateTaskPayload {
 }
 export interface UpdateTaskPayload {
   title?: string; notes?: string; category?: Category; priority?: Priority
-  assignee_id?: string; status?: TaskStatus; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
+  assignee_id?: string; clear_assignee_id?: boolean; status?: TaskStatus; done?: boolean; due_at?: string; clear_due_at?: boolean; quantity?: string
 }
 
 export const CATEGORIES: Record<Category, { label: string; color: string }> = {
