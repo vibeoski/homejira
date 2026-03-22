@@ -15,12 +15,17 @@ type Config struct {
 }
 
 func Load() Config {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET env var is required")
+	}
+
 	cfg := Config{
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://homejira:homejira_secret@localhost:5432/homejira?sslmode=disable"),
 		Port:        getEnv("PORT", "8080"),
 		Env:         getEnv("ENV", "development"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "http://localhost:3000"),
-		JWTSecret:   getEnv("JWT_SECRET", "CHANGE_ME_IN_PRODUCTION_32_CHARS!"),
+		JWTSecret:   jwtSecret,
 		AppBaseURL:  getEnv("APP_BASE_URL", "http://localhost:3000"),
 	}
 	log.Printf("Config loaded: env=%s port=%s", cfg.Env, cfg.Port)
