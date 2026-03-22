@@ -9,7 +9,7 @@ import { useStore } from '../../store'
 
 export function AppLayout() {
   const { isAuthenticated, token, setAuth } = useAuthStore()
-  const { fetchTasks, fetchMembers, bumpSse, toast, dismissToast } = useStore()
+  const { fetchTasks, fetchMembers, fetchGroceries, bumpSse, toast, dismissToast } = useStore()
   const navigate = useNavigate()
   const esRef = useRef<EventSource | null>(null)
 
@@ -27,6 +27,18 @@ export function AppLayout() {
     // Initial data load
     fetchTasks()
     fetchMembers()
+    fetchGroceries()
+
+    const handleOnline = () => {
+      if (isAuthenticated) {
+        console.log('App back online, syncing...')
+        fetchTasks()
+        fetchMembers()
+        fetchGroceries()
+      }
+    }
+
+    window.addEventListener('online', handleOnline)
 
     const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1'
     const es = new EventSource(`${BASE}/events?token=${encodeURIComponent(token)}`)
@@ -36,6 +48,7 @@ export function AppLayout() {
       bumpSse()
       await fetchMembers()
       fetchTasks()
+      fetchGroceries()
 
       // Detect removal: if we were in a household but are no longer in the members list,
       // refresh the token (gets fresh household_id) and redirect.
@@ -53,6 +66,7 @@ export function AppLayout() {
     }
 
     return () => {
+      window.removeEventListener('online', handleOnline)
       es.close()
       esRef.current = null
     }

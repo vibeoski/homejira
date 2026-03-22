@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Task, Member, TaskFilter, CreateTaskPayload, Grocery, CreateGroceryPayload, UpdateGroceryPayload, UpdateTaskPayload } from '../types'
 import { tasksApi } from '../api/tasks'
 import { membersApi } from '../api/members'
@@ -68,151 +69,160 @@ interface AppStore {
   deleteGrocery: (id: string) => Promise<void>
 }
 
-export const useStore = create<AppStore>((set, get) => ({
-  tasks: [],
-  groceries: [],
-  members: [],
-  filter: {},
-  loading: false,
-  refreshing: false,
-  error: null,
-  sseVersion: 0,
-  groceryPending: 0,
-  toast: null,
+export const useStore = create<AppStore>()(
+  persist(
+    (set, get) => ({
+      tasks: [],
+      groceries: [],
+      members: [],
+      filter: {},
+      loading: false,
+      refreshing: false,
+      error: null,
+      sseVersion: 0,
+      groceryPending: 0,
+      toast: null,
 
-  setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
-  bumpSse: () => set((s) => ({ sseVersion: s.sseVersion + 1 })),
-  showToast: (message) => set({ toast: { message } }),
-  dismissToast: () => set({ toast: null }),
+      setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
+      bumpSse: () => set((s) => ({ sseVersion: s.sseVersion + 1 })),
+      showToast: (message) => set({ toast: { message } }),
+      dismissToast: () => set({ toast: null }),
 
-  fetchTasks: async () => {
-    const isInitial = get().tasks.length === 0
-    if (isInitial) set({ loading: true, error: null })
-    else set({ refreshing: true })
-    try {
-      const tasks = await tasksApi.list(get().filter)
-      if (JSON.stringify(tasks) !== JSON.stringify(get().tasks)) {
-        set({ tasks, loading: false, refreshing: false })
-      } else if (isInitial) {
-        set({ loading: false, refreshing: false })
-      } else {
-        set({ refreshing: false })
-      }
-    } catch (e: unknown) {
-      if (isInitial) set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false, refreshing: false })
-      else set({ refreshing: false })
+      fetchTasks: async () => {
+        const isInitial = get().tasks.length === 0
+        if (isInitial) set({ loading: true, error: null })
+        else set({ refreshing: true })
+        try {
+          const tasks = await tasksApi.list(get().filter)
+          if (JSON.stringify(tasks) !== JSON.stringify(get().tasks)) {
+            set({ tasks, loading: false, refreshing: false })
+          } else {
+            set({ loading: false, refreshing: false })
+          }
+        } catch (e: unknown) {
+          if (get().tasks.length > 0) {
+            set({ loading: false, refreshing: false })
+          } else {
+            set({ error: e instanceof Error ? e.message : 'Failed to load tasks', loading: false, refreshing: false })
+          }
+        }
+      },
+
+      fetchGroceries: async () => {
+        if (get().groceryPending > 0) return
+        try {
+          const groceries = await groceriesApi.list()
+          if (get().groceryPending > 0) return
+          if (JSON.stringify(groceries) !== JSON.stringify(get().groceries)) {
+            set({ groceries })
+          }
+        } catch { /* background error */ }
+      },
+
+      fetchMembers: async () => {
+        try {
+          const members = await membersApi.list()
+          if (JSON.stringify(members) !== JSON.stringify(get().members)) {
+            set({ members })
+          }
+        } catch { /* background error */ }
+      },
+
+      createTask: async (payload) => {
+        const task = await tasksApi.create(payload)
+        set((s) => ({ tasks: [task, ...s.tasks] }))
+      },
+
+      updateTask: async (id, payload) => {
+        const previous = get().tasks.find((t) => t.id === id)
+        if (!previous) throw new Error('Task not found')
+
+        const optimistic = applyTaskPatch(previous, payload, get().members)
+        set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? optimistic : task) }))
+        try {
+          const updated = await tasksApi.update(id, payload)
+          set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? updated : task) }))
+          return updated
+        } catch {
+          set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? previous : task) }))
+          throw new Error('Failed to update task')
+        }
+      },
+
+      toggleTask: async (id, done) => {
+        await get().updateTask(id, { done })
+      },
+
+      deleteTask: async (id) => {
+        const previous = get().tasks.find((t) => t.id === id)
+        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
+        try {
+          await tasksApi.remove(id)
+        } catch {
+          if (previous) set((s) => ({ tasks: [previous, ...s.tasks] }))
+          throw new Error('Failed to delete task')
+        }
+      },
+
+      addComment: async (taskId, body) => {
+        const comment = await tasksApi.addComment(taskId, body)
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === taskId ? { ...t, comments: [...(t.comments ?? []), comment] } : t
+          ),
+        }))
+      },
+
+      createGrocery: async (payload) => {
+        const g = await groceriesApi.create(payload)
+        set((s) => ({ groceries: [g, ...s.groceries] }))
+      },
+
+      toggleGrocery: async (id, done) => {
+        const previous = get().groceries.find((g) => g.id === id)
+        set((s) => ({
+          groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g),
+          groceryPending: s.groceryPending + 1,
+        }))
+        try {
+          const updated = await groceriesApi.update(id, { done })
+          set((s) => ({
+            groceries: s.groceries.map((g) => g.id === id ? updated : g),
+            groceryPending: Math.max(0, s.groceryPending - 1),
+          }))
+        } catch {
+          if (previous) {
+            set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? previous : g) }))
+          }
+          set((s) => ({ groceryPending: Math.max(0, s.groceryPending - 1) }))
+          get().showToast('Could not update item — please try again.')
+        }
+      },
+
+      updateGrocery: async (id, payload) => {
+        const updated = await groceriesApi.update(id, payload)
+        set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
+      },
+
+      deleteGrocery: async (id) => {
+        const previous = get().groceries.find((g) => g.id === id)
+        set((s) => ({ groceries: s.groceries.filter((g) => g.id !== id) }))
+        try {
+          await groceriesApi.delete(id)
+        } catch {
+          if (previous) set((s) => ({ groceries: [previous, ...s.groceries] }))
+          throw new Error('Failed to delete grocery')
+        }
+      },
+    }),
+    {
+      name: 'hj_app_state',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        tasks: state.tasks,
+        groceries: state.groceries,
+        members: state.members,
+      }),
     }
-  },
-
-  fetchGroceries: async () => {
-    // Skip SSE-triggered refresh while optimistic grocery updates are in-flight
-    if (get().groceryPending > 0) return
-    try {
-      const groceries = await groceriesApi.list()
-      if (get().groceryPending > 0) return // re-check after await
-      if (JSON.stringify(groceries) !== JSON.stringify(get().groceries)) {
-        set({ groceries })
-      }
-    } catch {
-      // ignore background errors
-    }
-  },
-
-  fetchMembers: async () => {
-    try {
-      const members = await membersApi.list()
-      if (JSON.stringify(members) !== JSON.stringify(get().members)) {
-        set({ members })
-      }
-    } catch {
-      // silently ignore background errors
-    }
-  },
-
-  createTask: async (payload) => {
-    const task = await tasksApi.create(payload)
-    set((s) => ({ tasks: [task, ...s.tasks] }))
-  },
-
-  updateTask: async (id, payload) => {
-    const previous = get().tasks.find((t) => t.id === id)
-    if (!previous) throw new Error('Task not found')
-
-    const optimistic = applyTaskPatch(previous, payload, get().members)
-    set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? optimistic : task) }))
-    try {
-      const updated = await tasksApi.update(id, payload)
-      set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? updated : task) }))
-      return updated
-    } catch {
-      set((state) => ({ tasks: state.tasks.map((task) => task.id === id ? previous : task) }))
-      throw new Error('Failed to update task')
-    }
-  },
-
-  toggleTask: async (id, done) => {
-    await get().updateTask(id, { done })
-  },
-
-  deleteTask: async (id) => {
-    const previous = get().tasks.find((t) => t.id === id)
-    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
-    try {
-      await tasksApi.remove(id)
-    } catch {
-      if (previous) set((s) => ({ tasks: [previous, ...s.tasks] }))
-      throw new Error('Failed to delete task')
-    }
-  },
-
-  addComment: async (taskId, body) => {
-    const comment = await tasksApi.addComment(taskId, body)
-    set((s) => ({
-      tasks: s.tasks.map((t) =>
-        t.id === taskId ? { ...t, comments: [...(t.comments ?? []), comment] } : t
-      ),
-    }))
-  },
-
-  createGrocery: async (payload) => {
-    const g = await groceriesApi.create(payload)
-    set((s) => ({ groceries: [g, ...s.groceries] }))
-  },
-
-  toggleGrocery: async (id, done) => {
-    const previous = get().groceries.find((g) => g.id === id)
-    set((s) => ({
-      groceries: s.groceries.map((g) => g.id === id ? { ...g, done } : g),
-      groceryPending: s.groceryPending + 1,
-    }))
-    try {
-      const updated = await groceriesApi.update(id, { done })
-      set((s) => ({
-        groceries: s.groceries.map((g) => g.id === id ? updated : g),
-        groceryPending: Math.max(0, s.groceryPending - 1),
-      }))
-    } catch {
-      if (previous) {
-        set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? previous : g) }))
-      }
-      set((s) => ({ groceryPending: Math.max(0, s.groceryPending - 1) }))
-      get().showToast('Could not update item — please try again.')
-    }
-  },
-
-  updateGrocery: async (id, payload) => {
-    const updated = await groceriesApi.update(id, payload)
-    set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
-  },
-
-  deleteGrocery: async (id) => {
-    const previous = get().groceries.find((g) => g.id === id)
-    set((s) => ({ groceries: s.groceries.filter((g) => g.id !== id) }))
-    try {
-      await groceriesApi.delete(id)
-    } catch {
-      if (previous) set((s) => ({ groceries: [previous, ...s.groceries] }))
-      throw new Error('Failed to delete grocery')
-    }
-  },
-}))
+  )
+)
