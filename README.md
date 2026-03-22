@@ -9,7 +9,7 @@
 | Layer      | Technology                                      |
 |------------|-------------------------------------------------|
 | Frontend   | React 19 + TypeScript + Vite + React Router + Zustand |
-| Backend    | Go 1.24 + Chi router + PGX                      |
+| Backend    | Go 1.25 + Chi router + PGX                      |
 | Database   | PostgreSQL 16                                   |
 | Realtime   | Server-Sent Events (SSE)                        |
 | Dev Infra  | Docker Compose + Air (Go hot reload) + Vite HMR |
@@ -108,7 +108,7 @@ A complete Postman collection covering the current API surface lives at [`postma
 - Test scripts auto-save key IDs after each create request
 - Collection metadata (UID, workspace) at [`postman/postman.json`](./postman/postman.json)
 
-> A git pre-commit hook blocks commits where handler or router files change but the collection JSON was not also staged — keeping the collection in sync automatically.
+> A git pre-commit hook runs gitleaks on staged files to catch accidentally committed secrets before they leave the local machine.
 
 ### FigJam Diagrams
 
@@ -334,7 +334,7 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 | `PORT`         | `8080`                                                           | API server port                    |
 | `ENV`          | `development`                                                    | Environment name                   |
 | `CORS_ORIGINS` | `http://localhost:3000`                                          | Comma-separated allowed origins    |
-| `JWT_SECRET`   | `CHANGE_ME_IN_PRODUCTION_32_CHARS!`                              | JWT signing key                    |
+| `JWT_SECRET`   | *(required — server exits if unset)*                             | JWT signing key (32+ chars)        |
 | `APP_BASE_URL` | `http://localhost:3000`                                          | Base URL used when building links  |
 
 ### Frontend
@@ -342,6 +342,34 @@ All endpoints require `Authorization: Bearer <jwt>` unless noted.
 | Variable       | Default   | Description                                 |
 |----------------|-----------|---------------------------------------------|
 | `VITE_API_URL` | `/api/v1` | API base URL; Vite proxy handles this in dev |
+
+---
+
+## CI / CD
+
+### Continuous Integration
+
+Every push and PR to `main` runs four jobs:
+
+| Job | What it checks |
+|-----|----------------|
+| Backend — build, vet, test | `go build`, `go vet`, `go test ./...` (Go 1.25) |
+| Frontend — build, lint | `npm run build`, `npm run lint` |
+| Dependency audit | `govulncheck ./...` + `npm audit --audit-level=high` |
+| Secret scan | `gitleaks` on staged/changed files |
+
+All four must pass before a PR can be merged (branch protection enforced).
+
+### Staging Deploy
+
+Merging to `main` automatically:
+
+1. Triggers a Railway staging redeploy via GraphQL API
+2. Polls `GET /health` every 15 s (up to 20 attempts) until the new commit SHA is live
+3. Runs an 8-check smoke test suite against staging
+4. On failure: opens a `blocker` GitHub issue automatically
+
+Production deploys are separate and manually triggered.
 
 ---
 
@@ -354,19 +382,18 @@ GitHub Issues are the source of truth for active backlog and roadmap work:
 - Necessary issues: <https://github.com/vibeoski/homejira/issues?q=is%3Aissue+is%3Aopen+label%3Anecessary>
 - Blockers: <https://github.com/vibeoski/homejira/issues?q=is%3Aissue+is%3Aopen+label%3Ablocker>
 
-**Open bugs (Sprint 5):**
-- #70 JoinPage: authenticated auto-join does not refresh JWT (stale household_id)
-- #71 JoinPage: "Sign in" button calls sign-up handler
-- #72 AccountMenu: avatar shows emoji instead of letter
-- #73 TasksPage: heading not using Fraunces font
-- #74 TasksPage: undo toast uses orange (palette violation)
-- #75 AddTaskSheet: empty household_id fallback on task create
-- #76 Loading state not shown on SSE-triggered refresh
-- #77 UX polish audit follow-up
+**Sprint 5**: CLOSED — all 8 frontend bugs (#70–#77) resolved.
 
-**Up next (roadmap):**
-- #42 In-app notification feed (NE-08)
-- #44 Recurring tasks (NE-10)
+**Up next (Sprint 6 — AWS migration):**
+- #192 Terraform VPC + networking
+- #193 RDS PostgreSQL instance
+- #194 ECS Fargate service
+- #197 S3 + CloudFront for frontend
+- #198 DNS cutover
+
+**Roadmap:**
+- #42 In-app notification feed
+- #44 Recurring tasks
 - #48 Push notifications (Web Push API)
 - #45 PWA — installable, offline
 

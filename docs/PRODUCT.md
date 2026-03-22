@@ -56,7 +56,7 @@ A **member** is a user account. Every member has a name, a profile color, a lett
 A **household** is the central container. Tasks, members, and activities all belong to a household. A member can only belong to one household at a time. The person who creates the household becomes the **admin**.
 
 ### Tasks
-A **task** is the fundamental unit of work. Each task has a title, category (chore, errand, repair, grocery), priority (urgent, high, normal), and an optional assignee, notes, and due date. Tasks can be toggled between open and done.
+A **task** is the fundamental unit of work. Each task has a title, category (chore, errand, repair), priority (urgent, high, normal), and an optional assignee, notes, and due date. Tasks can be toggled between open and done. Grocery items are a separate resource managed in the Grocery List — they are not a task category.
 
 ### Roles
 There are two roles inside a household:
@@ -67,16 +67,16 @@ There are two roles inside a household:
 
 ## 4. Authentication
 
-HomeJira uses **phone + 4-digit mPIN** authentication — no email, no password, no app store account required.
+HomeJira uses **username + 4-digit mPIN** authentication — no email, no password, no app store account required.
 
 ### Registration
-1. Enter your phone number.
-2. If the number is not registered, you're taken to the **Create Profile** screen.
+1. Enter a username.
+2. If the username is not registered, you're taken to the **Create Profile** screen.
 3. Enter your name, choose an emoji avatar, set a 4-digit mPIN, and confirm it.
 4. Tap **Create account** — you're immediately logged in.
 
 ### Login
-1. Enter your phone number.
+1. Enter your username.
 2. Enter your 4-digit mPIN.
 3. You're in.
 
@@ -140,11 +140,11 @@ Tasks are the core of HomeJira. Every task belongs to a household and optionally
 |-------|-------------|
 | **Title** | What needs to be done |
 | **Notes** | Optional longer description or instructions |
-| **Category** | `chore`, `errand`, `repair`, or `grocery` |
+| **Category** | `chore`, `errand`, or `repair` |
 | **Priority** | `urgent`, `high`, or `normal` |
+| **Status** | `open`, `in_progress`, `on_hold`, or `done` |
 | **Assignee** | Which member is responsible (optional) |
 | **Due date** | When it should be done by (optional) |
-| **Quantity** | Free-text amount (grocery items only, optional) |
 | **Done** | Completed or not |
 
 ### Creating a Task
@@ -152,12 +152,13 @@ Tap the **+** button on the Tasks page. Fill in a title (required), choose a cat
 
 ### Task Categories
 
-| Category | Emoji | Description |
-|----------|-------|-------------|
-| Grocery | 🛒 | Items to buy — shown separately in the Grocery List |
-| Chore | 🧹 | Regular household maintenance |
-| Errand | 📦 | Things to do outside the home |
-| Repair | 🔧 | Broken things that need fixing |
+| Category | Description |
+|----------|-------------|
+| Chore | Regular household maintenance |
+| Errand | Things to do outside the home |
+| Repair | Broken things that need fixing |
+
+> Grocery items are a **separate resource** with their own dedicated list and are not a task category.
 
 ### Task Priorities
 
@@ -256,7 +257,7 @@ Each member has:
 - **Name** — displayed throughout the app
 - **Letter avatar** — first letter of name on a colored circle background (Google-style). Emoji selection during registration is stored but displayed as a letter avatar throughout the app.
 - **Color** — chosen from 8 colors; used for avatar background, task indicators, and UI accents
-- **Phone number** — used for authentication; shown in your own profile view
+- **Username** — used for authentication
 
 ### Letter Avatars
 Avatars are displayed as a colored circle with the **first letter of the member's name** — Google-style. The background color is the member's chosen profile color. This makes members immediately recognisable at a glance across task cards, comments, and member lists.
@@ -369,24 +370,7 @@ The change takes effect on the next app load — no server restart needed.
 
 ## 14. Guest Mode
 
-Users who don't want to create an account can use HomeJira in **Guest Mode** by tapping "Skip" on the auth screen.
-
-### What Guest Mode Offers
-- Full task creation and management
-- All categories and priorities
-- Grocery list
-
-### How It Works
-In guest mode, all data is stored locally in the browser's `localStorage`. No API calls are made for task mutations. A static guest member profile is used as the task assignee.
-
-### Limitations
-- Data exists only on the current device and browser
-- No household collaboration — guest tasks are private
-- No real-time sync with other members
-- No coins, referrals, or activity history
-- Data is lost if the browser cache is cleared
-
-A **Guest Banner** is shown throughout the app, encouraging the user to create a free account to unlock all features and sync across devices.
+> ⚠️ **Deprecated (2026-03-20).** Guest mode has been removed from HomeJira. All users must create an account to use the app. Unauthenticated users are redirected to the onboarding/auth screen.
 
 ---
 
@@ -398,8 +382,8 @@ All endpoints are prefixed with `/api/v1`.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/auth/check-phone` | — | Check if a phone number is registered |
-| `POST` | `/auth/login` | — | Login with phone + mPIN |
+| `POST` | `/auth/check-username` | — | Check if a username is registered |
+| `POST` | `/auth/login` | — | Login with username + mPIN |
 | `POST` | `/auth/register` | — | Register new member |
 | `POST` | `/auth/refresh` | ✅ | Reissue JWT with latest DB state |
 | `PATCH` | `/auth/mpin` | ✅ | Change mPIN |
