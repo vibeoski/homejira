@@ -25,3 +25,28 @@ export function isDueSoon(dueAt: string | undefined, done: boolean): boolean {
   const ms = new Date(dueAt).getTime() - Date.now()
   return ms > 0 && ms <= 86_400_000
 }
+
+export function groupByDay(items: { updated_at: string; [key: string]: unknown }[]): { key: string; label: string; items: typeof items }[] {
+  const now = new Date()
+  const today = new Date(now); today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+
+  const map = new Map<string, typeof items>()
+  for (const item of items) {
+    const d = new Date(item.updated_at); d.setHours(0, 0, 0, 0)
+    const key = d.toISOString()
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(item)
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, items]) => {
+      const d = new Date(key)
+      let label: string
+      if (d.getTime() === today.getTime()) label = 'Today'
+      else if (d.getTime() === yesterday.getTime()) label = 'Yesterday'
+      else label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
+      return { key, label, items }
+    })
+}

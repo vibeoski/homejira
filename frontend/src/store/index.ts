@@ -200,8 +200,25 @@ export const useStore = create<AppStore>()(
       },
 
       updateGrocery: async (id, payload) => {
-        const updated = await groceriesApi.update(id, payload)
-        set((s) => ({ groceries: s.groceries.map((g) => g.id === id ? updated : g) }))
+        const previous = get().groceries.find(g => g.id === id)
+        if (!previous) return
+        set(s => ({
+          groceries: s.groceries.map(g => g.id === id ? { ...g, ...payload, updated_at: new Date().toISOString() } : g),
+          groceryPending: s.groceryPending + 1,
+        }))
+        try {
+          const updated = await groceriesApi.update(id, payload)
+          set(s => ({
+            groceries: s.groceries.map(g => g.id === id ? updated : g),
+            groceryPending: Math.max(0, s.groceryPending - 1),
+          }))
+        } catch {
+          set(s => ({
+            groceries: s.groceries.map(g => g.id === id ? previous : g),
+            groceryPending: Math.max(0, s.groceryPending - 1),
+          }))
+          get().showToast('Could not update item — please try again.')
+        }
       },
 
       deleteGrocery: async (id) => {
