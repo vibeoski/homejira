@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { useAuthStore } from '../store/authStore'
@@ -6,8 +6,10 @@ import { Spinner } from '../components/ui/Spinner'
 import { AddGrocerySheet } from '../components/tasks/AddGrocerySheet'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import type { Grocery, Member, UpdateGroceryPayload } from '../types'
+import { COLOR_PRIMARY } from '../constants/layout'
+import { groupByDay } from '../utils'
 
-const ACCENT = '#6366f1'
+type View = 'list' | 'history'
 
 export function GroceryPage() {
   const { groceries, fetchGroceries, toggleGrocery, deleteGrocery, updateGrocery, sseVersion, members } = useStore()
@@ -16,11 +18,12 @@ export function GroceryPage() {
 
   const [loading, setLoading] = useState(groceries.length === 0)
   const [showDone, setShowDone] = useState(true)
-  const [historyMode, setHistoryMode] = useState(false)
-  const todayKey = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() })()
+  const [view, setView] = useState<View>('list')
+  const todayKey = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d.toISOString() }, [])
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set([todayKey]))
   const [showAdd, setShowAdd] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Grocery | null>(null)
+  const [checkingAll, setCheckingAll] = useState(false)
 
   // Initial load — shows spinner while data is absent
   const load = useCallback(async () => {
@@ -40,27 +43,34 @@ export function GroceryPage() {
     if (!selectedItem) return
     const updated = groceries.find(g => g.id === selectedItem.id)
     if (!updated) setSelectedItem(null) // deleted elsewhere
-  }, [groceries, selectedItem])
+    else setSelectedItem(updated) // reflect any remote updates
+  }, [groceries]) // intentionally excludes selectedItem to avoid loop
 
-  const active = groceries.filter(g => !g.done)
-  const done = groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+  const active = useMemo(() => groceries.filter(g => !g.done), [groceries])
+  const done = useMemo(() => groceries.filter(g => g.done).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()), [groceries])
 
   const handleCheckAll = async () => {
-    await Promise.allSettled(active.map(g => toggleGrocery(g.id, true)))
-    setShowDone(true)
+    setCheckingAll(true)
+    try {
+      await Promise.allSettled(active.map(g => toggleGrocery(g.id, true)))
+      setShowDone(true)
+    } finally {
+      setCheckingAll(false)
+    }
   }
 
   if (!member?.household_id) return <Navigate to="/household" replace />
 
   if (loading) return <Spinner />
 
-  if (historyMode) {
+  if (view === 'history') {
     return (
       <div style={{ paddingBottom: 80 }}>
         <div style={{ background: 'white', padding: '12px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
-            onClick={() => setHistoryMode(false)}
-            style={{ background: 'none', border: 'none', color: ACCENT, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={() => setView('list')}
+            aria-label="Back to list"
+            style={{ background: 'none', border: 'none', color: COLOR_PRIMARY, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15,18 9,12 15,6" />
@@ -88,6 +98,7 @@ export function GroceryPage() {
                 <div key={key} style={{ marginBottom: 8 }}>
                   <button
                     onClick={toggle}
+                    aria-label={`${open ? 'Collapse' : 'Expand'} ${label}`}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 4px', marginBottom: open ? 4 : 0 }}
                   >
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#a8a29e', letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</span>
@@ -99,7 +110,7 @@ export function GroceryPage() {
                     </div>
                   </button>
                   {open && items.map(item => (
-                    <HistoryRow key={item.id} item={item} onDelete={deleteGrocery} onSelect={setSelectedItem} />
+                    <HistoryRow key={item.id} item={item} onSelect={setSelectedItem} />
                   ))}
                 </div>
               )
@@ -124,7 +135,8 @@ export function GroceryPage() {
     <div style={{ background: 'white', padding: '10px 16px', borderBottom: '1px solid #ede8e1', position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 49, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <h2 style={{ fontSize: 13, fontWeight: 600, color: '#78716c', margin: 0, letterSpacing: 0.2 }}>Grocery</h2>
       <button
-        onClick={() => setHistoryMode(true)}
+        onClick={() => setView('history')}
+        aria-label="View history"
         style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -138,7 +150,7 @@ export function GroceryPage() {
   const emptyState = (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', textAlign: 'center' }}>
       <div style={{ width: 60, height: 60, borderRadius: 18, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
           <line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
         </svg>
@@ -146,6 +158,18 @@ export function GroceryPage() {
       <p style={{ fontSize: 16, fontWeight: 700, color: '#1c1917', margin: '0 0 6px' }}>List is empty</p>
       <p style={{ fontSize: 13, color: '#a8a29e', margin: 0, lineHeight: 1.6 }}>Tap the + button to add items to your list.</p>
     </div>
+  )
+
+  const checkAllButton = (
+    <button
+      onClick={handleCheckAll}
+      disabled={checkingAll}
+      aria-label="Mark all items as done"
+      style={{ background: 'none', border: 'none', color: checkingAll ? '#a8a29e' : '#78716c', fontSize: 11, fontWeight: 600, cursor: checkingAll ? 'default' : 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
+      {checkingAll ? 'Checking…' : 'Check all'}
+    </button>
   )
 
   return (
@@ -158,10 +182,7 @@ export function GroceryPage() {
           <div style={{ flex: 1, padding: '0 16px', borderRight: '1px solid #ede8e1', minWidth: 0 }}>
             {active.length > 1 && (
               <div style={{ padding: '10px 0', display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={handleCheckAll} style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
-                  Check all
-                </button>
+                {checkAllButton}
               </div>
             )}
             {active.length === 0 && done.length === 0 && emptyState}
@@ -202,10 +223,7 @@ export function GroceryPage() {
         <div style={{ padding: '0 12px 0' }}>
           {active.length > 1 && (
             <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={handleCheckAll} style={{ background: 'none', border: 'none', color: '#78716c', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12" /></svg>
-                Check all
-              </button>
+              {checkAllButton}
             </div>
           )}
 
@@ -246,11 +264,12 @@ export function GroceryPage() {
 
       <button
         onClick={() => setShowAdd(true)}
+        aria-label="Add grocery item"
         style={{
           position: 'fixed', bottom: isDesktop ? 24 : 72, right: 20, width: 56, height: 56,
-          borderRadius: 16, background: ACCENT, color: 'white', border: 'none',
+          borderRadius: 16, background: COLOR_PRIMARY, color: 'white', border: 'none',
           fontSize: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 8px 24px ${ACCENT}40`, zIndex: 40, cursor: 'pointer', transition: 'transform .1s',
+          boxShadow: `0 8px 24px ${COLOR_PRIMARY}40`, zIndex: 40, cursor: 'pointer', transition: 'transform .1s',
         }}
         onMouseDown={e => (e.currentTarget.style.transform = 'scale(.94)')}
         onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -273,33 +292,6 @@ export function GroceryPage() {
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function groupByDay(items: Grocery[]): { key: string; label: string; items: Grocery[] }[] {
-  const now = new Date()
-  const today = new Date(now); today.setHours(0, 0, 0, 0)
-  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
-
-  const map = new Map<string, Grocery[]>()
-  for (const item of items) {
-    const d = new Date(item.updated_at); d.setHours(0, 0, 0, 0)
-    const key = d.toISOString()
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(item)
-  }
-
-  return Array.from(map.entries())
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([key, items]) => {
-      const d = new Date(key)
-      let label: string
-      if (d.getTime() === today.getTime()) label = 'Today'
-      else if (d.getTime() === yesterday.getTime()) label = 'Yesterday'
-      else label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })
-      return { key, label, items }
-    })
-}
-
 // ── GroceryRow ────────────────────────────────────────────────────────────────
 
 interface RowProps {
@@ -320,9 +312,9 @@ function GroceryRow({ item, done = false, onToggle, onSelect }: RowProps) {
         opacity: done ? 0.55 : 1, transition: 'opacity 0.15s', cursor: 'pointer',
       }}
     >
-      {/* Circular tick button */}
       <button
         onClick={e => { e.stopPropagation(); onToggle(!done) }}
+        aria-label={done ? 'Mark as not done' : 'Mark as done'}
         style={{
           width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
           border: `1.5px solid ${done ? '#22c55e' : '#d4d4d8'}`,
@@ -342,7 +334,6 @@ function GroceryRow({ item, done = false, onToggle, onSelect }: RowProps) {
         )}
       </button>
 
-      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 500, textDecoration: done ? 'line-through' : 'none', color: done ? '#a8a29e' : '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {item.title}
@@ -354,11 +345,10 @@ function GroceryRow({ item, done = false, onToggle, onSelect }: RowProps) {
         )}
       </div>
 
-      {/* Assignee avatar */}
       {item.assignee && (
         <span style={{
           width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-          background: item.assignee.color ?? ACCENT,
+          background: item.assignee.color ?? COLOR_PRIMARY,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10, fontWeight: 700, color: 'white',
         }}>
@@ -366,8 +356,7 @@ function GroceryRow({ item, done = false, onToggle, onSelect }: RowProps) {
         </span>
       )}
 
-      {/* Chevron hint */}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <polyline points="9,18 15,12 9,6" />
       </svg>
     </div>
@@ -411,6 +400,9 @@ function GroceryDetailSheet({ item, members, onClose, onToggle, onUpdate, onDele
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
 
+  // Sync assignee from remote updates (SSE) — immediate field, no debounce in flight
+  useEffect(() => { setAssigneeId(item.assignee?.id ?? '') }, [item.assignee?.id])
+
   const handleTitle = (v: string) => { setTitle(v); scheduleUpdate({ title: v }) }
   const handleQuantity = (v: string) => { setQuantity(v); scheduleUpdate({ quantity: v || undefined }) }
   const handleNotes = (v: string) => { setNotes(v); scheduleUpdate({ notes: v }) }
@@ -440,9 +432,9 @@ function GroceryDetailSheet({ item, members, onClose, onToggle, onUpdate, onDele
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          {/* Done toggle */}
           <button
             onClick={() => onToggle(!item.done)}
+            aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
             style={{
               width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
               border: `1.5px solid ${item.done ? '#22c55e' : '#d4d4d8'}`,
@@ -462,7 +454,7 @@ function GroceryDetailSheet({ item, members, onClose, onToggle, onUpdate, onDele
           </span>
           <div style={{ flex: 1 }} />
           {syncing && <span style={{ fontSize: 11, color: '#a8a29e' }}>Saving…</span>}
-          <button onClick={onClose} style={{ background: '#faf7f2', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 13, color: '#78716c', cursor: 'pointer' }}>Done</button>
+          <button onClick={onClose} style={{ background: '#faf7f2', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 13, color: '#78716c', cursor: 'pointer' }}>Close</button>
         </div>
 
         {/* Title */}
@@ -555,7 +547,7 @@ function GroceryDetailSheet({ item, members, onClose, onToggle, onUpdate, onDele
 
 // ── HistoryRow ────────────────────────────────────────────────────────────────
 
-function HistoryRow({ item, onDelete, onSelect }: { item: Grocery; onDelete: (id: string) => void; onSelect: (item: Grocery) => void }) {
+function HistoryRow({ item, onSelect }: { item: Grocery; onSelect: (item: Grocery) => void }) {
   return (
     <div
       onClick={() => onSelect(item)}
@@ -578,7 +570,7 @@ function HistoryRow({ item, onDelete, onSelect }: { item: Grocery; onDelete: (id
         <div style={{ fontSize: 14, color: '#a8a29e', textDecoration: 'line-through', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
         {item.quantity && <div style={{ fontSize: 11, color: '#a8a29e', marginTop: 1 }}>{item.quantity}</div>}
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <polyline points="9,18 15,12 9,6" />
       </svg>
     </div>

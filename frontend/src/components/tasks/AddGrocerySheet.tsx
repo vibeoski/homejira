@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { type Member, type CreateGroceryPayload } from '../../types'
 import { useStore } from '../../store'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { COLOR_PRIMARY } from '../../constants/layout'
 
 interface Props {
   members: Member[]
@@ -15,7 +16,7 @@ export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
 
   const [form, setForm] = useState<CreateGroceryPayload>({
     title: '', quantity: '', notes: '',
-    assignee_id: members[0]?.id ?? '',
+    assignee_id: '',
   })
   const [saving, setSaving] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -48,8 +49,6 @@ export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
       setSaving(false)
     }
   }
-
-  const ACCENT = '#6366f1'
 
   return (
     <div
@@ -87,7 +86,7 @@ export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
           placeholder="e.g. Milk, bread, eggs"
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           style={{
-            width: '100%', fontSize: 15, border: `1px solid ${form.title ? ACCENT + '60' : '#ede8e1'}`,
+            width: '100%', fontSize: 15, border: `1px solid ${form.title ? COLOR_PRIMARY + '60' : '#ede8e1'}`,
             borderRadius: 8, padding: '11px 12px', outline: 'none', marginBottom: 10,
             color: '#1c1917', background: '#fafafa', boxSizing: 'border-box',
           }}
@@ -122,6 +121,15 @@ export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
           Assign to
         </p>
         <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => set('assignee_id', '')}
+            style={{
+              padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+              borderColor: form.assignee_id === '' ? '#a8a29e' : '#ede8e1',
+              background: form.assignee_id === '' ? '#f5f5f4' : 'white',
+              color: form.assignee_id === '' ? '#78716c' : '#a8a29e',
+            }}
+          >Unassigned</button>
           {members.map((m) => (
             <button key={m.id} onClick={() => set('assignee_id', m.id)} style={{
               padding: '5px 12px', borderRadius: 99, border: '1px solid', fontWeight: 600, fontSize: 12, cursor: 'pointer',
@@ -144,7 +152,7 @@ export function AddGrocerySheet({ members, onClose, onAdded }: Props) {
           style={{
             width: '100%', border: 'none', borderRadius: 10, padding: 14,
             fontSize: 15, fontWeight: 700, cursor: saving || !form.title.trim() ? 'not-allowed' : 'pointer',
-            background: saving || !form.title.trim() ? '#ede8e1' : ACCENT,
+            background: saving || !form.title.trim() ? '#ede8e1' : COLOR_PRIMARY,
             color: saving || !form.title.trim() ? '#a8a29e' : 'white',
             transition: 'background 0.15s',
           }}
