@@ -26,7 +26,7 @@ export function isDueSoon(dueAt: string | undefined, done: boolean): boolean {
   return ms > 0 && ms <= 86_400_000
 }
 
-export function groupByDay(items: { updated_at: string; [key: string]: unknown }[]): { key: string; label: string; items: typeof items }[] {
+export function groupByDay<T extends { updated_at: string }>(items: T[]): { key: string; label: string; items: T[] }[] {
   const now = new Date()
   const today = new Date(now); today.setHours(0, 0, 0, 0)
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)

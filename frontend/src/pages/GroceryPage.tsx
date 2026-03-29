@@ -109,7 +109,7 @@ export function GroceryPage() {
                       </svg>
                     </div>
                   </button>
-                  {open && (items as Grocery[]).map(item => (
+                  {open && items.map(item => (
                     <HistoryRow key={item.id} item={item} onSelect={setSelectedItem} />
                   ))}
                 </div>
